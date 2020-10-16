@@ -1,0 +1,111 @@
+﻿@model Library.MVC.Models.LoanIndexVm;
+
+@{
+    ViewData["Title"] = "Loans";
+}
+
+<h1>Loans</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-light ">Create Loan</a> | 
+    <a asp-action="Delete" class="btn btn-light">Delete Loan</a>
+</p>
+ 
+   
+
+<p class="float-lg-right">
+
+    @Html.ActionLink("Active loans", "Index", "Loans", new { onlyActiveLoans = true}, new { @class = "btn btn-info btn-large" })  @Html.ActionLink("Show all", "Index", "Loans", new { onlyActiveLoans = false}, new { @class = "btn btn-outline-info btn-large" })
+
+</p>
+
+<table class="table table-hover">
+    <thead>
+        <tr class="bg-light">
+            <th>LoanID</th>
+            <th>Title 1</th>
+            <th>Title 2</th>
+            <th>Title 3</th>
+            <th>MemberName</th>
+            <th>MemberId</th>
+            <th>StartDate</th>
+            <th>DueDate</th>
+            <th>ReturnDate</th>
+            <th>Fee</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Loans)
+        {
+            <tr>
+
+                <td>
+                    @Html.DisplayFor(modelItem => item.LoanId)
+                </td>
+                @for (int i = 0; i < 3; i++)
+                {
+                    var bookCopies = item.BookCopyLoans.Where(l => l.LoanId == item.LoanId).ToList();
+
+
+                    if (bookCopies.Count() > i)
+                    {
+                        <td>
+                            @bookCopies[i].BookCopy.Details.Title
+                        </td>
+                    }
+                    else
+                    {
+                        <td>
+                            ----
+                        </td>
+                    }
+                }
+            <td>
+                 
+                    @Html.DisplayFor(modelItem => item.Member.Name)
+               
+            </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.MemberID)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.StartDate)
+                </td>
+                <td>
+                    @if (Model.Now > item.DueDate)
+                    {
+                        <div class="alert-danger">
+                            @Html.DisplayFor(modelItem => item.DueDate)
+                        </div>
+
+                    }
+                    else
+                    {
+                        @Html.DisplayFor(modelItem => item.DueDate)
+                    }
+                </td>
+                @if (item.ReturnDate < item.StartDate)
+                {
+
+                    <td>
+
+                        <a asp-action="Return" class="btn btn-success" asp-route-id="@item.LoanId">Return</a>
+
+                    </td>
+
+                }
+                else
+                {
+                    <td>
+                        @Html.DisplayFor(modelItem => item.ReturnDate) <br>
+
+                    </td>
+                }
+                <td>
+                    @Html.DisplayFor(modelItem => item.Fee) SEK
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+

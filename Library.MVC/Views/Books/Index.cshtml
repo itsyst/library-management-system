@@ -1,0 +1,91 @@
+﻿@model Library.MVC.Models.BookIndexVm
+
+@{
+    ViewData["Title"] = "Books";
+}
+
+<h1>Books</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-light">Create</a>
+</p>
+
+<div>
+    <form asp-action="Index" method="get" class="float-left">
+        <div class="form-actions no-color">
+
+            <input type="text" name="SearchString" placeholder="Author" />
+            <input type="submit" value="Search" class="btn btn-primary" />
+            <a asp-action="Index" class="btn btn-outline-primary">Undo</a>
+
+        </div>
+
+    </form>
+    <div class="form-actions no-color">
+        <p class="float-lg-right">
+
+            @Html.ActionLink("Show available", "Index", "Books", new { availability = true, searchString = @Model.SearchString }, new { @class = "btn btn-primary btn-large" })  @Html.ActionLink("Show all", "Index", "Books", new { availability = false, searchString = @Model.SearchString }, new { @class = "btn btn-outline-primary btn-large" })
+
+        </p>
+    </div>
+</div>
+
+<table class="table table-hover">
+    <thead>
+        <tr class="bg-light">
+            <th>Author</th>
+            <th>Titel</th>
+            <th>Description</th>
+            <th>ISBN</th>
+            <th>Copies</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+
+        @foreach (var item in Model.Books)
+        {
+
+            <tr>
+
+                <td>
+                    @Html.DisplayFor(modelItem => item.Author.Name)
+                </td>
+                <td>
+                    @Html.ActionLink(item.Title, "Details", "Books", new { id = item.ID }, null)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Description)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ISBN)
+                </td>
+                <td>
+                    @if (Model.ShowOnlyAvailableCopies)
+                    {
+                        @item.Copies.Where(x => x.IsAvailable == true).Count()
+                    }
+                    else
+                    {
+                        @Html.DisplayFor(modelItem => item.Copies.Count)
+                    }
+                </td>
+                <td>
+
+                    @Html.ActionLink("Add copy", "AddBookCopy", "Books", new { id = @item.ID, authorName = @Model.SearchString, showOnlyAvailable = @Model.ShowOnlyAvailableCopies, showSelectedAuthor = @Model.SelectedOnAuthors }, new { @class = "btn btn-outline-secondary btn-xs" })
+
+
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+
+@if (Model.BookCopyAdded)
+{
+    <script type="text/javascript">alert('@ViewBag.msg');</script>
+}
+
+
+

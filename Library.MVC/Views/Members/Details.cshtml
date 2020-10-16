@@ -1,0 +1,97 @@
+﻿@model Library.MVC.Models.MemberVm;
+
+@{
+    ViewData["Title"] = "Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>Member</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.Id)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.Id)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.SSN)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.SSN)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.Name)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.Name)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Delete" asp-route-id="@Model.Member.Id" class="btn btn-danger">Delete</a> |
+    <a asp-action="Edit" asp-route-id="@Model.Member.Id" class="btn btn-info">Edit</a> |
+    <a id="btn-show-loandetails" class="btn btn-outline-info">Show loans</a>
+    <a id="btn-hide-loandetails" class="btn btn-outline-info">Hide loans</a> |
+    <a asp-action="Index" class="btn btn-outline-info">Back to List</a>
+</div>
+<br />
+<div id="loan-details-member">
+    <table class="table table-hover">
+        <thead>
+            <tr class="bg-light">
+                <th>Loan</th>
+                <th>Title 1</th>
+                <th>Title 2</th>
+                <th>Title 3</th>
+                <th>Active</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{ int counter = 1;
+                @foreach (var loan in Model.Member.Loans)
+                {
+                    <tr>
+
+                        <td>
+                            @counter
+                        </td>
+                        @for (int i = 0; i < 3; i++)
+                        {
+                            var bookCopies = loan.BookCopyLoans.Where(l => l.LoanId == loan.LoanId).ToList();
+
+
+                            if (bookCopies.Count() > i)
+                            {
+                                <td>
+                                    @bookCopies[i].BookCopy.Details.Title
+                                </td>
+                            }
+                            else
+                            {
+                                <td>
+                                    ----
+                                </td>
+                            }
+                        }
+                        @if (loan.ReturnDate < loan.StartDate)
+                        {
+                            <td>
+                                X
+                            </td>
+                        }
+                        else
+                        {
+                            <td>
+                            </td>
+                        }
+                    </tr>
+                    counter++;
+                }
+            }
+        </tbody>
+    </table>
+</div>

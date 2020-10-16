@@ -1,0 +1,47 @@
+﻿@model Library.MVC.Models.LoanCreateVm;
+
+@{
+    ViewData["Title"] = "Create";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>Create</h1>
+
+
+
+
+<h4>Loan details</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="SelectListMemberId" class="control-label"></label>
+            @Html.DropDownListFor(m => m.MemberId, Model.SelectListMemberId, "Choose a member ID")  
+            </div>
+            <div class="form-group">
+                <label asp-for="SelectListBookCopy1" class="control-label"></label>
+                @Html.DropDownListFor(m => m.BookCopyID1, Model.SelectListBookCopy1,"Choose bookcopy")
+            </div>
+            <div class="form-group">
+                <label asp-for="SelectListBookCopy2" class="control-label"></label>
+                @Html.DropDownListFor(m => m.BookCopyID2, Model.SelectListBookCopy2,"Choose bookcopy")
+            </div>
+            <div class="form-group">
+                <label asp-for="SelectListBookCopy3" class="control-label"></label>
+                @Html.DropDownListFor(m => m.BookCopyID3, Model.SelectListBookCopy3, "Choose bookcopy")
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" /> |
+                    <a asp-action="Index" class="btn btn-outline-primary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

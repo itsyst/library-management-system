@@ -1,0 +1,67 @@
+﻿@model Library.MVC.Models.BookDetailsVm
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Bookdetails</h1>
+
+
+
+<table class="table">
+    <thead>
+        <tr class="bg-light">
+            <th>Book</th>
+            <th>BookDetailsID</th>
+            <th>BookCopyID</th>
+            <th>Available</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            int counter = 1;
+            @foreach (var item in Model.BookCopies)
+            {
+
+                <tr>
+
+                    <td>
+                        @counter
+                    </td>
+
+                    <td>
+                        @Html.DisplayFor(modelItem => Model.Book.ID)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.BookCopyId)
+                    </td>
+
+                    @if (item.IsAvailable == true)
+                    {
+                        <td>
+                            X
+                        </td>
+                    }
+                    else
+                    {
+                        <td>
+                            -
+                        </td>
+                    }
+                </tr>
+                counter++;
+
+            }
+
+        }
+
+    </tbody>
+</table>
+<a asp-action="Delete" asp-route-id="@Model.Book.ID" class="btn btn-danger">Delete</a> |
+<a asp-action="Edit" asp-route-id="@Model.Book.ID" class="btn btn-info">Edit</a> |
+<a asp-action="Index" class="btn btn-outline-info">Back to List</a>
+
+
+
+

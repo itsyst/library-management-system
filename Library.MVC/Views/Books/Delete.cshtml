@@ -1,0 +1,53 @@
+﻿@model Library.MVC.Models.BookDeleteVm
+
+@{
+    ViewData["Title"] = "Delete";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<h1>Delete</h1>
+
+<h3>Select one bookcopy or mark Delete all (bookdetails and all bookcopies) </h3>
+<div>
+    <h4>Author</h4>
+    <hr />
+    <dl class="row">
+
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Book.Title)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Book.Title)
+        </dd>
+    </dl>
+
+    <form asp-action="Delete">
+        <div class="form-group">
+            <label asp-for="BookCopyList" class="control-label"></label>
+            @Html.DropDownListFor(b => b.BookCopyId, @Model.BookCopyList, "Choose book copy")
+        </div>
+        <div>
+         Delete all <input type="checkbox" asp-for="DeleteAll" value="true" />
+                    <p>  </p>
+                    <p>  </p>
+                    <p>  </p>
+        </div>
+        <input type="hidden" asp-for="BookDetailsID " value="@Model.Book.ID" />
+        <input type="submit" value="Delete" class="btn btn-danger" /> 
+        <a asp-action="Index" class="btn btn-outline-danger">Back to List</a>
+    </form>
+</div>
+<div>
+    @if (Model.BookCopiesBlocked)
+    {
+        <hr />
+        <p class="alert-info">One or more bookcopies have not been deleted. They first have to be returned (check loans)</p>
+
+    }
+    else if (Model.BookCopyBlocked)
+    {
+        <hr />
+        <p class="alert-info">This bookcopy could not be deleted. It first has to be returned(check loans)</p>
+    }
+</div>

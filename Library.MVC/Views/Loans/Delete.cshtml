@@ -1,0 +1,22 @@
+﻿@model Library.MVC.Models.LoanDeleteVm
+@{
+    ViewData["Title"] = "Delete";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<h1>Delete</h1>
+<div>
+    <h4>Loan</h4>
+    <hr />
+
+    <form asp-action="Delete">
+        <div class="form-group">
+            <label asp-for="LoanIdList" class="control-label"></label>
+            @Html.DropDownListFor(m => m.LoanId, Model.LoanIdList, "Choose loan id")
+        </div>
+        <input type="submit" value="Delete" class="btn btn-danger" /> |
+        <a asp-action="Index" class="btn btn-outline-danger">Back to List</a>
+    </form>
+</div>
+

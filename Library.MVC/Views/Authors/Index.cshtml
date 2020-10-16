@@ -1,0 +1,46 @@
+﻿@model Library.MVC.Models.AuthorVm
+
+@{
+    ViewData["Title"] = "Authors";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>Authors</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-light">Create New</a>
+</p>
+<table class="table table-striped">
+    <thead>
+        <tr class="bg-light">
+            <th>
+                @Html.DisplayNameFor(model => model.Id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Name)
+            </th>
+            <th>
+                № of books
+            </th>
+
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Authors)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Id)
+                </td>
+                <td>
+                    @Html.ActionLink(item.Name, "Details", "Authors", new { id = item.Id }, null)
+
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Books.Count)
+                </td>
+
+            </tr>
+    }
+        </tbody>
+    </table>
