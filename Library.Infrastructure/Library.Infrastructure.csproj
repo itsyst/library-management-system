@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+	  <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -10,15 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Migrations\20200216140031_initials.cs" />
-    <Compile Remove="Migrations\20200216140031_initials.Designer.cs" />
-    <Compile Remove="Migrations\20200216141201_createdb.cs" />
-    <Compile Remove="Migrations\20200216141201_createdb.Designer.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="3.1.2" />
-    <PackageReference Include="PagedList.Mvc" Version="4.5.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.2" />
   </ItemGroup>
 
   <ItemGroup>
