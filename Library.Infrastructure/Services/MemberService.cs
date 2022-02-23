@@ -2,54 +2,48 @@
 using Library.Domain;
 using Library.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Linq.Expressions;
 
 namespace Library.Infrastructure.Services
 {
-    public class MemberService : IMemberService
+    public class MemberService : BaseService<Member>, IMemberService
     {
-
-        private readonly ApplicationDbContext _context;
-
-
-        public MemberService(ApplicationDbContext context)
+        public MemberService(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
 
-        public Member FindMember(int id)
+        public async Task<IReadOnlyList<Member>> GetAllMembersAsync(Expression<Func<Member, bool>>? filter = null, Func<IQueryable<Member>, IOrderedQueryable<Member>>? orderBy = null, params Expression<Func<Member, object>>[] includeProperties)
         {
-            var member = _context.Members.Where(m => m.Id == id).Include(m => m.Loans).ThenInclude(l => l.BookCopyLoans).ThenInclude(b => b.BookCopy).ThenInclude(b => b.Details).ToList().Last();
+            IQueryable<Member> query = _table;
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            if (includeProperties != null)
+            {
+                foreach (var includeProp in includeProperties)
+                {
+                    query = query.Include(includeProp);
+                }
 
-            return member;
+            }
+            if (orderBy != null)
+            {
+                query = orderBy(query);
+            }
+
+            return await query.ToListAsync();
+
         }
 
-        public void AddMember(Member member)
+        public async Task<Member> GetMemberByIdAsync(int id, bool includeProperties)
         {
-            _context.Members.Add(member);
-            _context.SaveChanges();
-        }
+            Member Member = new();
 
-        public void DeleteMember(int id)
-        {
-            var member = FindMember(id);
+            Member = includeProperties ? await _table.Include(m => m.Loans).ThenInclude(l => l.BookCopyLoans).ThenInclude(b => b.BookCopy).ThenInclude(b => b.Details).FirstOrDefaultAsync(x => x.Id == id) : await GetByIdAsync(id);
 
-            _context.Remove(member);
-            _context.SaveChanges();
-        }
-
-        public void UpdateMember(Member memberToUpdate)
-        {
-            _context.Update(memberToUpdate);
-            _context.SaveChanges();
-        }
-
-        public IList<Member> GetAllmembers()
-        {
-            return _context.Members.ToList();
+            return Member;
         }
     }
 }
