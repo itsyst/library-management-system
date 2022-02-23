@@ -1,19 +1,11 @@
 ﻿using Library.Domain;
-using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace Library.Application.Interfaces
 {
-    public interface IMemberService
+    public interface IMemberService : IAsyncGenericRepository<Member>
     {
- 
-        Member FindMember(int id);
-
-        void AddMember(Member member);
-
-        void UpdateMember (Member member);
-
-        void DeleteMember(int id);
-
-        IList<Member> GetAllmembers();
+        Task<IReadOnlyList<Member>> GetAllMembersAsync(Expression<Func<Member, bool>>? filter = null, Func<IQueryable<Member>, IOrderedQueryable<Member>>? orderBy = null, params Expression<Func<Member, object>>[] includeProperties);
+        Task<Member> GetMemberByIdAsync(int Id, bool includeProperties);
     }
 }
