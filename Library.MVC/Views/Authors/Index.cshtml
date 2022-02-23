@@ -1,46 +1,38 @@
-﻿@model Library.MVC.Models.AuthorVm
-
+﻿@model IEnumerable<Library.Domain.Author>
 @{
     ViewData["Title"] = "Authors";
-    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Authors</h1>
+<div class="p-3">
+    <div class="row pt-4">
+        <div class="col-6">
+            <h2 class="text-primary">Authors</h2>
+        </div>
 
-<p>
-    <a asp-action="Create" class="btn btn-light">Create New</a>
-</p>
-<table class="table table-striped">
-    <thead>
-        <tr class="bg-light">
-            <th>
-                @Html.DisplayNameFor(model => model.Id)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                № of books
-            </th>
-
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.Authors)
-        {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Id)
-                </td>
-                <td>
-                    @Html.ActionLink(item.Name, "Details", "Authors", new { id = item.Id }, null)
-
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Books.Count)
-                </td>
+        <div class="col-6 text-right">
+            <a class="btn btn-primary" asp-controller="Authors" asp-action="Create">
+                <i class="bi bi-plus-circle"></i> &nbsp; New
+            </a>
+        </div>
+    </div>
+    <br />
+    <table id="authors" class="table table-striped table-hover w-100">
+        <thead>
+            <tr class="bg-light">
+                <th>
+                    @Html.DisplayName("Full Name")
+                </th>
+                <th>
+                    @Html.DisplayName("№ of books")
+                </th>
+                <th></th>
 
             </tr>
-    }
-        </tbody>
+        </thead>
     </table>
+</div>
+
+@section scripts
+{
+<script src="~/js/authors.js"></script>
+} 
