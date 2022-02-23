@@ -1,8 +1,7 @@
 ﻿using Library.Application.Interfaces;
 using Library.Domain;
-using Library.MVC.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Data.Common;
 
 namespace Library.MVC.Controllers
@@ -10,149 +9,117 @@ namespace Library.MVC.Controllers
     public class MembersController : Controller
     {
         public readonly IMemberService _memberService;
+        public readonly ILoanService _loanService;
 
-        public MembersController(IMemberService memberService)
+        public MembersController(IMemberService memberService, ILoanService loanService)
         {
             _memberService = memberService;
+            _loanService = loanService;
         }
 
-        public ActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var vm = new MemberVm();
-
-            vm.Members = _memberService.GetAllmembers();
-
-            return View(vm);
+            var members = await _memberService.GetAllMembersAsync(orderBy: m => m.OrderBy(m => m.Name), includeProperties: m => m.Loans);
+            return View(members);
         }
 
-        public ActionResult Details(int id)
+        public async Task<IActionResult> Create()
         {
-            if (id == 0)
-            {
-                return NotFound();
-            }
-
-            var vm = new MemberVm
-            {
-                Member = _memberService.FindMember(id)
-            };
-
-            return View(vm);
-        }
-
-        public ActionResult Create()
-        {
-            var vm = new MemberVm();
-
-            return View(vm);
+            await Task.CompletedTask;
+            return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(MemberVm vm)
+        public async Task<ActionResult> Create(Member member)
         {
-            try
+            var memberInDb = await _memberService.GetAllAsync();
+            foreach (var item in memberInDb)
             {
-                var newMember = new Member();
-
-                newMember.SSN = vm.SSN;
-                newMember.Name = vm.Name;
-                _memberService.AddMember(newMember);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbException)
-            {
-                return View();
-            }
-        }
-
-        public ActionResult Edit(int id)
-        {
-            if (id == 0)
-            {
-                return NotFound();
-            }
-
-            var vm = new MemberVm
-            {
-                Member = _memberService.FindMember(id)
-            };
-
-            return View(vm);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(MemberVm vm)
-        {
-            try
-            {
-                var memberToUpdate = new Member();
-
-                memberToUpdate.Id = vm.Id;
-                memberToUpdate.Name = vm.Name;
-                memberToUpdate.SSN = vm.SSN;
-
-                _memberService.UpdateMember(memberToUpdate);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbException)
-            {
-                return View();
-            }
-        }
-
-        public ActionResult Delete(int id, bool blockDelete)
-        {
-            if (id == 0)
-            {
-                return NotFound();
-            }
-
-            var vm = new MemberVm
-            {
-                Member = _memberService.FindMember(id)
-            };
-
-            if (blockDelete)
-            {
-                vm.BlockDelete = true;
-            }
-
-            return View(vm);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(MemberVm vm)
-        {
-            try
-            {
-                // we first check if the member doesnt have any active loans
-                // else the user needs to end these loans first
-                var memberToCheckForLoans = _memberService.FindMember(vm.Id);
-                var activeLoans = false;
-
-                foreach (var loan in memberToCheckForLoans.Loans)
+                if (member.SSN.ToLower().Trim() != item.SSN.ToLower().Trim() &&
+                    member.Name.ToLower().Trim() != item.Name.ToLower().Trim())
                 {
-                    if (loan.ReturnDate < loan.StartDate)
+                    try
                     {
-                        activeLoans = true;
-                        break;
+                        await _memberService.AddAsync(member);
+                        TempData["Success"] = "Member created successfully.";
+
+                        return RedirectToAction(nameof(Index));
+                    }
+                    catch (DbException)
+                    {
+                        TempData["Error"] = "Something went wrong.";
+                        return View();
                     }
                 }
-                if (activeLoans == true)
+                else
                 {
-                    return RedirectToAction(nameof(Delete), new { id = vm.Id, blockDelete = true });
+                    TempData["Error"] = "Member already exists.";
+                    return View(nameof(Create));
                 }
-
-                _memberService.DeleteMember(vm.Id);
-                return RedirectToAction(nameof(Index));
             }
-            catch (DbException)
-            {
-                return View();
-            }
+            return RedirectToAction(nameof(Index));
         }
+
+        public async Task<IActionResult> Details(int id)
+        {
+            if (id == 0)
+                return NotFound();
+
+            var member = await _memberService.GetMemberByIdAsync(id, includeProperties: true);
+
+            return View(member);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Details(int id, [Bind("Id, SSN, Name")] Member member)
+        {
+            if (id != member.Id)
+                return NotFound();
+
+            try
+            {
+                await _memberService.UpdateAsync(member);
+                TempData["Success"] = "Author updated successfully.";
+
+                return RedirectToAction(nameof(Index));
+
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (await MemberExists(member.Id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    TempData["Error"] = "An Unexpected Error Occurred!";
+                }
+            }
+            return View(member);
+        }
+        private async Task<bool> MemberExists(int id)
+        {
+            return await _memberService.GetByIdAsync(id) != null;
+        }
+
+        #region API CALLS
+        // DELETE: Members/Delete/5
+        [HttpDelete]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var memberInDb = await _memberService.GetByIdAsync(id);
+
+            var loanInDb = await _loanService.GetLoanOrDefaultAsync(filter: b => b.Member.Id == memberInDb.Id);
+
+            if (loanInDb != null)
+                return Json(new { error = true, message = "You can not delete this member as long it has loans refering to it (check loans)!" });
+
+            await _memberService.DeleteAsync(id);
+            return Json(new { success = true, message = "Member deleted successfully." });
+
+        }
+        #endregion
     }
 }
