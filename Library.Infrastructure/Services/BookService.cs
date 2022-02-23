@@ -2,91 +2,47 @@
 using Library.Domain;
 using Library.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Linq.Expressions;
 
 namespace Library.Infrastructure.Services
 {
-    public class BookService : IBookService
+    public class BookService : BaseService<BookDetails>, IBookService
     {
-        private readonly ApplicationDbContext _context;
-
-        public BookService(ApplicationDbContext context)
+        public BookService(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
-
-        public void AddBook(BookDetails book)
+        public async Task<BookDetails> GetBookOrDefaultAsync(Expression<Func<BookDetails, bool>> filter, string? includeProperties = null, bool tracked = true)
         {
-            _context.Add(book);
-            _context.SaveChanges();
-        }
-
-        public ICollection<BookDetails> GetAllBooks()
-        {
-            return _context.BookDetails.Include(x => x.Author).Include(b => b.Copies).OrderBy(x => x.Title).ToList();
-        }
-
-        /// <summary>
-        /// Method to get books that are available for lending out 
-        /// </summary>
-        /// <returns>Collection of books available </returns>
-        public ICollection<BookDetails> GetAvailableBooks()
-        {
-            var listOfBooks = _context.BookDetails.Include(x => x.Author).Include(b => b.Copies).OrderBy(x => x.Title).ToList();
-
-            List<BookDetails> listOfBooksWithCopies = new List<BookDetails>();
-            List<BookDetails> listOfBooksWithCopiesAvailable = new List<BookDetails>();
-
-            // Books that currently have no copies must be filtered out
-            foreach (var book in listOfBooks)
+            if (tracked)
             {
-                if (book.Copies.Count != 0)
+                IQueryable<BookDetails> query = _table;
+
+                query = query.Where(filter);
+                if (includeProperties != null)
                 {
-                    listOfBooksWithCopies.Add(book);
-                }
-            }
-            // Then we make sure to only select books that have at least one copy available
-            foreach (var book in listOfBooksWithCopies)
-            {
-                bool available = false;
-                foreach (var item in book.Copies)
-                {
-                    if (item.IsAvailable == true)
+                    foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     {
-                        available = true;
-                        break;
+                        query = query.Include(includeProp);
                     }
                 }
-                if (available)
-                {
-                    listOfBooksWithCopiesAvailable.Add(book);
-                }
+
+                return await query.FirstOrDefaultAsync();
             }
-            return listOfBooksWithCopiesAvailable;
-        }
+            else
+            {
+                IQueryable<BookDetails> query = _table.AsNoTracking();
 
+                query = query.Where(filter);
+                if (includeProperties != null)
+                {
+                    foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        query = query.Include(includeProp);
+                    }
+                }
 
-        public BookDetails FindBook(int id)
-        {
-            var book = _context.BookDetails.SingleOrDefault(b => b.ID == id);
-            return book;
-        }
-
-        public void UpdateBookDetails(BookDetails book)
-        {
-            _context.Update(book);
-            _context.SaveChanges();
-        }
-
-        public void DeleteBookDetails(int id)
-        {
-            var book = FindBook(id);
-
-            _context.BookDetails.Remove(book);
-            _context.SaveChanges();
+                return await query.FirstOrDefaultAsync();
+            }
         }
     }
 }
