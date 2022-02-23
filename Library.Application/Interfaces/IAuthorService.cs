@@ -1,25 +1,11 @@
 ﻿using Library.Domain;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Linq.Expressions;
 
 namespace Library.Application.Interfaces
 {
-    public interface IAuthorService
+    public interface IAuthorService : IAsyncGenericRepository<Author>
     {
-        /// <summary>
-        /// Gets all Authors
-        /// </summary>
-        /// <returns>List of authors</returns>
-        IList<Author> GetAllAuthors();
-
-        Author FindAuthor(int id);
-
-        void AddAuthor(Author author);
-
-        void UpdateAuthor(Author author);
-
-        void DeleteAuthor(int id);
- 
+        Task<IReadOnlyList<Author>> GetAllAuthorsAsync(Expression<Func<Author, bool>>? filter = null, Func<IQueryable<Author>, IOrderedQueryable<Author>>? orderBy = null, params Expression<Func<Author, object>>[] includeProperties);
     }
+
 }
