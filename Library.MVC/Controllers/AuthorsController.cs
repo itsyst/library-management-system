@@ -1,23 +1,15 @@
 ﻿using Library.Application.Interfaces;
-using Library.Domain;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Library.MVC.Models;
 using System.Data.Common;
+using Library.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.MVC.Controllers
 {
     public class AuthorsController : Controller
     {
-
         private readonly IAuthorService _authorService;
         private readonly IBookService _bookService;
-
 
         public AuthorsController(IAuthorService authorService, IBookService bookService)
         {
@@ -25,50 +17,26 @@ namespace Library.MVC.Controllers
             _bookService = bookService;
         }
 
-        public ActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var vm = new AuthorVm
-            {
-                Authors = _authorService.GetAllAuthors()
-            };
-            return View(vm);
+            var authors = await _authorService.GetAllAuthorsAsync(includeProperties: a => a.Books);
+            return View(authors);
         }
 
-        public ActionResult Details(int id)
+        public async Task<IActionResult> Create()
         {
-            if (id == 0)
-            {
-                return NotFound();
-            }
-            var vm = new AuthorVm
-            {
-                Author = _authorService.FindAuthor(id)
-            };
-
-            return View(vm);
-        }
-
-        public ActionResult Create()
-        {
-            var vm = new AuthorVm();
-
-            return View(vm);
-
+            await Task.CompletedTask;
+            return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(AuthorVm vm)
+        public async Task<ActionResult> Create(Author author)
         {
-
             try
             {
-                var newAuthor = new Author
-                {
-                    Name = vm.Name
-                };
-
-                _authorService.AddAuthor(newAuthor);
+                await _authorService.AddAsync(author);
+                TempData["Success"] = "Author created successfully.";
 
                 return RedirectToAction(nameof(Index));
             }
@@ -78,81 +46,78 @@ namespace Library.MVC.Controllers
             }
         }
 
-        public ActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
             if (id == 0)
-            {
                 return NotFound();
-            }
 
-            var vm = new AuthorVm
-            {
-                Author = _authorService.FindAuthor(id)
-            };
+            var author = await _authorService.GetByIdAsync(id);
 
-            return View(vm);
+            if (author == null)
+                return NotFound();
+
+            return View(author);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(AuthorVm vm)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name")] Author author)
         {
-            try
-            {
-                var authorToBeEdited = new Author
-                {
-                    Id = vm.Id,
-                    Name = vm.Name
-                };
-                _authorService.UpdateAuthor(authorToBeEdited);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbException)
-            {
-                return View();
-            }
-        }
-
-        public ActionResult Delete(int id, bool blockDelete)
-        {
-            if (id == 0)
-            {
+            if (id != author.Id)
                 return NotFound();
-            }
 
-            var vm = new AuthorVm
+            if (ModelState.IsValid)
             {
-                Author = _authorService.FindAuthor(id),
-
-                BlockDelete = blockDelete ? true : false
-            };
-
-            return View(vm);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(AuthorVm vm)
-        {
-  
-
-            try
-            {
-                var booksWithAuthorToBeDeleted = _bookService.GetAllBooks().Where(b => b.AuthorID == vm.Id).ToList();
-                if (booksWithAuthorToBeDeleted.Count() == 0)
+                try
                 {
-                    _authorService.DeleteAuthor(vm.Id);
-                    return RedirectToAction(nameof(Index));
+                    await _authorService.UpdateAsync(author);
+                    TempData["Success"] = "Author updated successfully.";
                 }
-                else
-                    return RedirectToAction(nameof(Delete), new { blockDelete = true});
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (await AuthorExists(author.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        TempData["Error"] = "An Unexpected Error Occurred!";
+                    }
+                }
+                return RedirectToAction(nameof(Index));
             }
-            catch(DbException)
-            {
-                return View();
-            }
-
-          
+            return View(author);
         }
+
+        private async Task<bool> AuthorExists(int id)
+        {
+            return await _authorService.GetByIdAsync(id) != null;
+        }
+
+        #region API CALLS
+        // GET: Authors/GetAll
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var authors = await _authorService.GetAllAuthorsAsync(includeProperties: a => a.Books);
+            return Json(new { data = authors });
+        }
+
+        // DELETE: Authors/Delete/5
+        [HttpDelete]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var authorInDb = await _authorService.GetByIdAsync(id);
+
+            var bookInDb = await _bookService.GetBookOrDefaultAsync(filter: b => b.Author.Id == authorInDb.Id);
+
+            if (bookInDb != null)
+                return Json(new { error = true, message = "You can not delete this author as long it has books refering to it (check books)!" });
+
+            await _authorService.DeleteAsync(id);
+            return Json(new { success = true, message = "Author deleted successfully." });
+
+        }
+        #endregion
     }
 }
