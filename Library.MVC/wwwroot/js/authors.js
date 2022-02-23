@@ -14,7 +14,7 @@
                 "data": "id",
                 "render": function (data) {
                     return `<a class='btn-link' href='/authors/edit/${data}'><i class='bi bi-pencil-square' style='color:#75caeb; cursor:pointer;'></i></a>
-                                <a class='btn-link js-delete' data-author-id=${data}><i class='bi bi-trash-fill' style='color: #ff4136; cursor:pointer;'></a>`
+                                <a class='btn-link js-delete' data-author-id=${data}><i class='bi bi-trash-fill' style='color: #ff4136; cursor:pointer;'></i></a>`
 
                 },
                 "className": 'text-light dt-body-center'
