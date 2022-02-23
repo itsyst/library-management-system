@@ -6,7 +6,11 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddNewtonsoftJson(options =>
+    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+    // Fix the error "A possible object cycle was detected"
+);
 
 //DbContext configuration
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(
