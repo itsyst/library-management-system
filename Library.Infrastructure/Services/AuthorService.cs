@@ -2,52 +2,38 @@
 using Library.Domain;
 using Library.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
+using System.Linq.Expressions;
 
 namespace Library.Infrastructure.Services
 {
-    public class AuthorService : IAuthorService
+    public class AuthorService : BaseService<Author>, IAuthorService
     {
-
-        private readonly ApplicationDbContext _context;
-
-
-        public AuthorService(ApplicationDbContext context)
+        public AuthorService(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
 
-
-        public void AddAuthor(Author author)
+        public async Task<IReadOnlyList<Author>> GetAllAuthorsAsync(Expression<Func<Author, bool>>? filter = null, Func<IQueryable<Author>, IOrderedQueryable<Author>>? orderBy = null, params Expression<Func<Author, object>>[] includeProperties)
         {
-            _context.Authors.Add(author);
-            _context.SaveChanges();
-        }
+            IQueryable<Author> query = _table;
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            if (includeProperties != null)
+            {
+                foreach (var includeProp in includeProperties)
+                {
+                    query = query.Include(includeProp);
+                }
 
-        public Author FindAuthor(int id)
-        {
-            var author = _context.Authors.Include(a => a.Books).SingleOrDefault(a => a.Id == id);
-            return author;
-        }
+            }
+            if (orderBy != null)
+            {
+                query = orderBy(query);
+            }
 
-        public void DeleteAuthor(int id)
-        {
-            var author = FindAuthor(id);
+            return await query.ToListAsync();
 
-            _context.Authors.Remove(author);
-            _context.SaveChanges();
-        }
-
-        public void UpdateAuthor(Author newAuthor)
-        {
-            _context.Update(newAuthor);
-            _context.SaveChanges();
-        }
-
-        public IList<Author> GetAllAuthors()
-        {
-            return _context.Authors.Include(a => a.Books).ThenInclude(t => t.Copies).OrderBy(x => x.Id).ToList();
         }
     }
 }
