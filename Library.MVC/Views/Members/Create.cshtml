@@ -1,16 +1,19 @@
-﻿@model Library.MVC.Models.MemberVm;
+﻿@model Library.Domain.Member
 
 @{
     ViewData["Title"] = "Create";
-    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Create</h1>
 
-<h4>Member</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
+<div class="p-3">
+    <div class="row pt-4">
+        <div class="col-6">
+            <h2 class="text-primary">Create Member</h2>
+        </div>
+    </div>
+    <hr />
+    <div class="row">
+        <div class="col-md-4">
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group">
@@ -24,15 +27,17 @@
                 <span asp-validation-for="Name" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" /> |
+                <input type="submit" value="Save" class="btn btn-primary" /> |
                 <a asp-action="Index" class="btn btn-outline-primary">Back to List</a>
             </div>
         </form>
+        </div>
     </div>
 </div>
 
 
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
+}
 }

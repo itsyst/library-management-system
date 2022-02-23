@@ -1,46 +1,68 @@
-﻿@model Library.MVC.Models.MemberVm;
+﻿@model IEnumerable<Library.Domain.Member>
 
 @{
     ViewData["Title"] = "Index";
-    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h1>Members</h1>
+<div class="p-3">
+    <div class="row pt-4">
+        <div class="col-6">
+            <h2 class="text-primary">Members</h2>
+        </div>
 
-<p>
-    <a asp-action="Create" class="btn btn-light">Create New</a>
-</p>
-<table class="table table-hover">
-    <thead>
-        <tr class="bg-light">
-            <th>
-                @Html.DisplayNameFor(model => model.Id)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.SSN)
-            </th>
-
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.Members)
-        {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Id)
-                </td>
-                <td>
-                    @Html.ActionLink(item.Name, "Details", "Members", new { id = item.Id }, null)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.SSN)
-                </td>
-
+        <div class="col-6 text-right">
+            <a class="btn btn-primary" asp-controller="Members" asp-action="Create">
+                <i class="bi bi-plus-circle"></i> &nbsp; New
+            </a>
+        </div>
+    </div>
+    <br />
+    <table id="members" class="table table-hover">
+        <thead>
+            <tr class="bg-light">
+                <th>
+                    @Html.DisplayNameFor(model => model.Name)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.SSN)
+                </th>
+                <th>
+                    @Html.DisplayName("Lons")
+                </th>
+                <th></th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var member in Model)
+            {
+                <tr>
+                    <td>
+                        @Html.ActionLink(member.Name, "Details", "Members", new { id = member.Id }, null)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => member.SSN)
+                    </td>
+                    @if (member.Loans.Count() != 0)
+                    {
+                        <td style='color: #198754;'>
+                            <p class="font-weight-bold">@Html.DisplayName("✓")</p>
+                        </td>
+                    }
+                    else
+                    {
+                        <td>
+                            <p class="font-weight-bold">@Html.DisplayName("-")</p>
+                        </td>
+                    }
+                    <td colspan="2" class="text-right">
+                        <a onClick=Delete('/Members/Delete/@member.Id') class="btn-link mx-2" ><i class='bi bi-trash-fill' style='color: #ff4136; cursor:pointer;'></i></a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts{
+<script src="~/js/members.js"></script>
+ }
