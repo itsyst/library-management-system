@@ -7,15 +7,15 @@ namespace Library.Domain
     {
         public int Id { get; set; }
 
-        [MaxLength(12)]
+        [MaxLength(13)]
         [Required]
         public string SSN { get; set; } = "00000000-0000";
 
-        [Display(Name="Full Name")]
+        [Display(Name = "Full Name")]
         [MaxLength(30)]
         [Required]
         public string Name { get; set; } = string.Empty;
         [ValidateNever]
-        public IList<Loan> Loans { get; set; }
+        public IList<Loan>? Loans { get; set; }
     }
 }
