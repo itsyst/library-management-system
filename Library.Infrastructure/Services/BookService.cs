@@ -6,11 +6,36 @@ using System.Linq.Expressions;
 
 namespace Library.Infrastructure.Services
 {
+#nullable disable
     public class BookService : BaseService<BookDetails>, IBookService
     {
         public BookService(ApplicationDbContext context) : base(context)
         {
         }
+
+        public async Task<IReadOnlyList<BookDetails>> GetAllBookDetailsAsync(Expression<Func<BookDetails, bool>>? filter = null, Func<IQueryable<BookDetails>, IOrderedQueryable<BookDetails>>? orderBy = null, params Expression<Func<BookDetails, object>>[] includeProperties)
+        {
+            IQueryable<BookDetails> query = _table;
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            if (includeProperties != null)
+            {
+                foreach (var includeProp in includeProperties)
+                {
+                    query = query.Include(includeProp);
+                }
+
+            }
+            if (orderBy != null)
+            {
+                query = orderBy(query);
+            }
+
+            return await query.ToListAsync();
+        }
+
         public async Task<BookDetails> GetBookOrDefaultAsync(Expression<Func<BookDetails, bool>> filter, string? includeProperties = null, bool tracked = true)
         {
             if (tracked)
@@ -26,7 +51,7 @@ namespace Library.Infrastructure.Services
                     }
                 }
 
-                return await query.FirstOrDefaultAsync();
+                return await query.FirstAsync();
             }
             else
             {
@@ -41,7 +66,7 @@ namespace Library.Infrastructure.Services
                     }
                 }
 
-                return await query.FirstOrDefaultAsync();
+                return await query.FirstAsync();
             }
         }
     }
