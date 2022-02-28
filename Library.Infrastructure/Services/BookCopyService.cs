@@ -1,86 +1,77 @@
 ﻿using Library.Domain;
 using Library.Infrastructure.Persistence;
-using System;
-using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using System.Collections.Generic;
-using System.Text;
 using Library.Application.Interfaces;
+using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.Infrastructure.Services
 {
-    public class BookCopyService : IBookCopyService
+    public class BookCopyService : BaseService<BookCopy>, IBookCopyService
     {
-        private readonly ApplicationDbContext _context;
-
-        public BookCopyService(ApplicationDbContext context)
+        public BookCopyService(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
 
-        public ICollection<BookCopy> GetAllBookCopies()
+        public async Task<IReadOnlyList<BookCopy>> GetAllBookCopiesAsync(Expression<Func<BookCopy, bool>>? filter = null, Func<IQueryable<BookCopy>, IOrderedQueryable<BookCopy>>? orderBy = null, params Expression<Func<BookCopy, object>>[] includeProperties)
         {
-            //return _context.BookCopies.Include(x => x.Details).Include(x => x.Loan).OrderBy(x => x.Id).ToList();
-            return _context.BookCopies.ToList();
-        }
-
-        public BookCopy FindBookCopy(int id)
-        {
-            var bookCopy = _context.BookCopies.SingleOrDefault(a => a.BookCopyId == id);
-            return bookCopy;
-        }
-
-        public void DeleteBookCopy(int id)
-        {
-            var bookCopy = FindBookCopy(id);
-
-            _context.BookCopies.Remove(bookCopy);
-            _context.SaveChanges();
-
-        }
-        /// <summary>
-        /// This methods makes a bookcopy either available or unavailable for lending out
-        /// </summary>
-        /// <param name="id"></param>
-        public void UpdateBookCopyDetails(int id)
-        {
-            var bookCopy = _context.BookCopies.Where(b => b.BookCopyId == id).First();
-
-            var available = bookCopy.IsAvailable;
-
-            if (available)
+            IQueryable<BookCopy> query = _table;
+            if (filter != null)
             {
-                bookCopy.IsAvailable = false;
+                query = query.Where(filter);
             }
-            if (!available)
+            if (includeProperties != null)
             {
-                bookCopy.IsAvailable = true;
+                foreach (var includeProp in includeProperties)
+                {
+                    query = query.Include(includeProp);
+                }
+
+            }
+            if (orderBy != null)
+            {
+                query = orderBy(query);
             }
 
-            _context.SaveChanges();
+            return await query.ToListAsync();
         }
 
-        public void UpdateBookCopyDetails(int id, int loanId)
+        public async Task<BookCopy> GetBookCopyOrDefaultAsync(Expression<Func<BookCopy, bool>> filter, string? includeProperties = null, bool tracked = true)
         {
-            var bookCopy = _context.BookCopies.Where(b => b.BookCopyId == id).First();
-
-            bookCopy.IsAvailable = bookCopy.IsAvailable != true ? bookCopy.IsAvailable = false : bookCopy.IsAvailable = true;
-
-            _context.SaveChanges();
-        }
-        public void AddBookCopy(BookCopy book)
-        {
-            _context.Add(book);
-            _context.SaveChanges();
-        }
-
-        public void RemoveBookCopies(List<BookCopy> bookCopiesToBeRemoved)
-        {
-            foreach (var item in bookCopiesToBeRemoved)
+            if (tracked)
             {
-                _context.Remove(item);
-                _context.SaveChanges();
+                IQueryable<BookCopy> query = _table;
+
+                query = query.Where(filter);
+                if (includeProperties != null)
+                {
+                    foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        query = query.Include(includeProp);
+                    }
+                }
+
+                return await query.FirstAsync();
             }
+            else
+            {
+                IQueryable<BookCopy> query = _table.AsNoTracking();
+
+                query = query.Where(filter);
+                if (includeProperties != null)
+                {
+                    foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        query = query.Include(includeProp);
+                    }
+                }
+
+                return await query.FirstAsync();
+            }
+        }
+
+        public void RemoveRange(IEnumerable<BookCopy> entities)
+        {
+            _table.RemoveRange(entities);
         }
     }
 }
