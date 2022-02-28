@@ -1,53 +1,45 @@
-﻿@model Library.MVC.Models.BookDeleteVm
+﻿@model Library.MVC.ViewModels.BookDetailsViewModel
 
 @{
     ViewData["Title"] = "Delete";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+
+#pragma warning disable
 }
 
-
-<h1>Delete</h1>
-
-<h3>Select one bookcopy or mark Delete all (bookdetails and all bookcopies) </h3>
-<div>
-    <h4>Author</h4>
-    <hr />
-    <dl class="row">
-
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Book.Title)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Book.Title)
-        </dd>
-    </dl>
-
-    <form asp-action="Delete">
-        <div class="form-group">
-            <label asp-for="BookCopyList" class="control-label"></label>
-            @Html.DropDownListFor(b => b.BookCopyId, @Model.BookCopyList, "Choose book copy")
+<h2 class="text-primary">Delete Copies</h2>
+<hr />
+<div class="row">
+    <div class="col-12 col-md-8" id="js-destroy">
+        <div class="form-group mb-3">
+            <label asp-for="BookDetails.Title" class="control-label"></label>
+            <input asp-for="BookDetails.Title" class="form-control" disabled />
         </div>
         <div>
-         Delete all <input type="checkbox" asp-for="DeleteAll" value="true" />
-                    <p>  </p>
-                    <p>  </p>
-                    <p>  </p>
+            <input type="hidden" asp-for="BookDetails.ID " />
+            <div class="form-group">
+                <label for="formControlSelect">Copies</label>
+                <select class="form-control" id="formControlSelect">
+                    <option selected>---Select Book Copy---</option>
+                    @if (Model.Copies != 0)
+                    {
+                        @foreach (var item in @Model.BookCopies)
+                        {
+                            <option id="copy-item" data-copy-id=@item.Value>@item.Value</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" name="toggle" data-copies=@Model.Copies data-book-id=@Model.BookDetails.ID id="customSwitch">
+                <label class="custom-control-label" for="customSwitch">Delete All</label>
+            </div>
+            <div class="mt-3">
+                <a class="btn btn-danger text-white js-delete" data-book-details="@Model.BookDetails.ID">Delete</a>
+                <a class="btn btn-outline-danger" asp-controller="Books" asp-action="Index">Back to List</a>
+            </div>
         </div>
-        <input type="hidden" asp-for="BookDetailsID " value="@Model.Book.ID" />
-        <input type="submit" value="Delete" class="btn btn-danger" /> 
-        <a asp-action="Index" class="btn btn-outline-danger">Back to List</a>
-    </form>
+    </div>
 </div>
-<div>
-    @if (Model.BookCopiesBlocked)
-    {
-        <hr />
-        <p class="alert-info">One or more bookcopies have not been deleted. They first have to be returned (check loans)</p>
-
+@section Scripts {
+<script src="~/js/bookCopies.js"></script>
     }
-    else if (Model.BookCopyBlocked)
-    {
-        <hr />
-        <p class="alert-info">This bookcopy could not be deleted. It first has to be returned(check loans)</p>
-    }
-</div>
