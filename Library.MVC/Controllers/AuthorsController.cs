@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Library.MVC.Controllers
 {
+#nullable disable  
     public class AuthorsController : Controller
     {
         private readonly IAuthorService _authorService;
@@ -19,7 +20,7 @@ namespace Library.MVC.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var authors = await _authorService.GetAllAuthorsAsync(includeProperties: a => a.Books);
+            var authors = await _authorService.GetAllAuthorsAsync(includeProperties: a => a.Books!);
             return View(authors);
         }
 
