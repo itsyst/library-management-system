@@ -1,11 +1,9 @@
 ﻿using Library.Domain;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Library.Infrastructure.Persistence
 {
+#nullable disable
     public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions options) : base(options)
@@ -88,95 +86,100 @@ namespace Library.Infrastructure.Persistence
                     Description = "12 Rules for Life offers a deeply rewarding antidote to the chaos in our lives: eternal truths applied to our modern problems. ",
                     AuthorID = 5,
                 },
-                    new BookDetails
-                    {
-                        ID = 6,
-                        ISBN = "9789147122103",
-                        Title = "Business behavior",
-                        Description = "Denna eminenta bok handlar om hur man ska behandla sina affärskontakter för att de ska känna sig trygga med dig som affärspartner. ",
-                        AuthorID = 6,
-                    },
-                    new BookDetails
-                    {
-                        ID = 7,
-                        ISBN = "9781439199190",
-                        Title = "How to Win Friends and Influence People",
-                        Description = "Dale Carnegie had an understanding of human nature that will never be outdated. Financial success, Carnegie believed, is due 15 percent to professional knowledge and 85 percent to the ability to express ideas, to assume leadership, and to arouse enthusiasm among people.",
-                        AuthorID = 7,
-                    },
-                    new BookDetails
-                    {
-                        ID = 8,
-                        ISBN = "9789186293321",
-                        Title = "Förhandla : från strikta regler till dirty tricks",
-                        Description = "I Affärsmannaskap har Rolf Laurelli summerat sin långa erfarenhet av konsten att göra affärer. Med boken hoppas han kunna locka fram dina affärsinstinkter.",
-                        AuthorID = 8,
-                    },
-                    new BookDetails
-                    {
-                        ID = 9,
-                        ISBN = "9780814433195",
-                        Title = "Negotiation ",
-                        Description = "Tracy teaches readers how to utilize the six key negotiating styles ",
-                        AuthorID = 9,
-                    },
-                    new BookDetails
-                    {
-                        ID = 13,
-                        ISBN = "9780814439098",
-                        Title = "THE AGE OF AGILE ",
-                        Description = "The Age of Agile helps readers master the three laws of Agile Management (team, customer, network)",
-                        AuthorID = 13,
-                    },
-                    new BookDetails
-                    {
-                        ID = 10,
-                        ISBN = "9780957587403",
-                        Title = "Scrum Mastery ",
-                        Description = "The basics of being a ScrumMaster are fairly straightforward: Facilitate the Scrum process and remove impediments. ",
-                        AuthorID = 10,
-                    },
-                    new BookDetails
-                    {
-                        ID = 11,
-                        ISBN = "9780984521401",
-                        Title = "Kanban ",
-                        Description = "Optimize the effectiveness of your business, to produce fit-for-purpose products and services that delight your customers, making them loyal to your brand and increasing your share, revenues and margins.",
-                        AuthorID = 11,
-                    },
-                    new BookDetails
-                    {
-                        ID = 12,
-                        ISBN = "9783030301255",
-                        Title = " Agile Processes in Software Engineering and Extreme Programming",
-                        Description = "This  book constitutes the research workshops, doctoral symposium and panel summaries presented at the 20th International Conference on Agile Software Development",
-                        AuthorID = 12,
-                    }
+                new BookDetails
+                {
+                    ID = 6,
+                    ISBN = "9789147122103",
+                    Title = "Business behavior",
+                    Description = "Denna eminenta bok handlar om hur man ska behandla sina affärskontakter för att de ska känna sig trygga med dig som affärspartner. ",
+                    AuthorID = 6,
+                },
+                new BookDetails
+                {
+                    ID = 7,
+                    ISBN = "9781439199190",
+                    Title = "How to Win Friends and Influence People",
+                    Description = "Dale Carnegie had an understanding of human nature that will never be outdated. Financial success, Carnegie believed, is due 15 percent to professional knowledge and 85 percent to the ability to express ideas, to assume leadership, and to arouse enthusiasm among people.",
+                    AuthorID = 7,
+                },
+                new BookDetails
+                {
+                    ID = 8,
+                    ISBN = "9789186293321",
+                    Title = "Förhandla : från strikta regler till dirty tricks",
+                    Description = "I Affärsmannaskap har Rolf Laurelli summerat sin långa erfarenhet av konsten att göra affärer. Med boken hoppas han kunna locka fram dina affärsinstinkter.",
+                    AuthorID = 8,
+                },
+                new BookDetails
+                {
+                    ID = 9,
+                    ISBN = "9780814433195",
+                    Title = "Negotiation ",
+                    Description = "Tracy teaches readers how to utilize the six key negotiating styles ",
+                    AuthorID = 9,
+                },
+                new BookDetails
+                {
+                    ID = 13,
+                    ISBN = "9780814439098",
+                    Title = "THE AGE OF AGILE ",
+                    Description = "The Age of Agile helps readers master the three laws of Agile Management (team, customer, network)",
+                    AuthorID = 13,
+                },
+                new BookDetails
+                {
+                    ID = 10,
+                    ISBN = "9780957587403",
+                    Title = "Scrum Mastery ",
+                    Description = "The basics of being a ScrumMaster are fairly straightforward: Facilitate the Scrum process and remove impediments. ",
+                    AuthorID = 10,
+                },
+                new BookDetails
+                {
+                    ID = 11,
+                    ISBN = "9780984521401",
+                    Title = "Kanban ",
+                    Description = "Optimize the effectiveness of your business, to produce fit-for-purpose products and services that delight your customers, making them loyal to your brand and increasing your share, revenues and margins.",
+                    AuthorID = 11,
+                },
+                new BookDetails
+                {
+                    ID = 12,
+                    ISBN = "9783030301255",
+                    Title = " Agile Processes in Software Engineering and Extreme Programming",
+                    Description = "This  book constitutes the research workshops, doctoral symposium and panel summaries presented at the 20th International Conference on Agile Software Development",
+                    AuthorID = 12,
+                }
 
                 );
-
             modelBuilder.Entity<Member>().HasData(
-                new Member { Id = 1, SSN = "555666-0001", Name = "Daniel Graham" },
-                new Member { Id = 2, SSN = "555666-0002", Name = "Eric Howell" },
-                new Member { Id = 3, SSN = "555666-0003", Name = "Patricia Lebsack" },
-                new Member { Id = 4, SSN = "555666-0004", Name = "Kalle Runolfsdottir" },
-                new Member { Id = 5, SSN = "555666-0005", Name = "Linus Reichert" }
+                new Member { Id = 1, SSN = "19855666-0001", Name = "Daniel Graham" },
+                new Member { Id = 2, SSN = "19555666-0002", Name = "Eric Howell" },
+                new Member { Id = 3, SSN = "19555666-0003", Name = "Patricia Lebsack" },
+                new Member { Id = 4, SSN = "19555666-0004", Name = "Kalle Runolfsdottir" },
+                new Member { Id = 5, SSN = "19555666-0005", Name = "Linus Reichert" }
             );
             modelBuilder.Entity<Loan>().HasData(
-             new Loan { LoanId = 1, MemberID = 3, ReturnDate = new DateTime(2020, 5, 4) },
-             new Loan { LoanId = 2, StartDate = new DateTime(2020, 1, 5), DueDate = new DateTime(2020, 1, 19), MemberID = 1 },
-             new Loan { LoanId = 3, StartDate = new DateTime(2020, 1, 3), DueDate = new DateTime(2020, 1, 17), MemberID = 2 },
-             new Loan { LoanId = 4, MemberID = 2 }
-         );
+                new Loan { LoanId = 1, MemberID = 3, ReturnDate = new DateTime(2020, 5, 4) },
+                new Loan { LoanId = 2, StartDate = new DateTime(2020, 1, 5), DueDate = new DateTime(2020, 1, 19), MemberID = 1 },
+                new Loan { LoanId = 3, StartDate = new DateTime(2020, 1, 3), DueDate = new DateTime(2020, 1, 17), MemberID = 2 },
+                new Loan { LoanId = 4, MemberID = 2 }
+            );
             modelBuilder.Entity<BookCopy>().HasData(
-                new BookCopy { BookCopyId = 1, DetailsId = 1 },
-                new BookCopy { BookCopyId = 2, DetailsId = 1 },
-                new BookCopy { BookCopyId = 3, DetailsId = 1 },
-                new BookCopy { BookCopyId = 4, DetailsId = 3 },
-                new BookCopy { BookCopyId = 5, DetailsId = 2 },
-                new BookCopy { BookCopyId = 6, DetailsId = 3 },
-                new BookCopy { BookCopyId = 7, DetailsId = 3 },
-                new BookCopy { BookCopyId = 8, DetailsId = 3 }
+                new BookCopy { BookCopyId = 1, DetailsId = 1, IsAvailable = true },
+                new BookCopy { BookCopyId = 2, DetailsId = 1, IsAvailable = true },
+                new BookCopy { BookCopyId = 3, DetailsId = 1, IsAvailable = true },
+                new BookCopy { BookCopyId = 4, DetailsId = 3, IsAvailable = true },
+                new BookCopy { BookCopyId = 5, DetailsId = 2, IsAvailable = true },
+                new BookCopy { BookCopyId = 6, DetailsId = 3, IsAvailable = true },
+                new BookCopy { BookCopyId = 7, DetailsId = 3, IsAvailable = true },
+                new BookCopy { BookCopyId = 8, DetailsId = 3, IsAvailable = true }
+            );
+            modelBuilder.Entity<BookCopyLoan>().HasData(
+                new BookCopyLoan { BookCopyId = 1, LoanId = 2 },
+                new BookCopyLoan { BookCopyId = 2, LoanId = 3 },
+                new BookCopyLoan { BookCopyId = 3, LoanId = 4 },
+                new BookCopyLoan { BookCopyId = 4, LoanId = 1 }
             );
         }
 
