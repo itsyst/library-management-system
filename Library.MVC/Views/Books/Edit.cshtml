@@ -1,51 +1,60 @@
-﻿@model Library.MVC.Models.BookEditVm;
+﻿@model Library.MVC.ViewModels.BookDetailsViewModel;
 
 @{
-    ViewData["Title"] = "Edit";
+	ViewData["Title"] = "Edit";
+#pragma warning disable
 }
 
-<h1>Edit</h1>
-
-<h4>BookDetails</h4>
+<h1 class="text-primary mx-3">Edit Book</h1>
 <hr />
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Id" class="control-label"></label>
-                <input asp-for="Id" readonly class="form-control" />
-                <span asp-validation-for="Id" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="ISBN" class="control-label"></label>
-                <input asp-for="ISBN" class="form-control" value="@Model.Book.ISBN" />
-                <span asp-validation-for="ISBN" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" value="@Model.Book.Title" />
-                <span asp-validation-for="Title" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="AuthorList" class="control-label"></label>
-                @Html.DropDownListFor(m => m.AuthorId, Model.AuthorList, "Choose author")
-            </div>
-            <div class="form-group">
-                <label asp-for="Description" class="control-label"></label>
-                <input asp-for="Description" class="form-control" value="@Model.Book.Description.ToString()" />
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-                <a asp-action="Index" class="btn btn-outline-primary">Back to List</a>
-            </div>
-        </form>
-    </div>
+	<div class="col-12 col-md-6 text-right mx-1">
+		@Html.ActionLink("Delete", "Delete", "Books", new { id = @Model.BookDetails.ID}, new { @class ="btn btn-danger mx-4" })
+	</div>
+	<div class="col-md-6">
+		<form asp-action="Edit" method="post">
+			<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+			<input asp-for="BookDetails.ID" hidden />
+			<div class="row mx-1">
+				<div class="form-group  mb-3 col-6">
+					<label asp-for="BookDetails.ISBN" class="control-label"></label>
+					<input asp-for="BookDetails.ISBN" class="form-control" />
+					<span asp-validation-for="BookDetails.ISBN" class="text-danger"></span>
+				</div>
+				<div class="form-group  mb-3 col-6">
+					<label asp-for="BookDetails.Copies" class="control-label"></label>
+					<input asp-for="BookDetails.Copies.Count" class="form-control" disabled />
+					<span asp-validation-for="BookDetails.Copies" class="text-danger"></span>
+				</div>
+			</div>
+			<div class="form-group  mb-3 col-12">
+				<label asp-for="BookDetails.Title" class="control-label"></label>
+				<input asp-for="BookDetails.Title" class="form-control" />
+				<span asp-validation-for="BookDetails.Title" class="text-danger"></span>
+			</div>
+			<div class="form-group  mb-3 col-12">
+				<label asp-for="BookDetails.Description" class="control-label"></label>
+				<textarea asp-for="BookDetails.Description" class="form-control" rows="3"></textarea>
+				<span asp-validation-for="BookDetails.Description" class="text-danger"></span>
+			</div>
+			<div class="form-group mb-3 col-12">
+				<label asp-for="BookDetails.AuthorID" class="control-label"></label>
+				<select class="form-control" asp-for="BookDetails.AuthorID" asp-items="@Model.Authors" class="form-select">
+					<option disabled selected>--Select Author--</option>
+				</select>
+				<span asp-validation-for="BookDetails.AuthorID" class="text-danger"></span>
+			</div>
+			<div class="form-group mt-3 mx-3">
+				<input type="submit" value="Save" class="btn btn-primary" />
+				<a asp-action="Index" class="btn btn-outline-primary">Back to List</a>
+			</div>
+		</form>
+	</div>
 </div>
 
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+	@{
+	await Html.RenderPartialAsync("_ValidationScriptsPartial");
+}
 }
