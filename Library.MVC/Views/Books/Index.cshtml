@@ -1,91 +1,71 @@
-﻿@model Library.MVC.Models.BookIndexVm
+﻿@model IEnumerable<Library.Domain.BookDetails>
 
 @{
     ViewData["Title"] = "Books";
+
+    var status = Context.Request.Query["status"];
+    var isAvailable = "text-primary";
+    var all = "text-primary";
+
+    switch (status)
+    {
+        case "isAvailable":
+            isAvailable = "active text-white";
+            break;
+        case "all":
+            all = "active text-white";
+            break;
+        default:
+            break;
+    }
 }
 
-<h1>Books</h1>
-
-<p>
-    <a asp-action="Create" class="btn btn-light">Create</a>
-</p>
-
-<div>
-    <form asp-action="Index" method="get" class="float-left">
-        <div class="form-actions no-color">
-
-            <input type="text" name="SearchString" placeholder="Author" />
-            <input type="submit" value="Search" class="btn btn-primary" />
-            <a asp-action="Index" class="btn btn-outline-primary">Undo</a>
-
+<div class="p-3">
+    <div class="d-flex justify-content-between pt-4">
+        <div class="">
+            <h2 class="text-primary">Books</h2>
         </div>
+        <div class="row">
 
-    </form>
-    <div class="form-actions no-color">
-        <p class="float-lg-right">
+            <ul class="list-group list-group-horizontal-sm col-12">
+                <a style="text-decoration:none;" asp-controller="Books" asp-action"Index" asp-route-satatus="isAvailable">
+                <li class="list-group-item @isAvailable">Available</li>
+                </a>
+                <a style="text-decoration:none;" asp-controller="Books" asp-action"Index" asp-route-satatus="all">
+                <li class="list-group-item @all">All</li>
+                </a>
+                <a class="btn btn-primary mt-2 mt-sm-0 ml-sm-3 py-2 px-3" style="text-decoration:none; vertical-align: middle;" asp-controller="Books" asp-action="Create">
+                    <i class="align-middle  bi bi-plus-circle"></i> <span class="align-middle">&nbsp; New</span>
+                </a>
 
-            @Html.ActionLink("Show available", "Index", "Books", new { availability = true, searchString = @Model.SearchString }, new { @class = "btn btn-primary btn-large" })  @Html.ActionLink("Show all", "Index", "Books", new { availability = false, searchString = @Model.SearchString }, new { @class = "btn btn-outline-primary btn-large" })
-
-        </p>
+            </ul>
+        </div>
     </div>
 </div>
-
-<table class="table table-hover">
-    <thead>
-        <tr class="bg-light">
-            <th>Author</th>
-            <th>Titel</th>
-            <th>Description</th>
-            <th>ISBN</th>
-            <th>Copies</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-
-        @foreach (var item in Model.Books)
-        {
-
-            <tr>
-
-                <td>
-                    @Html.DisplayFor(modelItem => item.Author.Name)
-                </td>
-                <td>
-                    @Html.ActionLink(item.Title, "Details", "Books", new { id = item.ID }, null)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Description)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.ISBN)
-                </td>
-                <td>
-                    @if (Model.ShowOnlyAvailableCopies)
-                    {
-                        @item.Copies.Where(x => x.IsAvailable == true).Count()
-                    }
-                    else
-                    {
-                        @Html.DisplayFor(modelItem => item.Copies.Count)
-                    }
-                </td>
-                <td>
-
-                    @Html.ActionLink("Add copy", "AddBookCopy", "Books", new { id = @item.ID, authorName = @Model.SearchString, showOnlyAvailable = @Model.ShowOnlyAvailableCopies, showSelectedAuthor = @Model.SelectedOnAuthors }, new { @class = "btn btn-outline-secondary btn-xs" })
-
-
-                </td>
+<div class="p-3">
+    <table id="books" class="table table-striped table-hover display" cellspacing="0" width="100%">
+        <thead>
+            <tr class="bg-light">
+                <th>
+                    @Html.DisplayNameFor(model => model.Title)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.ISBN)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Author)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Copies)
+                </th>
+                <th></th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+    </table>
+</div>
 
-
-@if (Model.BookCopyAdded)
+@section scripts
 {
-    <script type="text/javascript">alert('@ViewBag.msg');</script>
+<script src="~/js/books.js"></script>
 }
-
-
 
