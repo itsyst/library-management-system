@@ -1,6 +1,39 @@
-﻿<div class="col-12">
-    <p class="container col-8 text-center text text-white">
-        &copy;2020 TUC - Linköping - Eric & Khaled
-    </p>
-    <a class="col-4 text-light" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-</div>
+﻿<footer class="footer">
+    <div class="container-fluid bg-dark">
+        <section class="p-3 pt-0">
+            <div class="row d-flex align-items-center">
+                <div class="col-md-7 col-lg-8 text-center text-md-left">
+                    <div class="p-3 text-white">
+                        &copy; @DateTime.Now.Year - TUC - Linköping - Eric & Khaled
+                    </div>
+                </div>
+                <div class="col-md-5 col-lg-4 ml-lg-0 text-center text-md-right">
+                    <!-- Facebook -->
+                    <a class="btn-link   m-1 text-white"
+                       role="button">
+                        <i class="bi bi-meta"></i>
+                    </a>
+
+                    <!-- Twitter -->
+                    <a class="btn-link btn-floating m-1 text-white"
+                       role="button">
+                        <i class="bi bi-twitter"></i>
+                    </a>
+
+                    <!-- Google -->
+                    <a class="btn-link btn-floating m-1 text-white"
+                       role="button">
+                        <i class="bi bi-google"></i>
+                    </a>
+
+                    <!-- Instagram -->
+                    <a class="btn-link btn-floating m-1 text-white"
+                       role="button">
+                        <i class="bi bi-instagram"></i>
+                    </a>
+                    <a class="text-left text-white ml-4" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                </div>
+            </div>
+        </section>
+    </div>
+</footer>
