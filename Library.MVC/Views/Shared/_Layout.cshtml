@@ -4,23 +4,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Library</title>
-    <partial name="_StylesheetPartial" />
+    @await Html.PartialAsync("_StylesheetPartial")
+
 </head>
 <body>
-    <header>
-        <partial name="_NavBar" />
-    </header>
+    @await Html.PartialAsync("_NavBar")
     <div class="container-fluid">
         <main role="main" class="pb-3">
-            <partial name="_Notification" />
+            @await Html.PartialAsync("_Notification")
             @RenderBody()
         </main>
     </div>
-
-    <footer class="border-top footer text-muted">
-        <partial name="_Footer" />
-    </footer>
-    <partial name="_ScriptsPartial" />
+    @await Html.PartialAsync("_Footer")
+    @await Html.PartialAsync("_ScriptsPartial")
     @RenderSection("Scripts", required: false)
 </body>
 </html>
