@@ -60,7 +60,7 @@ html {
 }
 
 body {
-    /* Margin bottom by footer height */
+  /*   Margin bottom by footer height */
     margin-bottom: 60px;
     background-color: #FCFCFD;
 }
@@ -69,10 +69,21 @@ body {
     bottom: 0;
     width: 100%;
     white-space: nowrap;
-    line-height: 60px; /* Vertically center the text there */
+    line-height: 20px;  /*Vertically center the text there */
     background-color: #343A40;
 }
 .jonas-fula-text{
     color:saddlebrown;
     font-size: 40px;
 }
+
+/* Sweet alert styles
+-------------------------------------------------- */
+.swal2-icon.swal2-warning {
+    border-color: #d33 !important;
+    color: #d33 !important;
+}
+.swal2-html-container {
+    color: #d33 !important;
+}
+    
