@@ -6,6 +6,7 @@ using System.Data.Common;
 
 namespace Library.MVC.Controllers
 {
+#nullable disable
     public class MembersController : Controller
     {
         public readonly IMemberService _memberService;
