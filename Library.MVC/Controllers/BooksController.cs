@@ -1,269 +1,306 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using Library.Domain;
-using Library.MVC.Models;
 using Library.Application.Interfaces;
 using System.Data.Common;
+using Library.MVC.ViewModels;
 
 namespace Library.MVC.Controllers
 {
+#pragma warning disable
     public class BooksController : Controller
     {
         private readonly IBookService _bookService;
         private readonly IAuthorService _authorService;
         private readonly IBookCopyService _bookCopyService;
+        private readonly ILoanService _loanService;
 
-        public BooksController(IBookService bookservice, IAuthorService authorService, IBookCopyService bookCopyService)
+        public BooksController(
+            IBookService bookservice, 
+            IAuthorService authorService, 
+            IBookCopyService bookCopyService,
+            ILoanService loanService)
         {
             _bookService = bookservice;
             _authorService = authorService;
             _bookCopyService = bookCopyService;
+            _loanService = loanService;
         }
 
-        public ActionResult Index(string searchString, bool availability, bool selectedAuthor, bool bookCopyAdded)
+        public async Task<IActionResult> Index()
         {
-            var vm = new BookIndexVm();
-            IQueryable<BookDetails> books;
+            var books = await _bookService.GetAllBookDetailsAsync(filter: null, orderBy: null, a => a.Author, c => c.Copies);
 
-            if (availability || selectedAuthor)
-            {
-                books = _bookService.GetAvailableBooks().AsQueryable();
-                vm.ShowOnlyAvailableCopies = true;
-            }
-            else
-            {
-                books = _bookService.GetAllBooks().AsQueryable();
-            }
-
-            if (!String.IsNullOrEmpty(searchString))
-            {
-                vm.Books = books.Where(b => b.Author.Name.Contains(searchString)).ToList();
-                vm.SearchString = searchString;
-                vm.SelectedOnAuthors = true;
-            }
-            else
-                vm.Books = books.ToList();
-
-            // code needed to notify the user of the id of the new bookcopy  
-            vm.BookCopyAdded = bookCopyAdded ? true : false;
-            var listOfBookCopies = _bookCopyService.GetAllBookCopies();
-            var lastItem = listOfBookCopies.Last();
-            ViewBag.msg = $"Bookcopy succesfully created. Its ID is: {lastItem.BookCopyId}";
-
-            return View(vm);
+            return View(books);
         }
 
-        public ActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            var vm = new BookCreateVm
+            IEnumerable<Author> authors = await _authorService.GetAllAuthorsAsync(filter: null, orderBy: null, includeProperties: a => a.Books);
+
+            BookDetailsViewModel model = new()
             {
-                AuthorList = new SelectList(_authorService.GetAllAuthors(), "Id", "Name")
+                BookDetails = new(),
+                Authors = authors.Select(i => new SelectListItem
+                {
+                    Text = i.Name,
+                    Value = i.Id.ToString()
+                }),
+                Copies = 0
             };
 
-            return View(vm);
+            return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(BookCreateVm vm)
+        public async Task<IActionResult> Create(BookDetailsViewModel model)
         {
-            if (ModelState.IsValid)
+            try
             {
                 //Create new book
-                var newBook = new BookDetails();
-                newBook.AuthorID = vm.AuthorId;
-                newBook.Description = vm.Description;
-                newBook.ISBN = vm.ISBN;
-                newBook.Title = vm.Title;
-                _bookService.AddBook(newBook);
-
-                if (vm.NumberOfCopies != 0)
+                BookDetails bookDetails = new()
                 {
-                    var allBooksIncludingNewBookDetails = _bookService.GetAllBooks();
-                    var allBooksOrdered = allBooksIncludingNewBookDetails.OrderBy(x => x.ID);
-                    var lastItem = allBooksOrdered.Last();
+                    AuthorID = model.BookDetails.AuthorID,
+                    Description = model.BookDetails.Description,
+                    ISBN = model.BookDetails.ISBN,
+                    Title = model.BookDetails.Title,
+                    Copies = new List<BookCopy>()
+                };
 
-                    for (var i = 0; i < vm.NumberOfCopies; i++)
+                var books = await _bookService.GetAllAsync();
+
+                // Chech if the book already exists
+                foreach (var item in books)
+                {
+                    if (model.BookDetails.ISBN.ToLower().Trim() == item.ISBN.ToLower().Trim() || model.BookDetails.Title.ToLower().Trim() == item.Title.ToLower().Trim())
                     {
-                        var newBookCopy = new BookCopy();
-
-                        var BookDetailsID = lastItem.ID;
-                        newBookCopy.DetailsId = BookDetailsID;
-
-                        _bookCopyService.AddBookCopy(newBookCopy);
-                        newBookCopy = null;
+                        TempData["Error"] = "Book already exists.";
+                        return View(model);
                     }
                 }
 
+                //Get the newqly new book
+                var addedBook = await _bookService.AddAsync(bookDetails);
+
+                for (var i = 0; i < model.Copies; i++)
+                {
+                    //Add book copies 
+                    addedBook.Copies.Add(
+                        new BookCopy
+                        {
+                            DetailsId = addedBook.ID,
+                            IsAvailable = true
+                        }
+                    );
+                }
+                await _bookService.UpdateAsync(addedBook);
+
+                TempData["Success"] = "Book created successfully.";
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "Something went wrong.";
                 return RedirectToAction(nameof(Index));
             }
 
-            return RedirectToAction("Error", "Home", "");
+            return View(model);
         }
 
-        /// <summary>
-        /// Action to add a new copy to the databas and then redirect to index
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public ActionResult AddBookCopy(int id, string authorName, bool showOnlyAvailable, bool showSelectedAuthor)
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id == 0)
-            {
-                return NotFound();
-            }
-
-            if (id >= 0)
-            {
-                //Create new bookcopy
-                var newBookCopy = new BookCopy();
-
-                newBookCopy.DetailsId = id;
-
-                _bookCopyService.AddBookCopy(newBookCopy);
-
-                return RedirectToAction(nameof(Index), new { searchString = authorName, availability = showOnlyAvailable, selectedAuthor = showSelectedAuthor, bookCopyAdded = true });
-            }
-
-            return RedirectToAction("Error", "Home", "");
-        }
-
-        public ActionResult Edit(int id)
-        {
+            IEnumerable<Author> authors = await _authorService.GetAllAsync();
 
             if (id == 0)
-            {
                 return NotFound();
-            }
 
-            var vm = new BookEditVm
+            BookDetailsViewModel model = new()
             {
-                AuthorList = new SelectList(_authorService.GetAllAuthors(), "Id", "Name"),
-                Book = _bookService.FindBook(id)
+                BookDetails = new(),
+                Authors = authors.Select(i => new SelectListItem
+                {
+                    Text = i.Name,
+                    Value = i.Id.ToString()
+                }),
+                Copies = 0
+
             };
 
-            return View(vm);
+            // update
+            model.BookDetails = await _bookService.GetBookOrDefaultAsync(b => b.ID == id, includeProperties: "Copies");
+            return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, BookEditVm vm)
+        public async Task<IActionResult> Edit(int id, BookDetailsViewModel model)
         {
             try
             {
                 if (id == 0)
-                {
                     return NotFound();
-                }
 
-
-                BookDetails updatedBook = new BookDetails
+                BookDetails book = new()
                 {
-                    ID = vm.Id,
-                    AuthorID = vm.AuthorId,
-                    Description = vm.Description,
-                    ISBN = vm.ISBN,
-                    Title = vm.Title
+                    ID = model.BookDetails!.ID,
+                    AuthorID = model.BookDetails.AuthorID,
+                    Description = model.BookDetails.Description,
+                    ISBN = model.BookDetails.ISBN,
+                    Title = model.BookDetails.Title
                 };
 
-                _bookService.UpdateBookDetails(updatedBook);
+                await _bookService.UpdateAsync(book);
+                TempData["Success"] = "Book copy created successfully.";
+
                 return RedirectToAction(nameof(Index));
             }
             catch (DbException)
             {
+                TempData["Error"] = "an unexpected error has occurred.";
                 return View();
             }
         }
 
-        public ActionResult Delete(int id, bool bookCopiesBlocked, bool bookCopyBlocked)
+        public async Task<IActionResult> Delete(int? id)
         {
             if (id == 0)
-            {
                 return NotFound();
-            }
 
+            IReadOnlyList<BookCopy> bookCopies = await _bookCopyService.GetAllBookCopiesAsync(x => x.DetailsId == id);
 
-            var vm = new BookDeleteVm();
-            vm.Book = _bookService.FindBook(id);
-            vm.BookCopyList = new SelectList(_bookCopyService.GetAllBookCopies().Where(b => b.DetailsId == id).ToList(), "BookCopyId", "BookCopyId");
+            BookDetailsViewModel model = new()
+            {
+                BookDetails = await _bookService.GetBookOrDefaultAsync(x => x.ID == id, "Author"),
+                BookCopies = bookCopies.Select(i => new SelectListItem
+                {
+                    Text = i.BookCopyId.ToString(),
+                    Value = i.BookCopyId.ToString()
+                }),
+                Copies = bookCopies.Count
+            };
 
-            vm.BookCopiesBlocked = bookCopiesBlocked ? true : false;
-            vm.BookCopyBlocked = bookCopyBlocked ? true : false;
+            if (model == null)
+                return NotFound();
 
-            return View(vm);
+            return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(BookDeleteVm vm)
+        public async Task<IActionResult> DeleteAll(BookDetailsViewModel model)
         {
+            return View(model);
+        }
 
+        #region API CALLS
+        // GET: Authors/GetAll
+        [HttpGet]
+        public async Task<IActionResult> GetAll(string status)
+        {
+            IEnumerable<BookDetails> books = await _bookService.GetAllAsync();
+
+            // TODO if book loan or book no loan.
+            switch (status)
+            {
+                case "isAvailable":
+                    books = await _bookService.GetAllBookDetailsAsync(filter: b => b.Copies.Count != 0, orderBy: x => x.OrderBy(b => b.Copies.Count), a => a.Author, c => c.Copies);
+                    break;
+                case "all":
+                    books = await _bookService.GetAllBookDetailsAsync(filter: null, orderBy: null, a => a.Author, c => c.Copies);
+                    break;
+                default:
+                    break;
+            }
+
+            return Json(new { data = books});
+        }
+
+        //POST: Books/AddBookCopy /5
+        [HttpPost]
+        public async Task<IActionResult> AddBookCopy(int id)
+        {
             try
             {
-                // Here we first check which of the delete options the user has clicked on
-                // We also prevent the user from deleting a bookcopy that is part of a loan event
+                BookDetails book = await _bookService.GetBookOrDefaultAsync(c => c.ID == id, includeProperties: "Author");
 
-                if (vm.BookCopyId != 0 && vm.DeleteAll == false)
+                //Create new book
+                BookCopy copy = new()
                 {
-                    if (_bookCopyService.FindBookCopy(vm.BookCopyId).IsAvailable == false)
-                    {
-                        return RedirectToAction(nameof(Delete), new { id = vm.BookDetailsID, bookCopyBlocked = true });
-                    }
-                    else
-                    {
-                        _bookCopyService.DeleteBookCopy(vm.BookCopyId);
-                        return RedirectToAction(nameof(Index));
-                    }
-                }
-                else if (vm.BookCopyId == 0 && vm.DeleteAll)
-                {
-                    var bookCopiesToBeRemoved = _bookCopyService.GetAllBookCopies().Where(b => b.DetailsId == vm.BookDetailsID).ToList();
+                    DetailsId = book.ID,
+                    Details = await _bookService.GetBookOrDefaultAsync(b => b.ID == id),
+                    IsAvailable = true,
+                };
 
-                    var bookCopiesToBlock = bookCopiesToBeRemoved.Where(b => b.IsAvailable == false).ToList();
+                BookCopy addedCopy = await _bookCopyService.AddAsync(copy);
 
-                    bookCopiesToBeRemoved.RemoveAll(b => b.IsAvailable == false);
+                return Json(new { success = true, message = "Book copy " + addedCopy.BookCopyId + " added successfully." });
 
-                    _bookCopyService.RemoveBookCopies(bookCopiesToBeRemoved);
-
-                    if (bookCopiesToBlock.Count() != 0)
-                    {
-                        return RedirectToAction(nameof(Delete), new { id = vm.BookDetailsID, bookCopiesBlocked = true });
-                    }
-                    else
-                    {
-                        _bookService.DeleteBookDetails(vm.BookDetailsID);
-                        return RedirectToAction(nameof(Index));
-                    }
-                }
-                else
-                    return RedirectToAction(nameof(Delete), vm.Book.ID);
             }
-            catch (DbException)
+            catch (Exception)
             {
-                return View();
+                return Json(new { error = true, message = "Something went wrong!" });
             }
+
+            return Json(new { error = true, message = "An unexpected error occurred!" });
         }
 
-        public ActionResult Details(int id)
+        //DELETE: Books/Delete /5
+        [HttpDelete]
+        public async Task<IActionResult> DeleteSingle(int id)
         {
-            if (id == 0)
+            if (id != 0)
             {
-                return NotFound();
+                var bookCopyInDb = await _bookCopyService.GetBookCopyOrDefaultAsync(filter: b => b.BookCopyId == id);
+
+                await _bookCopyService.DeleteAsync(id);
+
+                TempData["Success"] = "Book copy deleted successfully.";
+                return RedirectToAction(nameof(Index));
             }
-
-            var vm = new BookDetailsVm
-            {
-                Book = _bookService.FindBook(id),
-                BookCopies = _bookCopyService.GetAllBookCopies().Where(b => b.DetailsId == id).ToList()
-            };
-
-            return View(vm);
+            return Json(new { error = true, message = "An unexpected error occurred." });
         }
+
+        [HttpDelete]
+        public async Task<IActionResult> DeleteAll(int id)
+        {
+            if (id != 0)
+            {
+                var bookInDB = await _bookService.GetByIdAsync(id);
+                var bookCopiesInDb = await _bookCopyService.GetAllBookCopiesAsync(filter: b => b.DetailsId == bookInDB.ID);
+
+                _bookCopyService.RemoveRange(bookCopiesInDb);
+
+                await _bookService.UpdateAsync(bookInDB);
+
+                return Json(new { success = true, message = "Book copies deleted successfully." });
+            }
+            return Json(new { error = true, message = "An unexpected error occurred." });
+        }
+
+        [HttpDelete]
+        public async Task<IActionResult> Delete(int id)
+        {
+            if (id != 0)
+            {
+                var bookInDB = await _bookService.GetBookOrDefaultAsync(b => b.ID == id);
+                var bookCopiesInDb = await _bookCopyService.GetAllBookCopiesAsync(filter: c => c.DetailsId == bookInDB.ID);
+
+                if (bookCopiesInDb != null)
+                    _bookCopyService.RemoveRange(bookCopiesInDb);
+
+                await _bookService.DeleteAsync(bookInDB.ID);
+
+                return Json(new { success = true, message = "Book and copies deleted successfully." });
+            }
+            else
+            {
+                return Json(new { error = true, message = "Something went wrong." });
+            }
+            return Json(new { error = true, message = "An unexpected error occurred." });
+        }
+        #endregion
 
     }
 }
