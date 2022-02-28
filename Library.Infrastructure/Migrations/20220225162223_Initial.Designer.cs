@@ -7,30 +7,35 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+#nullable disable
+
 namespace Library.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200218142918_addAuthors")]
-    partial class addAuthors
+    [Migration("20220225162223_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "3.1.0")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128)
-                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                .HasAnnotation("ProductVersion", "6.0.2")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
             modelBuilder.Entity("Library.Domain.Author", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(55)")
-                        .HasMaxLength(55);
+                        .IsRequired()
+                        .HasMaxLength(55)
+                        .HasColumnType("nvarchar(55)");
 
                     b.HasKey("Id");
 
@@ -108,8 +113,9 @@ namespace Library.Infrastructure.Migrations
                 {
                     b.Property<int>("BookCopyId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BookCopyId"), 1L, 1);
 
                     b.Property<int>("DetailsId")
                         .HasColumnType("int");
@@ -187,25 +193,51 @@ namespace Library.Infrastructure.Migrations
                     b.HasIndex("LoanId");
 
                     b.ToTable("BookCopyLoans");
+
+                    b.HasData(
+                        new
+                        {
+                            BookCopyId = 1,
+                            LoanId = 2
+                        },
+                        new
+                        {
+                            BookCopyId = 2,
+                            LoanId = 3
+                        },
+                        new
+                        {
+                            BookCopyId = 3,
+                            LoanId = 4
+                        },
+                        new
+                        {
+                            BookCopyId = 4,
+                            LoanId = 1
+                        });
                 });
 
             modelBuilder.Entity("Library.Domain.BookDetails", b =>
                 {
                     b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"), 1L, 1);
 
                     b.Property<int>("AuthorID")
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ISBN")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("ID");
@@ -238,6 +270,86 @@ namespace Library.Infrastructure.Migrations
                             Description = "An intense drama of love, deception, jealousy and destruction.",
                             ISBN = "1853260185",
                             Title = "Othello"
+                        },
+                        new
+                        {
+                            ID = 4,
+                            AuthorID = 4,
+                            Description = "I Affärsmannaskap har Rolf Laurelli summerat sin långa erfarenhet av konsten att göra affärer. Med boken hoppas han kunna locka fram dina affärsinstinkter.",
+                            ISBN = "9789147107483",
+                            Title = "Affärsmannaskap för ingenjörer, jurister och alla andra specialister"
+                        },
+                        new
+                        {
+                            ID = 5,
+                            AuthorID = 5,
+                            Description = "12 Rules for Life offers a deeply rewarding antidote to the chaos in our lives: eternal truths applied to our modern problems. ",
+                            ISBN = "9780345816023",
+                            Title = "12 Rules For Life "
+                        },
+                        new
+                        {
+                            ID = 6,
+                            AuthorID = 6,
+                            Description = "Denna eminenta bok handlar om hur man ska behandla sina affärskontakter för att de ska känna sig trygga med dig som affärspartner. ",
+                            ISBN = "9789147122103",
+                            Title = "Business behavior"
+                        },
+                        new
+                        {
+                            ID = 7,
+                            AuthorID = 7,
+                            Description = "Dale Carnegie had an understanding of human nature that will never be outdated. Financial success, Carnegie believed, is due 15 percent to professional knowledge and 85 percent to the ability to express ideas, to assume leadership, and to arouse enthusiasm among people.",
+                            ISBN = "9781439199190",
+                            Title = "How to Win Friends and Influence People"
+                        },
+                        new
+                        {
+                            ID = 8,
+                            AuthorID = 8,
+                            Description = "I Affärsmannaskap har Rolf Laurelli summerat sin långa erfarenhet av konsten att göra affärer. Med boken hoppas han kunna locka fram dina affärsinstinkter.",
+                            ISBN = "9789186293321",
+                            Title = "Förhandla : från strikta regler till dirty tricks"
+                        },
+                        new
+                        {
+                            ID = 9,
+                            AuthorID = 9,
+                            Description = "Tracy teaches readers how to utilize the six key negotiating styles ",
+                            ISBN = "9780814433195",
+                            Title = "Negotiation "
+                        },
+                        new
+                        {
+                            ID = 13,
+                            AuthorID = 13,
+                            Description = "The Age of Agile helps readers master the three laws of Agile Management (team, customer, network)",
+                            ISBN = "9780814439098",
+                            Title = "THE AGE OF AGILE "
+                        },
+                        new
+                        {
+                            ID = 10,
+                            AuthorID = 10,
+                            Description = "The basics of being a ScrumMaster are fairly straightforward: Facilitate the Scrum process and remove impediments. ",
+                            ISBN = "9780957587403",
+                            Title = "Scrum Mastery "
+                        },
+                        new
+                        {
+                            ID = 11,
+                            AuthorID = 11,
+                            Description = "Optimize the effectiveness of your business, to produce fit-for-purpose products and services that delight your customers, making them loyal to your brand and increasing your share, revenues and margins.",
+                            ISBN = "9780984521401",
+                            Title = "Kanban "
+                        },
+                        new
+                        {
+                            ID = 12,
+                            AuthorID = 12,
+                            Description = "This  book constitutes the research workshops, doctoral symposium and panel summaries presented at the 20th International Conference on Agile Software Development",
+                            ISBN = "9783030301255",
+                            Title = " Agile Processes in Software Engineering and Extreme Programming"
                         });
                 });
 
@@ -245,8 +357,9 @@ namespace Library.Infrastructure.Migrations
                 {
                     b.Property<int>("LoanId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LoanId"), 1L, 1);
 
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("datetime2");
@@ -273,11 +386,11 @@ namespace Library.Infrastructure.Migrations
                         new
                         {
                             LoanId = 1,
-                            DueDate = new DateTime(2020, 3, 3, 15, 29, 18, 25, DateTimeKind.Local).AddTicks(2222),
+                            DueDate = new DateTime(2022, 3, 11, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3054),
                             Fee = 0,
                             MemberID = 3,
                             ReturnDate = new DateTime(2020, 5, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            StartDate = new DateTime(2020, 2, 18, 15, 29, 18, 22, DateTimeKind.Local).AddTicks(1250)
+                            StartDate = new DateTime(2022, 2, 25, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3003)
                         },
                         new
                         {
@@ -300,11 +413,11 @@ namespace Library.Infrastructure.Migrations
                         new
                         {
                             LoanId = 4,
-                            DueDate = new DateTime(2020, 3, 3, 15, 29, 18, 25, DateTimeKind.Local).AddTicks(4823),
+                            DueDate = new DateTime(2022, 3, 11, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3070),
                             Fee = 0,
                             MemberID = 2,
                             ReturnDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            StartDate = new DateTime(2020, 2, 18, 15, 29, 18, 25, DateTimeKind.Local).AddTicks(4820)
+                            StartDate = new DateTime(2022, 2, 25, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3068)
                         });
                 });
 
@@ -312,14 +425,19 @@ namespace Library.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("SSN")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("nvarchar(13)");
 
                     b.HasKey("Id");
 
@@ -330,31 +448,31 @@ namespace Library.Infrastructure.Migrations
                         {
                             Id = 1,
                             Name = "Daniel Graham",
-                            SSN = "555666-0001"
+                            SSN = "19855666-0001"
                         },
                         new
                         {
                             Id = 2,
                             Name = "Eric Howell",
-                            SSN = "555666-0002"
+                            SSN = "19555666-0002"
                         },
                         new
                         {
                             Id = 3,
                             Name = "Patricia Lebsack",
-                            SSN = "555666-0003"
+                            SSN = "19555666-0003"
                         },
                         new
                         {
                             Id = 4,
                             Name = "Kalle Runolfsdottir",
-                            SSN = "555666-0004"
+                            SSN = "19555666-0004"
                         },
                         new
                         {
                             Id = 5,
                             Name = "Linus Reichert",
-                            SSN = "555666-0005"
+                            SSN = "19555666-0005"
                         });
                 });
 
@@ -365,6 +483,8 @@ namespace Library.Infrastructure.Migrations
                         .HasForeignKey("DetailsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Details");
                 });
 
             modelBuilder.Entity("Library.Domain.BookCopyLoan", b =>
@@ -380,6 +500,10 @@ namespace Library.Infrastructure.Migrations
                         .HasForeignKey("LoanId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("BookCopy");
+
+                    b.Navigation("Loan");
                 });
 
             modelBuilder.Entity("Library.Domain.BookDetails", b =>
@@ -389,6 +513,8 @@ namespace Library.Infrastructure.Migrations
                         .HasForeignKey("AuthorID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Author");
                 });
 
             modelBuilder.Entity("Library.Domain.Loan", b =>
@@ -398,6 +524,33 @@ namespace Library.Infrastructure.Migrations
                         .HasForeignKey("MemberID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Member");
+                });
+
+            modelBuilder.Entity("Library.Domain.Author", b =>
+                {
+                    b.Navigation("Books");
+                });
+
+            modelBuilder.Entity("Library.Domain.BookCopy", b =>
+                {
+                    b.Navigation("BookCopyLoans");
+                });
+
+            modelBuilder.Entity("Library.Domain.BookDetails", b =>
+                {
+                    b.Navigation("Copies");
+                });
+
+            modelBuilder.Entity("Library.Domain.Loan", b =>
+                {
+                    b.Navigation("BookCopyLoans");
+                });
+
+            modelBuilder.Entity("Library.Domain.Member", b =>
+                {
+                    b.Navigation("Loans");
                 });
 #pragma warning restore 612, 618
         }
