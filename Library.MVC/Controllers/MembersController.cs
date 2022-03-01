@@ -110,16 +110,17 @@ namespace Library.MVC.Controllers
         [HttpDelete]
         public async Task<IActionResult> Delete(int id)
         {
+
             var memberInDb = await _memberService.GetByIdAsync(id);
 
-            var loanInDb = await _loanService.GetLoanOrDefaultAsync(filter: b => b.Member.Id == memberInDb.Id);
+            var loanInDb = await _loanService.GetLoanOrDefaultAsync(filter: b => b.MemberID == memberInDb.Id);
 
             if (loanInDb != null)
                 return Json(new { error = true, message = "You can not delete this member as long it has loans refering to it (check loans)!" });
 
             await _memberService.DeleteAsync(id);
-            return Json(new { success = true, message = "Member deleted successfully." });
 
+            return Json(new { success = true, message = "Member deleted successfully." });
         }
         #endregion
     }
