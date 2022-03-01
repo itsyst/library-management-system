@@ -160,10 +160,11 @@ namespace Library.Infrastructure.Persistence
                 new Member { Id = 5, SSN = "19555666-0005", Name = "Linus Reichert" }
             );
             modelBuilder.Entity<Loan>().HasData(
-                new Loan { LoanId = 1, MemberID = 3, ReturnDate = new DateTime(2020, 5, 4) },
-                new Loan { LoanId = 2, StartDate = new DateTime(2020, 1, 5), DueDate = new DateTime(2020, 1, 19), MemberID = 1 },
-                new Loan { LoanId = 3, StartDate = new DateTime(2020, 1, 3), DueDate = new DateTime(2020, 1, 17), MemberID = 2 },
-                new Loan { LoanId = 4, MemberID = 2 }
+                new Loan { LoanId = 1, MemberID = 3, StartDate = new DateTime(2022, 1, 5), DueDate = new DateTime(2022, 1, 19), ReturnDate = new DateTime(2022, 1, 19), Fee = 0 },
+                new Loan { LoanId = 2, MemberID = 1, StartDate = new DateTime(2022, 1, 15), DueDate = new DateTime(2022, 1, 30), ReturnDate = new DateTime(2022, 2, 4), Fee = 10 },
+                new Loan { LoanId = 3, MemberID = 2,  StartDate = new DateTime(2022, 1, 3), DueDate = new DateTime(2022, 1, 17), ReturnDate = new DateTime(2022, 1, 16), Fee = 0 },
+                new Loan { LoanId = 4, MemberID = 2, StartDate = new DateTime(2022, 1, 30), DueDate = new DateTime(2022, 2, 14),  Fee = 2 },
+                new Loan { LoanId = 5, MemberID = 4, StartDate = new DateTime(2022, 1, 29), DueDate = new DateTime(2022, 2, 12), }
             );
             modelBuilder.Entity<BookCopy>().HasData(
                 new BookCopy { BookCopyId = 1, DetailsId = 1, IsAvailable = true },
@@ -179,7 +180,8 @@ namespace Library.Infrastructure.Persistence
                 new BookCopyLoan { BookCopyId = 1, LoanId = 2 },
                 new BookCopyLoan { BookCopyId = 2, LoanId = 3 },
                 new BookCopyLoan { BookCopyId = 3, LoanId = 4 },
-                new BookCopyLoan { BookCopyId = 4, LoanId = 1 }
+                new BookCopyLoan { BookCopyId = 4, LoanId = 1 },
+                new BookCopyLoan { BookCopyId = 5, LoanId = 5 }
             );
         }
 
