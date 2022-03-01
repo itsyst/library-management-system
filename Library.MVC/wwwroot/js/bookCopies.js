@@ -59,6 +59,11 @@
                                     toastr.success(data.message);
                                     copy.empty();
                                     toggle = false;
+                                } else {
+                                    window.location.reload();
+                                    toastr.error(data.message);
+                                    copy.empty();
+                                    toggle = false;
                                 }
 
                             }

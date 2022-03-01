@@ -42,7 +42,7 @@
                     <td>
                         @Html.DisplayFor(modelItem => member.SSN)
                     </td>
-                    @if (member.Loans.Count() != 0)
+                    @if (member.Loans!.Count() != 0)
                     {
                         <td style='color: #198754;'>
                             <p class="font-weight-bold">@Html.DisplayName("✓")</p>
@@ -55,7 +55,7 @@
                         </td>
                     }
                     <td colspan="2" class="text-right">
-                        <a onClick=Delete('/Members/Delete/@member.Id') class="btn-link mx-2" ><i class='bi bi-trash-fill' style='color: #ff4136; cursor:pointer;'></i></a>
+                        <a class="btn-link mx-2 js-delete" data-member-id=@member.Id><i class='bi bi-trash-fill' style='color: #ff4136; cursor:pointer;'></i></a>
                     </td>
                 </tr>
             }
