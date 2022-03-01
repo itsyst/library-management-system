@@ -1,5 +1,6 @@
 ﻿$(document).ready(function () {
-    function Delete(url) {
+    $("#members").on('click', '.js-delete', function () {
+        var button = $(this);
         Swal.fire({
             title: `Are you sure you want to delete this member ?`,
             icon: 'warning',
@@ -10,7 +11,7 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: url,
+                    url: "/members/delete/" + button[0].dataset["memberId"],
                     type: 'DELETE',
                     success: function (data) {
                         if (data) {
@@ -29,5 +30,5 @@
         }).catch(() => {
             toastr.error("An unexpected error occurred please try again later !");
         })
-    }
+    })
 });
