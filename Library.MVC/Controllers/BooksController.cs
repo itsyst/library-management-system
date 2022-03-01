@@ -14,17 +14,20 @@ namespace Library.MVC.Controllers
         private readonly IAuthorService _authorService;
         private readonly IBookCopyService _bookCopyService;
         private readonly ILoanService _loanService;
+        private readonly IBookCopyLoanService _bookCopyLoanService;
 
         public BooksController(
-            IBookService bookservice, 
-            IAuthorService authorService, 
+            IBookService bookservice,
+            IAuthorService authorService,
             IBookCopyService bookCopyService,
-            ILoanService loanService)
+            ILoanService loanService,
+            IBookCopyLoanService bookCopyLoanService)
         {
             _bookService = bookservice;
             _authorService = authorService;
             _bookCopyService = bookCopyService;
             _loanService = loanService;
+            _bookCopyLoanService = bookCopyLoanService;
         }
 
         public async Task<IActionResult> Index()
@@ -201,7 +204,6 @@ namespace Library.MVC.Controllers
         {
             IEnumerable<BookDetails> books = await _bookService.GetAllAsync();
 
-            // TODO if book loan or book no loan.
             switch (status)
             {
                 case "isAvailable":
@@ -214,7 +216,7 @@ namespace Library.MVC.Controllers
                     break;
             }
 
-            return Json(new { data = books});
+            return Json(new { data = books });
         }
 
         //POST: Books/AddBookCopy /5
@@ -254,10 +256,16 @@ namespace Library.MVC.Controllers
             {
                 var bookCopyInDb = await _bookCopyService.GetBookCopyOrDefaultAsync(filter: b => b.BookCopyId == id);
 
+                var boocopyLoan = await _bookCopyLoanService.GetBookCopyLoanOrDefaultAsync(x => x.BookCopyId == bookCopyInDb.BookCopyId);
+
+                // Check if book copy is loaned
+                if (boocopyLoan != null)
+                    return Json(new { error = true, message = "This book copy could not be deleted. It first has to be returned(check loans)!" });
+
+                // Delete book copy loan
                 await _bookCopyService.DeleteAsync(id);
 
-                TempData["Success"] = "Book copy deleted successfully.";
-                return RedirectToAction(nameof(Index));
+                return Json(new { success = true, message = "Book copy " + id + " deleted successfully." });
             }
             return Json(new { error = true, message = "An unexpected error occurred." });
         }
@@ -267,15 +275,34 @@ namespace Library.MVC.Controllers
         {
             if (id != 0)
             {
+
                 var bookInDB = await _bookService.GetByIdAsync(id);
                 var bookCopiesInDb = await _bookCopyService.GetAllBookCopiesAsync(filter: b => b.DetailsId == bookInDB.ID);
+                List<BookCopy> bookCopiesTobeDeleted = new List<BookCopy>();
 
-                _bookCopyService.RemoveRange(bookCopiesInDb);
+                foreach (var bookCopy in bookCopiesInDb)
+                {
+                    var boocopyLoan = await _bookCopyLoanService.GetBookCopyLoanOrDefaultAsync(x => x.BookCopyId == bookCopy.BookCopyId);
 
-                await _bookService.UpdateAsync(bookInDB);
+                    // Check if book copy is loaned
+                    if (boocopyLoan == null)
 
-                return Json(new { success = true, message = "Book copies deleted successfully." });
+                        bookCopiesTobeDeleted.Add(bookCopy);
+                }
+
+                if (bookCopiesTobeDeleted.Count > 0)
+                {
+                    _bookCopyService.RemoveRange(bookCopiesTobeDeleted);
+                    await _bookService.UpdateAsync(bookInDB);
+
+                    return Json(new { success = true, message = "Book copies deleted successfully." });
+                }
+                else
+                {
+                    return Json(new { error = true, message = "Book copies could not be deleted. They first has to be returned(check loans)!" });
+                }
             }
+
             return Json(new { error = true, message = "An unexpected error occurred." });
         }
 
@@ -286,13 +313,33 @@ namespace Library.MVC.Controllers
             {
                 var bookInDB = await _bookService.GetBookOrDefaultAsync(b => b.ID == id);
                 var bookCopiesInDb = await _bookCopyService.GetAllBookCopiesAsync(filter: c => c.DetailsId == bookInDB.ID);
+                List<BookCopy> bookCopiesTobeDeleted = new List<BookCopy>();
 
-                if (bookCopiesInDb != null)
-                    _bookCopyService.RemoveRange(bookCopiesInDb);
+                foreach (var bookCopy in bookCopiesInDb)
+                {
+                    var boocopyLoan = await _bookCopyLoanService.GetBookCopyLoanOrDefaultAsync(x => x.BookCopyId == bookCopy.BookCopyId);
 
-                await _bookService.DeleteAsync(bookInDB.ID);
+                    // Check if book copy is loaned
+                    if (boocopyLoan == null)
+                        bookCopiesTobeDeleted.Add(bookCopy);
+                }
 
-                return Json(new { success = true, message = "Book and copies deleted successfully." });
+                if (bookCopiesTobeDeleted.Count > 0)
+                {
+                    // delete book copies
+                    _bookCopyService.RemoveRange(bookCopiesTobeDeleted);
+                    await _bookService.UpdateAsync(bookInDB);
+
+                    // delete book
+                    await _bookService.DeleteAsync(bookInDB.ID);
+
+                    return Json(new { success = true, message = "Book and related copies deleted successfully." });
+                }
+                else
+                {
+                    return Json(new { error = true, message = "You can not delete this book as long it has loans refering to it (check loans)!" });
+                }
+       
             }
             else
             {
