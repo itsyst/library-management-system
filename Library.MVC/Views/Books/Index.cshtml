@@ -3,9 +3,9 @@
 @{
     ViewData["Title"] = "Books";
 
-    var status = Context.Request.Query["status"];
-    var isAvailable = "text-primary";
-    var all = "text-primary";
+    var status = Context.Request.Query["satatus"];
+    var isAvailable = "text-secondary";
+    var all = "text-secondary";
 
     switch (status)
     {
@@ -28,16 +28,17 @@
         <div class="row">
 
             <ul class="list-group list-group-horizontal-sm col-12">
-                <a style="text-decoration:none;" asp-controller="Books" asp-action"Index" asp-route-satatus="isAvailable">
-                <li class="list-group-item @isAvailable">Available</li>
-                </a>
-                <a style="text-decoration:none;" asp-controller="Books" asp-action"Index" asp-route-satatus="all">
-                <li class="list-group-item @all">All</li>
-                </a>
+                <li class="btn-group btn-group-toggle">
+                    <a style="text-decoration:none;" class="books-button btn btn-outline-secondary mt-2 mt-sm-0 py-2 px-3 @isAvailable" asp-controller="Books" asp-action"Index" asp-route-satatus="isAvailable">
+                        <span >Available</span>
+                    </a>
+                    <a style="text-decoration:none; text-decoration-color:text-primary;" class="books-button btn btn-outline-secondary mt-2 mt-sm-0 py-2 px-3 @all" asp-controller="Books" asp-action"Index" asp-route-satatus="all">
+                        <span>All</span>
+                    </a>
+                </li>
                 <a class="btn btn-primary mt-2 mt-sm-0 ml-sm-3 py-2 px-3" style="text-decoration:none; vertical-align: middle;" asp-controller="Books" asp-action="Create">
                     <i class="align-middle  bi bi-plus-circle"></i> <span class="align-middle">&nbsp; New</span>
                 </a>
-
             </ul>
         </div>
     </div>
