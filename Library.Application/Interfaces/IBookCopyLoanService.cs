@@ -1,16 +1,11 @@
 ﻿using Library.Domain;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Linq.Expressions;
 
 namespace Library.Application.Interfaces
 {
-    public interface IBookCopyLoanService
+    public interface IBookCopyLoanService : IAsyncGenericRepository<BookCopyLoan>
     {
-        void AddBookCopyLoan(BookCopyLoan bookCopyLoan);
-
-        public List <BookCopyLoan> GetBookCopiesOfALoan(int loanId);
-
-        public void DeleteBookCopyLoansByLoanId(int loanId);
-}
+        Task<BookCopyLoan> GetBookCopyLoanOrDefaultAsync(Expression<Func<BookCopyLoan, bool>> filter, string? includeProperties = null, bool tracked = true);
+        Task<IReadOnlyList<BookCopyLoan>> GetAllBookCopyLoansAsync(Expression<Func<BookCopyLoan, bool>>? filter = null, Func<IQueryable<BookCopyLoan>, IOrderedQueryable<BookCopyLoan>>? orderBy = null, params Expression<Func<BookCopyLoan, object>>[] includeProperties);
+    }
 }
