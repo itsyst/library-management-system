@@ -1,57 +1,74 @@
 ﻿using Library.Domain;
 using Library.Infrastructure.Persistence;
-using System;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Text;
 using Library.Application.Interfaces;
-using System.Linq;
+using System.Linq.Expressions;
 
 namespace Library.Infrastructure.Services
 {
-    public class LoanService : ILoanService
+#nullable disable
+    public class LoanService : BaseService<Loan> , ILoanService
     {
-        private readonly ApplicationDbContext _context;
-
-        public LoanService(ApplicationDbContext context)
+        public LoanService(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
 
-        public void AddLoan(Loan loan)
+        public async Task<Loan> GetLoanOrDefaultAsync(Expression<Func<Loan, bool>> filter, string? includeProperties = null, bool tracked = true)
         {
-            _context.Add(loan);
-            _context.SaveChanges();
+            if (tracked)
+            {
+                IQueryable<Loan> query = _table;
+
+                query = query.Where(filter);
+                if (includeProperties != null)
+                {
+                    foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        query = query.Include(includeProp);
+                    }
+                }
+
+                return query.FirstOrDefault();
+            }
+            else
+            {
+                IQueryable<Loan> query = _table.AsNoTracking();
+
+                query = query.Where(filter);
+                if (includeProperties != null)
+                {
+                    foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        query = query.Include(includeProp);
+                    }
+                }
+
+                return query.FirstOrDefault();
+            }
         }
 
-        public ICollection<Loan> GetAllLoans()
+        public async Task<IReadOnlyList<Loan>> GetAllLoansAsync(Expression<Func<Loan, bool>>? filter = null, Func<IQueryable<Loan>, IOrderedQueryable<Loan>>? orderBy = null, params Expression<Func<Loan, object>>[] includeProperties)
         {
-            return _context.Loans
-                .Include(x => x.BookCopyLoans)
-                .ThenInclude(x => x.BookCopy)
-                .ThenInclude(x => x.Details)
-                .Include(m => m.Member)
-                .OrderBy(x => x.ReturnDate).ToList();
+            IQueryable<Loan> query = _table;
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            if (includeProperties != null)
+            {
+                foreach (var includeProp in includeProperties)
+                {
+                    query = query.Include(includeProp);
+                }
+
+            }
+            if (orderBy != null)
+            {
+                query = orderBy(query);
+            }
+
+            return await query.ToListAsync();
         }
 
-        public void UpdateLoan(Loan loan)
-        {
-            _context.Update(loan);
-            _context.SaveChanges();
-        }
-
-        public Loan GetLoanByLoanId(int loanId)
-        {
-            return _context.Loans.FirstOrDefault(l => l.LoanId == loanId);
-        }
-
-        public void DeleteLoanByLoanId(int id)
-        {
-            var loan = _context.Loans.SingleOrDefault(l => l.LoanId == id);
-
-            _context.Loans.Remove(loan);
-
-            _context.SaveChanges();
-        }
     }
 }
