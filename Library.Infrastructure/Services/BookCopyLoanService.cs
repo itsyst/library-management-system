@@ -2,41 +2,71 @@
 using Library.Domain;
 using Library.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Linq.Expressions;
 
 namespace Library.Infrastructure.Services
 {
-    public class BookCopyLoanService : IBookCopyLoanService
+    public class BookCopyLoanService : BaseService<BookCopyLoan>, IBookCopyLoanService
     {
-        private readonly ApplicationDbContext _context;
-
-        public BookCopyLoanService(ApplicationDbContext context)
+        public BookCopyLoanService(ApplicationDbContext context):base(context)
         {
-            _context = context;
         }
 
-        public void AddBookCopyLoan(BookCopyLoan bookCopyLoan)
+        public async Task<IReadOnlyList<BookCopyLoan>> GetAllBookCopyLoansAsync(Expression<Func<BookCopyLoan, bool>>? filter = null, Func<IQueryable<BookCopyLoan>, IOrderedQueryable<BookCopyLoan>>? orderBy = null, params Expression<Func<BookCopyLoan, object>>[] includeProperties)
         {
-            _context.Add(bookCopyLoan);
-            _context.SaveChanges();
-        }
-
-        public List<BookCopyLoan> GetBookCopiesOfALoan(int loanId)
-        {
-            return _context.BookCopyLoans.Include(b => b.BookCopy).Where(b => b.LoanId == loanId).OrderBy(b => b.BookCopyId).ToList();
-        }
-
-        public void DeleteBookCopyLoansByLoanId(int loanId)
-        {
-            var bookCopyLoansToRemove = _context.BookCopyLoans.Where(b => b.LoanId == loanId);
-            foreach (var bookCopyLoan in bookCopyLoansToRemove)
+            IQueryable<BookCopyLoan> query = _table;
+            if (filter != null)
             {
-                _context.BookCopyLoans.Remove(bookCopyLoan);
+                query = query.Where(filter);
             }
-            _context.SaveChanges();
+            if (includeProperties != null)
+            {
+                foreach (var includeProp in includeProperties)
+                {
+                    query = query.Include(includeProp);
+                }
+
+            }
+            if (orderBy != null)
+            {
+                query = orderBy(query);
+            }
+
+            return await query.ToListAsync();
+        }
+
+        public async Task<BookCopyLoan> GetBookCopyLoanOrDefaultAsync(Expression<Func<BookCopyLoan, bool>> filter, string? includeProperties = null, bool tracked = true)
+        {
+            if (tracked)
+            {
+                IQueryable<BookCopyLoan> query = _table;
+
+                query = query.Where(filter);
+                if (includeProperties != null)
+                {
+                    foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        query = query.Include(includeProp);
+                    }
+                }
+
+                return query.FirstOrDefault();
+            }
+            else
+            {
+                IQueryable<BookCopyLoan> query = _table.AsNoTracking();
+
+                query = query.Where(filter);
+                if (includeProperties != null)
+                {
+                    foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        query = query.Include(includeProp);
+                    }
+                }
+
+                return query.FirstOrDefault();
+            }
         }
     }
 }
