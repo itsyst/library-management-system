@@ -1,21 +1,11 @@
 ﻿using Library.Domain;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Linq.Expressions;
 
 namespace Library.Application.Interfaces
 {
-    public interface ILoanService
+    public interface ILoanService : IAsyncGenericRepository<Loan>
     {
-        public ICollection<Loan> GetAllLoans();
-
-        void AddLoan(Loan loan);
-        
-        void UpdateLoan(Loan loan);
-
-        public Loan GetLoanByLoanId(int loanId);
-
-        public void DeleteLoanByLoanId(int loanId);
-
+        Task<IReadOnlyList<Loan>> GetAllLoansAsync(Expression<Func<Loan, bool>>? filter = null, Func<IQueryable<Loan>, IOrderedQueryable<Loan>>? orderBy = null, params Expression<Func<Loan, object>>[] includeProperties);
+        Task<Loan> GetLoanOrDefaultAsync(Expression<Func<Loan, bool>> filter, string? includeProperties = null, bool tracked = true);
     }
 }
