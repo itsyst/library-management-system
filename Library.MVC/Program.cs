@@ -13,9 +13,9 @@ builder.Services.AddControllersWithViews()
 );
 
 //DbContext configuration
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(
-    builder.Configuration.GetConnectionString("LibrarySystem"),
-    b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName))
+builder.Services.AddDbContext<ApplicationDbContext>(options => options
+    .UseSqlServer(builder.Configuration.GetConnectionString("LibrarySystem"), b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName))
+    .EnableSensitiveDataLogging()
 );
 
 //Services configuration
