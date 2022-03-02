@@ -161,7 +161,7 @@ namespace Library.Infrastructure.Persistence
             );
             modelBuilder.Entity<Loan>().HasData(
                 new Loan { LoanId = 1, MemberID = 3, StartDate = new DateTime(2022, 1, 5), DueDate = new DateTime(2022, 1, 19), ReturnDate = new DateTime(2022, 1, 19), Fee = 0 },
-                new Loan { LoanId = 2, MemberID = 1, StartDate = new DateTime(2022, 1, 15), DueDate = new DateTime(2022, 1, 29), ReturnDate = new DateTime(2022, 2, 4), Fee = 12 },
+                new Loan { LoanId = 2, MemberID = 1, StartDate = new DateTime(2022, 1, 15), DueDate = new DateTime(2022, 1, 29), ReturnDate = new DateTime(2022, 2, 4), Fee = 24},
                 new Loan { LoanId = 3, MemberID = 2, StartDate = new DateTime(2022, 1, 3), DueDate = new DateTime(2022, 1, 17), ReturnDate = new DateTime(2022, 1, 16), Fee = 0 },
                 new Loan { LoanId = 4, MemberID = 2, StartDate = new DateTime(2022, 1, 30), DueDate = new DateTime(2022, 2, 13)},
                 new Loan { LoanId = 5, MemberID = 4, StartDate = new DateTime(2022, 1, 29), DueDate = new DateTime(2022, 2, 12)},
