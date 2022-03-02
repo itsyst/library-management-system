@@ -1,111 +1,127 @@
-﻿@model Library.MVC.Models.LoanIndexVm;
+﻿@model Library.MVC.ViewModels.LoanViewModel
+@using Library.Domain.Utilities
 
 @{
     ViewData["Title"] = "Loans";
+
+    var status = Context.Request.Query["satatus"];
+    var isActive = "text-secondary";
+    var all = "text-secondary";
+
+    switch (status)
+    {
+        case "isActive":
+            isActive = "active text-white";
+            break;
+        case "all":
+            all = "active text-white";
+            break;
+        default:
+            break;
+    }
+#pragma warning disable
 }
 
-<h1>Loans</h1>
+<div class="p-3">
+    <div class="d-flex justify-content-between pt-4">
+        <div class="">
+            <h2 class="text-primary">Loans</h2>
+        </div>
+        <div class="row">
+            <ul class="list-group list-group-horizontal-sm col-12">
+                @*                <li class="btn-group btn-group-toggle">
+                    @Html.ActionLink("Active loans", "Index", "Loans", new {status}, new { @class = "btn btn-outline-secondary mt-2 mt-sm-0 py-2 px-3 align-middle " + @isActive})  @Html.ActionLink("Show all", "Index", "Loans", new { status }, new { @class = "btn btn-outline-secondary mt-2 mt-sm-0 py-2 px-3 align-middle " + @all })
+                    </li>*@
 
-<p>
-    <a asp-action="Create" class="btn btn-light ">Create Loan</a> | 
-    <a asp-action="Delete" class="btn btn-light">Delete Loan</a>
-</p>
- 
-   
+                <li class="btn-group btn-group-toggle">
+                    <a style="text-decoration:none;" class="books-button btn btn-outline-secondary mt-2 mt-sm-0 py-2 px-3 @isActive" asp-controller="Loans" asp-action"Index" asp-route-satatus="isActive">
+                        <span>Active loans</span>
+                    </a>
+                    <a style="text-decoration:none;" class="books-button btn btn-outline-secondary mt-2 mt-sm-0 py-2 px-3 @all" asp-controller="Loans" asp-action"Index" asp-route-satatus="all">
+                        <span>Show All</span>
+                    </a>
+                </li>
 
-<p class="float-lg-right">
+                <a class="btn btn-primary mt-2 mt-sm-0 ml-sm-3 py-2 px-3" style="text-decoration:none; vertical-align: middle;" asp-controller="Loans" asp-action="Create">
+                    <i class="align-middle  bi bi-plus-circle"></i> <span class="align-middle">&nbsp; New</span>
+                </a>
 
-    @Html.ActionLink("Active loans", "Index", "Loans", new { onlyActiveLoans = true}, new { @class = "btn btn-info btn-large" })  @Html.ActionLink("Show all", "Index", "Loans", new { onlyActiveLoans = false}, new { @class = "btn btn-outline-info btn-large" })
-
-</p>
-
-<table class="table table-hover">
-    <thead>
-        <tr class="bg-light">
-            <th>LoanID</th>
-            <th>Title 1</th>
-            <th>Title 2</th>
-            <th>Title 3</th>
-            <th>MemberName</th>
-            <th>MemberId</th>
-            <th>StartDate</th>
-            <th>DueDate</th>
-            <th>ReturnDate</th>
-            <th>Fee</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.Loans)
-        {
-            <tr>
-
-                <td>
-                    @Html.DisplayFor(modelItem => item.LoanId)
-                </td>
-                @for (int i = 0; i < 3; i++)
-                {
-                    var bookCopies = item.BookCopyLoans.Where(l => l.LoanId == item.LoanId).ToList();
-
-
-                    if (bookCopies.Count() > i)
-                    {
-                        <td>
-                            @bookCopies[i].BookCopy.Details.Title
-                        </td>
-                    }
-                    else
-                    {
-                        <td>
-                            ----
-                        </td>
-                    }
-                }
-            <td>
-                 
-                    @Html.DisplayFor(modelItem => item.Member.Name)
-               
-            </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.MemberID)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.StartDate)
-                </td>
-                <td>
-                    @if (Model.Now > item.DueDate)
-                    {
-                        <div class="alert-danger">
-                            @Html.DisplayFor(modelItem => item.DueDate)
-                        </div>
-
-                    }
-                    else
-                    {
-                        @Html.DisplayFor(modelItem => item.DueDate)
-                    }
-                </td>
-                @if (item.ReturnDate < item.StartDate)
-                {
-
-                    <td>
-
-                        <a asp-action="Return" class="btn btn-success" asp-route-id="@item.LoanId">Return</a>
-
-                    </td>
-
-                }
-                else
-                {
-                    <td>
-                        @Html.DisplayFor(modelItem => item.ReturnDate) <br>
-
-                    </td>
-                }
-                <td>
-                    @Html.DisplayFor(modelItem => item.Fee) SEK
-                </td>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="p-3">
+    <table id="loans" class="table table-hover">
+        <thead>
+            <tr class="bg-light">
+                <th> @Html.DisplayName("Member SSN")</th>
+                <th> @Html.DisplayName("Member Name")</th>
+                <th> @Html.DisplayName("Copies")</th>
+                <th> @Html.DisplayNameFor(model => model.Loan.StartDate)</th>
+                <th> @Html.DisplayNameFor(model => model.Loan.DueDate)</th>
+                <th> @Html.DisplayNameFor(model => model.Loan.ReturnDate)</th>
+                <th> @Html.DisplayNameFor(model => model.Loan.Fee)</th>
+                <th></th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Loans)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Member.SSN)
+                    </td>
+                    <td>
+                        @Html.ActionLink(item.Member.Name, "Details", "Members", new {id = item.MemberID})
+                    </td>
+                    @{
+                        var bookCopyLoans = item.BookCopyLoans.Where(l => l.LoanId == item.LoanId).Select(x => x.BookCopy.Details.Title).Count();
+                        <td>
+                            @Html.DisplayName(bookCopyLoans.ToString())
+                        </td>
+                    }
+                    <td>
+                        @Html.DisplayName(item.StartDate.ToShortDateString())
+                    </td>
+                    <td>
+                        @if (DateTime.Now > item.DueDate && item.Fee > 0)
+                        {
+                            <span class="bg badge-danger p-1">
+                                @Html.DisplayName(item.DueDate.ToShortDateString())
+                            </span>
+                        }
+                        else
+                        {
+                            @Html.DisplayName(item.DueDate.ToShortDateString())
+                        }
 
+                    </td>
+                    @if (item.ReturnDate < item.StartDate)
+                    {
+                        <td>
+                            <a asp-action="Return" class="btn btn-success" asp-route-id="@item.LoanId">Return</a>
+                        </td>
+                    }
+                    else
+                    {
+                        <td>
+                            @Html.DisplayName(item.ReturnDate.ToShortDateString())
+                        </td>
+                    }
+                    <td>
+                        @Html.DisplayName(item.Fee.ToString("c"))
+                    </td>
+                    <td>
+                        <a class='btn-link js-delete' data-loan-id=@item.LoanId>
+                            <i class='bi bi-trash-fill' style='color: #ff4136; cursor:pointer;'></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts{
+<script src="~/js/loans.js"></script>
+}
