@@ -3,12 +3,13 @@
 
 @{
     ViewData["Title"] = "Details";
+#pragma warning disable
 }
 
 <div class="p-3">
     <div class="row pt-4">
         <div class="col-6">
-            <h2 class="text-primary">Update Details</h2>
+            <h2 class="text-primary ml-3">Update Details</h2>
         </div>
     </div>
     <div class="col-md-9">
@@ -27,7 +28,7 @@
                     <span asp-validation-for="SSN" class="text-danger"></span>
                 </div>
             </div>
-            <div class="col-md-9">
+            <div class="col-9">
                 <div class="row">
                     <table class="table table-striped table-bordered">
                         <thead class="thead-dark">
@@ -51,16 +52,16 @@
                         <tbody>
                             @foreach (var loan in Model.Loans)
                             {
-                                var copies = loan.BookCopyLoans.Where(l => l.LoanId == loan.LoanId).ToList();
 
+                                var copies = loan.BookCopyLoans.Where(l => l.LoanId == loan.LoanId).ToList();
                                 <tr>
+                                    <td>
+                                        @Html.DisplayName(loan.LoanId.ToString())
+                                    </td>
                                     @for (var i = 0; i < MaxLoan.Max; i++)
                                     {
                                         if (copies.Count() > i)
                                         {
-                                            <td>
-                                                @Html.DisplayName(@copies[i].LoanId.ToString())
-                                            </td>
                                             <td>
                                                 @Html.DisplayName(@copies[i].BookCopy.Details.Title)
                                             </td>
@@ -96,7 +97,7 @@
                     <input type="submit" value="Update" class="btn btn-primary" />
                     <button asp-action="Index" class="btn btn-outline-primary">Back to list</button>
                 </div>
-                <div class="col-4 text-right">
+                <div class="col-sm-4 text-xs-left text-sm-right">
                     <a class="btn btn-outline-primary" asp-controller="Loans" asp-action="Index">
                         <i class="bi bi-arrow-left-short"></i> &nbsp; Back to loans
                     </a>
