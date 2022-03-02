@@ -161,27 +161,51 @@ namespace Library.Infrastructure.Persistence
             );
             modelBuilder.Entity<Loan>().HasData(
                 new Loan { LoanId = 1, MemberID = 3, StartDate = new DateTime(2022, 1, 5), DueDate = new DateTime(2022, 1, 19), ReturnDate = new DateTime(2022, 1, 19), Fee = 0 },
-                new Loan { LoanId = 2, MemberID = 1, StartDate = new DateTime(2022, 1, 15), DueDate = new DateTime(2022, 1, 30), ReturnDate = new DateTime(2022, 2, 4), Fee = 10 },
-                new Loan { LoanId = 3, MemberID = 2,  StartDate = new DateTime(2022, 1, 3), DueDate = new DateTime(2022, 1, 17), ReturnDate = new DateTime(2022, 1, 16), Fee = 0 },
-                new Loan { LoanId = 4, MemberID = 2, StartDate = new DateTime(2022, 1, 30), DueDate = new DateTime(2022, 2, 14),  Fee = 2 },
-                new Loan { LoanId = 5, MemberID = 4, StartDate = new DateTime(2022, 1, 29), DueDate = new DateTime(2022, 2, 12), }
+                new Loan { LoanId = 2, MemberID = 1, StartDate = new DateTime(2022, 1, 15), DueDate = new DateTime(2022, 1, 29), ReturnDate = new DateTime(2022, 2, 4), Fee = 12 },
+                new Loan { LoanId = 3, MemberID = 2, StartDate = new DateTime(2022, 1, 3), DueDate = new DateTime(2022, 1, 17), ReturnDate = new DateTime(2022, 1, 16), Fee = 0 },
+                new Loan { LoanId = 4, MemberID = 2, StartDate = new DateTime(2022, 1, 30), DueDate = new DateTime(2022, 2, 13)},
+                new Loan { LoanId = 5, MemberID = 4, StartDate = new DateTime(2022, 1, 29), DueDate = new DateTime(2022, 2, 12)},
+                new Loan { LoanId = 6, MemberID = 5, StartDate = new DateTime(2022, 3, 2), DueDate = new DateTime(2022, 3, 16)}
             );
             modelBuilder.Entity<BookCopy>().HasData(
                 new BookCopy { BookCopyId = 1, DetailsId = 1, IsAvailable = true },
-                new BookCopy { BookCopyId = 2, DetailsId = 1, IsAvailable = true },
-                new BookCopy { BookCopyId = 3, DetailsId = 1, IsAvailable = true },
-                new BookCopy { BookCopyId = 4, DetailsId = 3, IsAvailable = true },
-                new BookCopy { BookCopyId = 5, DetailsId = 2, IsAvailable = true },
-                new BookCopy { BookCopyId = 6, DetailsId = 3, IsAvailable = true },
-                new BookCopy { BookCopyId = 7, DetailsId = 3, IsAvailable = true },
-                new BookCopy { BookCopyId = 8, DetailsId = 3, IsAvailable = true }
+                new BookCopy { BookCopyId = 2, DetailsId = 2, IsAvailable = true },
+                new BookCopy { BookCopyId = 3, DetailsId = 3, IsAvailable = true },
+                new BookCopy { BookCopyId = 4, DetailsId = 4, IsAvailable = true },
+                new BookCopy { BookCopyId = 5, DetailsId = 5, IsAvailable = true },
+                new BookCopy { BookCopyId = 6, DetailsId = 6, IsAvailable = true },
+                new BookCopy { BookCopyId = 7, DetailsId = 7, IsAvailable = true },
+                new BookCopy { BookCopyId = 9, DetailsId = 12, IsAvailable = true },
+                new BookCopy { BookCopyId = 10, DetailsId = 12, IsAvailable = true },
+                new BookCopy { BookCopyId = 11, DetailsId = 5, IsAvailable = true },
+                new BookCopy { BookCopyId = 12, DetailsId = 4, IsAvailable = true },
+                new BookCopy { BookCopyId = 13, DetailsId = 8, IsAvailable = true },
+                new BookCopy { BookCopyId = 14, DetailsId = 1, IsAvailable = true },
+                new BookCopy { BookCopyId = 15, DetailsId = 7, IsAvailable = true },
+                new BookCopy { BookCopyId = 16, DetailsId = 11, IsAvailable = true },
+                new BookCopy { BookCopyId = 17, DetailsId = 11, IsAvailable = true },
+                new BookCopy { BookCopyId = 18, DetailsId = 2, IsAvailable = true },
+                new BookCopy { BookCopyId = 19, DetailsId = 9, IsAvailable = true },
+                new BookCopy { BookCopyId = 20, DetailsId = 9, IsAvailable = true },
+                new BookCopy { BookCopyId = 21, DetailsId = 13, IsAvailable = true },
+                new BookCopy { BookCopyId = 22, DetailsId = 5, IsAvailable = true },
+                new BookCopy { BookCopyId = 24, DetailsId = 10, IsAvailable = true },
+                new BookCopy { BookCopyId = 25, DetailsId = 10, IsAvailable = true },
+                new BookCopy { BookCopyId = 26, DetailsId = 13, IsAvailable = true },
+                new BookCopy { BookCopyId = 27, DetailsId = 13, IsAvailable = true }
             );
             modelBuilder.Entity<BookCopyLoan>().HasData(
+                new BookCopyLoan { BookCopyId = 4, LoanId = 1 },
                 new BookCopyLoan { BookCopyId = 1, LoanId = 2 },
                 new BookCopyLoan { BookCopyId = 2, LoanId = 3 },
                 new BookCopyLoan { BookCopyId = 3, LoanId = 4 },
-                new BookCopyLoan { BookCopyId = 4, LoanId = 1 },
-                new BookCopyLoan { BookCopyId = 5, LoanId = 5 }
+                new BookCopyLoan { BookCopyId = 5, LoanId = 5 },
+                new BookCopyLoan { BookCopyId = 6, LoanId = 6 },
+                new BookCopyLoan { BookCopyId = 1, LoanId = 5 },
+                new BookCopyLoan { BookCopyId = 2, LoanId = 5 },
+                new BookCopyLoan { BookCopyId = 3, LoanId = 1 },
+                new BookCopyLoan { BookCopyId = 12, LoanId =1 },
+                new BookCopyLoan { BookCopyId = 7, LoanId = 2 }
             );
         }
 
