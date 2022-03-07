@@ -1,8 +1,8 @@
-﻿using Library.Domain;
+﻿using Library.Application.Interfaces;
+using Library.Domain;
 using Library.Infrastructure.Persistence;
-using Library.Application.Interfaces;
-using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Library.Infrastructure.Services
 {

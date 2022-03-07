@@ -3,6 +3,6 @@
     public class BookStatus
     {
         // Max books to borrow
-        public const int Max = 9; 
+        public const int Max = 9;
     }
 }

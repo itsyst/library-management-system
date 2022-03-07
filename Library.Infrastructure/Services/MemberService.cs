@@ -2,7 +2,6 @@
 using Library.Domain;
 using Library.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace Library.Infrastructure.Services

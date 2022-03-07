@@ -1,5 +1,4 @@
 ﻿using Library.Domain;
-using Library.Domain.Utilities;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -25,8 +24,8 @@ namespace Library.MVC.ViewModels
 
 
         [ValidateNever]
-        public BookCopy? BookCopy { get; set; }       
- 
+        public BookCopy? BookCopy { get; set; }
+
         [ValidateNever]
         public IEnumerable<SelectListItem>? Copies { get; set; }
 

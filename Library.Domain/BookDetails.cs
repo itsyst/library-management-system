@@ -7,8 +7,8 @@ namespace Library.Domain
         public int ID { get; set; }
         public string ISBN { get; set; } = "0000000000000";
         public string Title { get; set; } = string.Empty;
-        
-        [Display(Name="Author")]
+
+        [Display(Name = "Author")]
         public int AuthorID { get; set; }
         public Author? Author { get; set; }
         public string Description { get; set; } = string.Empty;

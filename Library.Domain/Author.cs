@@ -6,7 +6,7 @@ namespace Library.Domain
     {
         public int Id { get; set; }
 
-        [Display(Name="Full Name")]
+        [Display(Name = "Full Name")]
         [MaxLength(30)]
         [Required]
         public string Name { get; set; } = string.Empty;

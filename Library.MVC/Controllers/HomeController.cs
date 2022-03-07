@@ -1,7 +1,7 @@
-﻿using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
+﻿using Library.Application.Interfaces;
 using Library.MVC.Models;
-using Library.Application.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace Library.MVC.Controllers
 {

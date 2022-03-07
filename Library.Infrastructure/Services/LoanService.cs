@@ -1,13 +1,13 @@
-﻿using Library.Domain;
+﻿using Library.Application.Interfaces;
+using Library.Domain;
 using Library.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Library.Application.Interfaces;
 using System.Linq.Expressions;
 
 namespace Library.Infrastructure.Services
 {
 #nullable disable
-    public class LoanService : BaseService<Loan> , ILoanService
+    public class LoanService : BaseService<Loan>, ILoanService
     {
         public LoanService(ApplicationDbContext context) : base(context)
         {

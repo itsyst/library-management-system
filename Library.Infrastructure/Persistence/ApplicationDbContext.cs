@@ -161,11 +161,11 @@ namespace Library.Infrastructure.Persistence
             );
             modelBuilder.Entity<Loan>().HasData(
                 new Loan { LoanId = 1, MemberID = 3, StartDate = new DateTime(2022, 1, 5), DueDate = new DateTime(2022, 1, 19), ReturnDate = new DateTime(2022, 1, 19), Fee = 0 },
-                new Loan { LoanId = 2, MemberID = 1, StartDate = new DateTime(2022, 1, 19), DueDate = new DateTime(2022, 2, 2), ReturnDate = new DateTime(2022, 2, 6), Fee = 24},
+                new Loan { LoanId = 2, MemberID = 1, StartDate = new DateTime(2022, 1, 19), DueDate = new DateTime(2022, 2, 2), ReturnDate = new DateTime(2022, 2, 6), Fee = 24 },
                 new Loan { LoanId = 3, MemberID = 2, StartDate = new DateTime(2022, 1, 3), DueDate = new DateTime(2022, 1, 17), ReturnDate = new DateTime(2022, 1, 16), Fee = 0 },
-                new Loan { LoanId = 4, MemberID = 2, StartDate = new DateTime(2022, 1, 30), DueDate = new DateTime(2022, 2, 13)},
-                new Loan { LoanId = 5, MemberID = 4, StartDate = new DateTime(2022, 1, 29), DueDate = new DateTime(2022, 2, 12)},
-                new Loan { LoanId = 6, MemberID = 5, StartDate = new DateTime(2022, 3, 2), DueDate = new DateTime(2022, 3, 16)}
+                new Loan { LoanId = 4, MemberID = 2, StartDate = new DateTime(2022, 1, 30), DueDate = new DateTime(2022, 2, 13) },
+                new Loan { LoanId = 5, MemberID = 4, StartDate = new DateTime(2022, 1, 29), DueDate = new DateTime(2022, 2, 12) },
+                new Loan { LoanId = 6, MemberID = 5, StartDate = new DateTime(2022, 3, 2), DueDate = new DateTime(2022, 3, 16) }
             );
             modelBuilder.Entity<BookCopy>().HasData(
                 new BookCopy { BookCopyId = 1, DetailsId = 1, IsAvailable = true },
@@ -202,7 +202,7 @@ namespace Library.Infrastructure.Persistence
                 new BookCopyLoan { BookCopyId = 6, LoanId = 6 },
                 new BookCopyLoan { BookCopyId = 2, LoanId = 5 },
                 new BookCopyLoan { BookCopyId = 3, LoanId = 1 },
-                new BookCopyLoan { BookCopyId = 12, LoanId =1 },
+                new BookCopyLoan { BookCopyId = 12, LoanId = 1 },
                 new BookCopyLoan { BookCopyId = 7, LoanId = 2 }
             );
         }

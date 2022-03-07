@@ -1,8 +1,8 @@
 ﻿using Library.Application.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using System.Data.Common;
 using Library.Domain;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Data.Common;
 
 namespace Library.MVC.Controllers
 {

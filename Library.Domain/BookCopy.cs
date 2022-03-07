@@ -5,7 +5,7 @@ namespace Library.Domain
 {
     public class BookCopy
     {
-        [Display(Name="Book Copy")]
+        [Display(Name = "Book Copy")]
         public int BookCopyId { get; set; }
 
         public int DetailsId { get; set; }

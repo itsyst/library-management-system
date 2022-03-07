@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Library.Application.Interfaces;
 using Library.Domain;
-using Library.Application.Interfaces;
-using System.Data.Common;
 using Library.MVC.ViewModels;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Data.Common;
 
 namespace Library.MVC.Controllers
 {
@@ -339,7 +339,7 @@ namespace Library.MVC.Controllers
                 {
                     return Json(new { error = true, message = "You can not delete this book as long it has loans refering to it (check loans)!" });
                 }
-       
+
             }
             else
             {
