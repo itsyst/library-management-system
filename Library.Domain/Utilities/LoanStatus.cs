@@ -1,7 +1,8 @@
 ﻿namespace Library.Domain.Utilities
 {
-    public class MaxLoan
+    public class LoanStatus
     {
+        // Max bookcoppies per loan
         public const int Max = 3;
     }
 }
