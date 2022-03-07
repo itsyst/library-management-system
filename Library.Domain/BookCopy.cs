@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel.DataAnnotations;
 
 namespace Library.Domain
 {
     public class BookCopy
     {
+        [Display(Name="Book Copy")]
         public int BookCopyId { get; set; }
 
         public int DetailsId { get; set; }
