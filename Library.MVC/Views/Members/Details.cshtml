@@ -36,7 +36,7 @@
                             {
                                 <tr class="bg-light">
                                     <th>@Html.DisplayName("Loan №")</th>
-                                    @for (var i = 1; i <= MaxLoan.Max; i++)
+                                    @for (var i = 1; i <= LoanStatus.Max; i++)
                                     {
                                         <th>@Html.DisplayName("Title" + i.ToString())</th>
                                     }
@@ -58,7 +58,7 @@
                                     <td>
                                         @Html.DisplayName(loan.LoanId.ToString())
                                     </td>
-                                    @for (var i = 0; i < MaxLoan.Max; i++)
+                                    @for (var i = 0; i < LoanStatus.Max; i++)
                                     {
                                         if (copies.Count() > i)
                                         {
