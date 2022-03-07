@@ -1,28 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Library.MVC.Models;
-using Library.Domain;
+using Library.Application.Interfaces;
 
 namespace Library.MVC.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
+        private readonly IBookService _bookService;
+        public HomeController(IBookService bookService, ILogger<HomeController> logger)
         {
+            _bookService = bookService;
             _logger = logger;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var book = new BookDetails();
-            return View(book);
+            var books = await _bookService.GetAllBookDetailsAsync(filter: null, orderBy: null, a => a.Author, c => c.Copies);
+
+            return View(books);
         }
 
         public IActionResult Privacy()
