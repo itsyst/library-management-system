@@ -4,6 +4,7 @@ using Library.Domain.Utilities;
 using Library.MVC.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Data.Common;
 
 namespace Library.MVC.Controllers
 {
@@ -93,6 +94,39 @@ namespace Library.MVC.Controllers
 
 
             return View(model);
+        }
+
+        public async Task<IActionResult> Return(int id)
+        {
+            if (id == 0)
+                return NotFound();
+
+            try
+            {
+                IReadOnlyList<BookCopyLoan> BookCopyLoans = await _bookCopyLoanService.GetAllBookCopyLoansAsync(x => x.LoanId == id);
+
+                foreach (var bookCopy in BookCopyLoans)
+                {
+                    BookCopy copy = await _bookCopyService.GetByIdAsync(bookCopy.BookCopyId);
+                    copy.IsAvailable = true;
+                    await _bookCopyService.UpdateAsync(copy);
+                }
+
+                Loan loanToBeUpdated = await _loanService.GetByIdAsync(id);
+                loanToBeUpdated.Fee = loanToBeUpdated.SetFee(BookCopyLoans.Count);
+                loanToBeUpdated.SetReturnDate();
+ 
+                await _loanService.UpdateAsync(loanToBeUpdated);
+
+                TempData["Success"] = "Books returned successfully.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbException)
+            {
+                TempData["Error"] = "Something went wrong.";
+                return View();
+            }
+
         }
 
         #region API CALLS
