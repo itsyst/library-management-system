@@ -1,47 +1,102 @@
-﻿@model Library.MVC.Models.LoanCreateVm;
+﻿@using Library.Domain.Utilities
+@model Library.MVC.ViewModels.LoanViewModel;
 
 @{
     ViewData["Title"] = "Create";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+#pragma warning disable
 }
 
-<h1>Create</h1>
-
-
-
-
-<h4>Loan details</h4>
+<h1 class="text-primary mx-2">Create Loan</h1>
 <hr />
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
+    <div class="col-md-6">
+        <form asp-action="Create" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="SelectListMemberId" class="control-label"></label>
-            @Html.DropDownListFor(m => m.MemberId, Model.SelectListMemberId, "Choose a member ID")  
+            <div class="form-group  mb-3 col-12">
+                <label class="control-label">Member Name</label>
+                <select asp-for="Member.Id" class="form-control">
+                    <option class="form-control" disabled selected>--Select Member--</option>
+                    @if (Model.Members.Count() != 0)
+                    { @foreach (var item in @Model.Members)
+                        {
+                            <option id="member-item" data-member-id=@item.Value>@item.Text</option>
+                        }
+                    }
+                </select>
+                <span asp-validation-for="BookCopy.BookCopyId" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="SelectListBookCopy1" class="control-label"></label>
-                @Html.DropDownListFor(m => m.BookCopyID1, Model.SelectListBookCopy1,"Choose bookcopy")
-            </div>
-            <div class="form-group">
-                <label asp-for="SelectListBookCopy2" class="control-label"></label>
-                @Html.DropDownListFor(m => m.BookCopyID2, Model.SelectListBookCopy2,"Choose bookcopy")
-            </div>
-            <div class="form-group">
-                <label asp-for="SelectListBookCopy3" class="control-label"></label>
-                @Html.DropDownListFor(m => m.BookCopyID3, Model.SelectListBookCopy3, "Choose bookcopy")
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" /> |
-                    <a asp-action="Index" class="btn btn-outline-primary">Back to List</a>
+            @for (var i = 1; i <= LoanStatus.Max; i++)
+            {
+                <div class="form-group  mb-3 col-12">
+                    <label class="control-label"> Copy № (@(i)) </label>
+                    <select id=book-copy-@(i) class="form-control">
+                        <option class="form-control" disabled selected>--Select Book Copy--</option>
+                        @if (Model.Copies.Count() != 0)
+                        { @foreach (var item in @Model.Copies)
+                            {
+                                <option id="copy-item" data-copy-id=@item.Value>@item.Text</option>
+                            }
+                        }
+                    </select>
+                    <span asp-validation-for="BookCopy.BookCopyId" class="text-danger"></span>
+                </div>
+            }
+            <div class="form-group  mt-3  mx-3">
+                <input type="submit" value="Create" class="btn btn-primary js-create" />
+                <a asp-action="Index" class="btn btn-outline-primary">Back to List</a>
             </div>
         </form>
     </div>
 </div>
 
-
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
+}
+<script>
+   $(document).ready(function(){
+        var send = false;
+        var items  = [];
+        var member = 0;
+
+        $(`#Member_Id`).change(function(){
+            member = $(this).find(':selected')[0].attributes["data-member-id"].value;
+        });
+
+        for(var i=1; i<=@LoanStatus.Max; i++){
+            $(`#book-copy-${i}`).each(function(){
+                $(`#book-copy-${i}`).change(function(){
+                    // Avoide using the same bookc copy id more than ones
+                    var selection = $(this).find(':selected')[0].attributes["data-copy-id"].value;
+                    items.push(selection);
+
+                    $(`select`).children(`option[data-copy-id=${selection}]`).hide();
+                })
+            })
+        }
+
+        $(".js-create").on('click', function(e){
+            e.preventDefault();
+            send = true;
+
+            if(items.length >= @LoanStatus.Max && send) {
+                $.ajax({
+                    type: 'POST',
+                    url: "@Url.Action("Create","Loans")",
+                    dataType: 'json',
+                    traditional: true,
+                    data: { ids: items , id:  member},
+                    success: function (data) {
+                        if (data.success) {
+                            window.location.replace('/Loans/Index');
+                            toastr.success(data.message);
+                        }else{
+                            toastr.warning(data.message, {timeOut: 10000});
+                        }
+                    }
+                });
+            }
+        });
+    })
+</script>
 }
