@@ -1,5 +1,5 @@
 ﻿$(document).ready(function () {
-        loadData();
+    loadData();
 });
 
 function loadData() {
@@ -22,10 +22,10 @@ function loadData() {
                         if (data) {
                             if (data.success) {
                                 window.location.reload();
-                                toastr.success(data.message);
+                                toastr.success(data.message, { timeOut: 10000 });
                             }
                             else {
-                                toastr.error(data.message);
+                                toastr.error(data.message, { timeOut: 10000 });
                             }
                         }
                     }
