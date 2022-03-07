@@ -68,5 +68,11 @@ namespace Library.Infrastructure.Services
                 return query.FirstOrDefault();
             }
         }
+        
+        public void RemoveRange(IEnumerable<BookCopyLoan> entities)
+        {
+            _table.RemoveRange(entities);
+        }
+
     }
 }
