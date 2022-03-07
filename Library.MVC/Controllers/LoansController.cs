@@ -47,7 +47,7 @@ namespace Library.MVC.Controllers
                     model.Loans = await _loanService.GetAllLoansAsync(filter: x => x.ReturnDate == DateTime.MinValue, orderBy: null, l => l.Member, l => l.BookCopyLoans);
                     break;
                 default:
-                    model.Loans = await _loanService.GetAllLoansAsync(filter: null, orderBy: x=>x.OrderByDescending(x=>x.LoanId), l => l.Member, l => l.BookCopyLoans);
+                    model.Loans = await _loanService.GetAllLoansAsync(filter: null, orderBy: x => x.OrderByDescending(x => x.LoanId), l => l.Member, l => l.BookCopyLoans);
                     break;
             }
 
@@ -115,7 +115,7 @@ namespace Library.MVC.Controllers
                 Loan loanToBeUpdated = await _loanService.GetByIdAsync(id);
                 loanToBeUpdated.Fee = loanToBeUpdated.SetFee(BookCopyLoans.Count);
                 loanToBeUpdated.SetReturnDate();
- 
+
                 await _loanService.UpdateAsync(loanToBeUpdated);
 
                 TempData["Success"] = "Books returned successfully.";
@@ -223,6 +223,38 @@ namespace Library.MVC.Controllers
             }
 
             return Json(new { error = true, message = "An unexpected error occurred!" });
+        }
+
+        [HttpDelete]
+        public async Task<IActionResult> Delete(int id)
+        {
+            if (id != 0)
+            {
+                try
+                {
+
+                    // Before have to set bookcopies availability to true.
+                    IReadOnlyList<BookCopyLoan> BookCopyLoans = await _bookCopyLoanService.GetAllBookCopyLoansAsync(x => x.LoanId == id);
+
+                    foreach (var bookCopy in BookCopyLoans)
+                    {
+                        BookCopy copy = await _bookCopyService.GetByIdAsync(bookCopy.BookCopyId);
+                        copy.IsAvailable = true;
+                        await _bookCopyService.UpdateAsync(copy);
+                    }
+
+                    // Then we proceed thid action we have to clean the BookCopyLoans attached to this loan ID.
+                    _bookCopyLoanService.RemoveRange(BookCopyLoans);
+                    await _loanService.DeleteAsync(id);
+
+                    return Json(new { success = true, message = "Loan deleted successfully." });
+                }
+                catch (Exception)
+                {
+                    return Json(new { error = true, message = "Something went wrong." });
+                }
+            }
+            return Json(new { error = true, message = "An unexpected error occurred." });
         }
         #endregion
     }
