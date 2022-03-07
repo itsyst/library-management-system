@@ -29,10 +29,6 @@
         </div>
         <div class="row">
             <ul class="list-group list-group-horizontal-sm col-12">
-                @*                <li class="btn-group btn-group-toggle">
-                    @Html.ActionLink("Active loans", "Index", "Loans", new {status}, new { @class = "btn btn-outline-secondary mt-2 mt-sm-0 py-2 px-3 align-middle " + @isActive})  @Html.ActionLink("Show all", "Index", "Loans", new { status }, new { @class = "btn btn-outline-secondary mt-2 mt-sm-0 py-2 px-3 align-middle " + @all })
-                    </li>*@
-
                 <li class="btn-group btn-group-toggle">
                     <a style="text-decoration:none;" class="books-button btn btn-outline-secondary mt-2 mt-sm-0 py-2 px-3 @isActive" asp-controller="Loans" asp-action"Index" asp-route-satatus="isActive">
                         <span>Active loans</span>
