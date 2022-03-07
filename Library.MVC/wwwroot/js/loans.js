@@ -17,7 +17,7 @@ function loadData() {
             if (result.isConfirmed) {
                 $.ajax({
                     url: "/loans/delete/" + button.attr("data-loan-id"),
-                    type: 'POST',
+                    type: 'DELETE',
                     success: function (data) {
                         if (data) {
                             if (data.success) {
