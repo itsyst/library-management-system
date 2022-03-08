@@ -68,6 +68,7 @@
                 $(`#book-copy-${i}`).change(function(){
                     // Avoide using the same bookc copy id more than ones
                     var selection = $(this).find(':selected')[0].attributes["data-copy-id"].value;
+
                     items.push(selection);
 
                     $(`select`).children(`option[data-copy-id=${selection}]`).hide();
@@ -78,8 +79,9 @@
         $(".js-create").on('click', function(e){
             e.preventDefault();
             send = true;
-
-            if(items.length >= @LoanStatus.Max && send) {
+            //TODO
+            items = items.filter((item,idx) => idx < 3)
+            if(items.length <= @LoanStatus.Max && send) {
                 $.ajax({
                     type: 'POST',
                     url: "@Url.Action("Create","Loans")",
