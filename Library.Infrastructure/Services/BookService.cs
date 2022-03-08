@@ -51,7 +51,7 @@ namespace Library.Infrastructure.Services
                     }
                 }
 
-                return await query.FirstAsync();
+                return query.FirstOrDefault();
             }
             else
             {
@@ -66,7 +66,7 @@ namespace Library.Infrastructure.Services
                     }
                 }
 
-                return await query.FirstAsync();
+                return query.FirstOrDefault();
             }
         }
     }
