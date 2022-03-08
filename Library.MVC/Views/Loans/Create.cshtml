@@ -80,7 +80,7 @@
             e.preventDefault();
             send = true;
             //TODO
-            items = items.filter((item,idx) => idx < 3)
+            items = items.slice(0, @LoanStatus.Max);
             if(items.length <= @LoanStatus.Max && send) {
                 $.ajax({
                     type: 'POST',
