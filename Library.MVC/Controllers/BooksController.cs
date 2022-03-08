@@ -324,7 +324,7 @@ namespace Library.MVC.Controllers
                         bookCopiesTobeDeleted.Add(bookCopy);
                 }
 
-                if (bookCopiesTobeDeleted.Count > 0)
+                if (bookCopiesTobeDeleted.Count >= 0)
                 {
                     // delete book copies
                     _bookCopyService.RemoveRange(bookCopiesTobeDeleted);
