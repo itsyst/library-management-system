@@ -1,20 +1,25 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace Library.Infrastructure.Migrations
 {
+    /// <inheritdoc />
     public partial class Initial : Migration
     {
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
                 name: "Authors",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(55)", maxLength: 55, nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 55, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -25,10 +30,10 @@ namespace Library.Infrastructure.Migrations
                 name: "Members",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    SSN = table.Column<string>(type: "nvarchar(13)", maxLength: 13, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    SSN = table.Column<string>(type: "TEXT", maxLength: 13, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -39,12 +44,12 @@ namespace Library.Infrastructure.Migrations
                 name: "BookDetails",
                 columns: table => new
                 {
-                    ID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ISBN = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AuthorID = table.Column<int>(type: "int", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    ID = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    ISBN = table.Column<string>(type: "TEXT", nullable: false),
+                    Title = table.Column<string>(type: "TEXT", nullable: false),
+                    AuthorID = table.Column<int>(type: "INTEGER", nullable: false),
+                    Description = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -61,13 +66,13 @@ namespace Library.Infrastructure.Migrations
                 name: "Loans",
                 columns: table => new
                 {
-                    LoanId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ReturnDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DueDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Fee = table.Column<int>(type: "int", nullable: false),
-                    MemberID = table.Column<int>(type: "int", nullable: false)
+                    LoanId = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    StartDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    ReturnDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    DueDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Fee = table.Column<double>(type: "REAL", nullable: false),
+                    MemberID = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -84,10 +89,10 @@ namespace Library.Infrastructure.Migrations
                 name: "BookCopies",
                 columns: table => new
                 {
-                    BookCopyId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    DetailsId = table.Column<int>(type: "int", nullable: false),
-                    IsAvailable = table.Column<bool>(type: "bit", nullable: false)
+                    BookCopyId = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    DetailsId = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsAvailable = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -104,8 +109,8 @@ namespace Library.Infrastructure.Migrations
                 name: "BookCopyLoans",
                 columns: table => new
                 {
-                    BookCopyId = table.Column<int>(type: "int", nullable: false),
-                    LoanId = table.Column<int>(type: "int", nullable: false)
+                    BookCopyId = table.Column<int>(type: "INTEGER", nullable: false),
+                    LoanId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -181,10 +186,12 @@ namespace Library.Infrastructure.Migrations
                 columns: new[] { "LoanId", "DueDate", "Fee", "MemberID", "ReturnDate", "StartDate" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2022, 3, 11, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3054), 0, 3, new DateTime(2020, 5, 4, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2022, 2, 25, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3003) },
-                    { 2, new DateTime(2020, 1, 19, 0, 0, 0, 0, DateTimeKind.Unspecified), 0, 1, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2020, 1, 5, 0, 0, 0, 0, DateTimeKind.Unspecified) },
-                    { 3, new DateTime(2020, 1, 17, 0, 0, 0, 0, DateTimeKind.Unspecified), 0, 2, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2020, 1, 3, 0, 0, 0, 0, DateTimeKind.Unspecified) },
-                    { 4, new DateTime(2022, 3, 11, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3070), 0, 2, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2022, 2, 25, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3068) }
+                    { 1, new DateTime(2022, 1, 19, 0, 0, 0, 0, DateTimeKind.Unspecified), 0.0, 3, new DateTime(2022, 1, 19, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2022, 1, 5, 0, 0, 0, 0, DateTimeKind.Unspecified) },
+                    { 2, new DateTime(2022, 2, 2, 0, 0, 0, 0, DateTimeKind.Unspecified), 24.0, 1, new DateTime(2022, 2, 6, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2022, 1, 19, 0, 0, 0, 0, DateTimeKind.Unspecified) },
+                    { 3, new DateTime(2022, 1, 17, 0, 0, 0, 0, DateTimeKind.Unspecified), 0.0, 2, new DateTime(2022, 1, 16, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2022, 1, 3, 0, 0, 0, 0, DateTimeKind.Unspecified) },
+                    { 4, new DateTime(2022, 2, 13, 0, 0, 0, 0, DateTimeKind.Unspecified), 0.0, 2, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2022, 1, 30, 0, 0, 0, 0, DateTimeKind.Unspecified) },
+                    { 5, new DateTime(2022, 2, 12, 0, 0, 0, 0, DateTimeKind.Unspecified), 0.0, 4, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2022, 1, 29, 0, 0, 0, 0, DateTimeKind.Unspecified) },
+                    { 6, new DateTime(2022, 3, 16, 0, 0, 0, 0, DateTimeKind.Unspecified), 0.0, 5, new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new DateTime(2022, 3, 2, 0, 0, 0, 0, DateTimeKind.Unspecified) }
                 });
 
             migrationBuilder.InsertData(
@@ -193,13 +200,30 @@ namespace Library.Infrastructure.Migrations
                 values: new object[,]
                 {
                     { 1, 1, true },
-                    { 2, 1, true },
-                    { 3, 1, true },
-                    { 4, 3, true },
-                    { 5, 2, true },
-                    { 6, 3, true },
-                    { 7, 3, true },
-                    { 8, 3, true }
+                    { 2, 2, false },
+                    { 3, 3, false },
+                    { 4, 4, true },
+                    { 5, 5, true },
+                    { 6, 6, false },
+                    { 7, 7, true },
+                    { 9, 12, true },
+                    { 10, 12, true },
+                    { 11, 5, true },
+                    { 12, 4, true },
+                    { 13, 8, true },
+                    { 14, 1, true },
+                    { 15, 7, true },
+                    { 16, 11, true },
+                    { 17, 11, true },
+                    { 18, 2, true },
+                    { 19, 9, true },
+                    { 20, 9, true },
+                    { 21, 13, true },
+                    { 22, 5, true },
+                    { 24, 10, true },
+                    { 25, 10, true },
+                    { 26, 13, true },
+                    { 27, 13, true }
                 });
 
             migrationBuilder.InsertData(
@@ -209,8 +233,13 @@ namespace Library.Infrastructure.Migrations
                 {
                     { 1, 2 },
                     { 2, 3 },
+                    { 2, 5 },
+                    { 3, 1 },
                     { 3, 4 },
-                    { 4, 1 }
+                    { 4, 1 },
+                    { 6, 6 },
+                    { 7, 2 },
+                    { 12, 1 }
                 });
 
             migrationBuilder.CreateIndex(
@@ -234,6 +263,7 @@ namespace Library.Infrastructure.Migrations
                 column: "MemberID");
         }
 
+        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(

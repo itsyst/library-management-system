@@ -3,7 +3,6 @@ using System;
 using Library.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -12,30 +11,25 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Library.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20220225162223_Initial")]
+    [Migration("20230831214707_Initial")]
     partial class Initial
     {
+        /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.2")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
-
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
+            modelBuilder.HasAnnotation("ProductVersion", "7.0.10");
 
             modelBuilder.Entity("Library.Domain.Author", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(55)
-                        .HasColumnType("nvarchar(55)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -113,15 +107,13 @@ namespace Library.Infrastructure.Migrations
                 {
                     b.Property<int>("BookCopyId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BookCopyId"), 1L, 1);
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("DetailsId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsAvailable")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("BookCopyId");
 
@@ -139,43 +131,145 @@ namespace Library.Infrastructure.Migrations
                         new
                         {
                             BookCopyId = 2,
-                            DetailsId = 1,
-                            IsAvailable = true
+                            DetailsId = 2,
+                            IsAvailable = false
                         },
                         new
                         {
                             BookCopyId = 3,
-                            DetailsId = 1,
-                            IsAvailable = true
+                            DetailsId = 3,
+                            IsAvailable = false
                         },
                         new
                         {
                             BookCopyId = 4,
-                            DetailsId = 3,
+                            DetailsId = 4,
                             IsAvailable = true
                         },
                         new
                         {
                             BookCopyId = 5,
-                            DetailsId = 2,
+                            DetailsId = 5,
                             IsAvailable = true
                         },
                         new
                         {
                             BookCopyId = 6,
-                            DetailsId = 3,
-                            IsAvailable = true
+                            DetailsId = 6,
+                            IsAvailable = false
                         },
                         new
                         {
                             BookCopyId = 7,
-                            DetailsId = 3,
+                            DetailsId = 7,
                             IsAvailable = true
                         },
                         new
                         {
-                            BookCopyId = 8,
-                            DetailsId = 3,
+                            BookCopyId = 9,
+                            DetailsId = 12,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 10,
+                            DetailsId = 12,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 11,
+                            DetailsId = 5,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 12,
+                            DetailsId = 4,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 13,
+                            DetailsId = 8,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 14,
+                            DetailsId = 1,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 15,
+                            DetailsId = 7,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 16,
+                            DetailsId = 11,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 17,
+                            DetailsId = 11,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 18,
+                            DetailsId = 2,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 19,
+                            DetailsId = 9,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 20,
+                            DetailsId = 9,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 21,
+                            DetailsId = 13,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 22,
+                            DetailsId = 5,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 24,
+                            DetailsId = 10,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 25,
+                            DetailsId = 10,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 26,
+                            DetailsId = 13,
+                            IsAvailable = true
+                        },
+                        new
+                        {
+                            BookCopyId = 27,
+                            DetailsId = 13,
                             IsAvailable = true
                         });
                 });
@@ -183,10 +277,10 @@ namespace Library.Infrastructure.Migrations
             modelBuilder.Entity("Library.Domain.BookCopyLoan", b =>
                 {
                     b.Property<int>("BookCopyId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("LoanId")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("BookCopyId", "LoanId");
 
@@ -195,6 +289,11 @@ namespace Library.Infrastructure.Migrations
                     b.ToTable("BookCopyLoans");
 
                     b.HasData(
+                        new
+                        {
+                            BookCopyId = 4,
+                            LoanId = 1
+                        },
                         new
                         {
                             BookCopyId = 1,
@@ -212,8 +311,28 @@ namespace Library.Infrastructure.Migrations
                         },
                         new
                         {
-                            BookCopyId = 4,
+                            BookCopyId = 6,
+                            LoanId = 6
+                        },
+                        new
+                        {
+                            BookCopyId = 2,
+                            LoanId = 5
+                        },
+                        new
+                        {
+                            BookCopyId = 3,
                             LoanId = 1
+                        },
+                        new
+                        {
+                            BookCopyId = 12,
+                            LoanId = 1
+                        },
+                        new
+                        {
+                            BookCopyId = 7,
+                            LoanId = 2
                         });
                 });
 
@@ -221,24 +340,22 @@ namespace Library.Infrastructure.Migrations
                 {
                     b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"), 1L, 1);
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("AuthorID")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ISBN")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("ID");
 
@@ -357,24 +474,22 @@ namespace Library.Infrastructure.Migrations
                 {
                     b.Property<int>("LoanId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LoanId"), 1L, 1);
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DueDate")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("Fee")
-                        .HasColumnType("int");
+                    b.Property<double>("Fee")
+                        .HasColumnType("REAL");
 
                     b.Property<int>("MemberID")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("ReturnDate")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("StartDate")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("LoanId");
 
@@ -386,38 +501,56 @@ namespace Library.Infrastructure.Migrations
                         new
                         {
                             LoanId = 1,
-                            DueDate = new DateTime(2022, 3, 11, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3054),
-                            Fee = 0,
+                            DueDate = new DateTime(2022, 1, 19, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Fee = 0.0,
                             MemberID = 3,
-                            ReturnDate = new DateTime(2020, 5, 4, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            StartDate = new DateTime(2022, 2, 25, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3003)
+                            ReturnDate = new DateTime(2022, 1, 19, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            StartDate = new DateTime(2022, 1, 5, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             LoanId = 2,
-                            DueDate = new DateTime(2020, 1, 19, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Fee = 0,
+                            DueDate = new DateTime(2022, 2, 2, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Fee = 24.0,
                             MemberID = 1,
-                            ReturnDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            StartDate = new DateTime(2020, 1, 5, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            ReturnDate = new DateTime(2022, 2, 6, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            StartDate = new DateTime(2022, 1, 19, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             LoanId = 3,
-                            DueDate = new DateTime(2020, 1, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Fee = 0,
+                            DueDate = new DateTime(2022, 1, 17, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Fee = 0.0,
                             MemberID = 2,
-                            ReturnDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            StartDate = new DateTime(2020, 1, 3, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                            ReturnDate = new DateTime(2022, 1, 16, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            StartDate = new DateTime(2022, 1, 3, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
                             LoanId = 4,
-                            DueDate = new DateTime(2022, 3, 11, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3070),
-                            Fee = 0,
+                            DueDate = new DateTime(2022, 2, 13, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Fee = 0.0,
                             MemberID = 2,
                             ReturnDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            StartDate = new DateTime(2022, 2, 25, 17, 22, 22, 998, DateTimeKind.Local).AddTicks(3068)
+                            StartDate = new DateTime(2022, 1, 30, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            LoanId = 5,
+                            DueDate = new DateTime(2022, 2, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Fee = 0.0,
+                            MemberID = 4,
+                            ReturnDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            StartDate = new DateTime(2022, 1, 29, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
+                            LoanId = 6,
+                            DueDate = new DateTime(2022, 3, 16, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Fee = 0.0,
+                            MemberID = 5,
+                            ReturnDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            StartDate = new DateTime(2022, 3, 2, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
                 });
 
@@ -425,19 +558,17 @@ namespace Library.Infrastructure.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("SSN")
                         .IsRequired()
                         .HasMaxLength(13)
-                        .HasColumnType("nvarchar(13)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
