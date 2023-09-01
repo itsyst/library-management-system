@@ -1,0 +1,33 @@
+version: '3.4'
+
+networks:
+  dev:
+   driver: bridge
+
+services:
+  library-mvc:
+   image: docker.io/library/library-mvc
+   links:
+     - "app_db"
+   depends_on:
+    - "app_db"
+   container_name: library-services
+   ports:
+     - "8080:5000"
+   build:
+    context: .
+    dockerfile: Dockerfile
+   networks:
+     - dev 
+ 
+#   app_db:
+#     image: nouchka/sqlite3
+#     container_name: app_db
+#     restart: always
+#     volumes:
+#       - app_data:/src/Library.MVC/app.db"  
+#     networks:
+#      - dev 
+
+# volumes:
+#   app_data:
