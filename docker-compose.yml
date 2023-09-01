@@ -6,7 +6,7 @@ networks:
 
 services:
   library-mvc:
-   image: ghcr.io/library/library-mvc:latest
+   image: docker.io/library/library-mvc 
    container_name: library-mvc
    ports:
      - "8080:5000"
