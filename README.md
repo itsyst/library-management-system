@@ -18,7 +18,7 @@ Build a complete e-commerce application ASP.NET Core  MVC  .NET 6
 ## Layout
  
 <a href="https://github.com/itsyst/Library-Management-System">
-  <img alt="logo" src="https://res.cloudinary.com/dzltxlm9l/image/upload/v1602522172/small_projects_4_uqjpyz_b0f0e9df8f.png" width="500"  />
+  <img alt="logo" src="https://res.cloudinary.com/itsyst/image/upload/v1694675467/library-management-system.webp" width="500"  />
 </a>
 
 ## Here is a quick check list you could follow to migrate your application from .Net 3.1 to .Net 6
