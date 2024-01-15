@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Library.Domain
 {
@@ -15,7 +13,7 @@ namespace Library.Domain
         public Author? Author { get; set; }
         public string Description { get; set; } = string.Empty;
 
-        public string? ImageBinary { get; set; }  
+        public string? ImageBinary { get; set; }
 
         [Range(0, 1000, ErrorMessage = "Value for {0} must be between {1} and {2}.")]
         public ICollection<BookCopy> Copies { get; set; }
