@@ -101,3 +101,20 @@ a.books-button:hover {
 a.books-button > span:hover {
     color: #ffff !important;
 }
+
+
+/* Card and image styles
+-------------------------------------------------- */
+
+.embed-responsive-item {
+    height: 150% !important;
+}
+
+.card-body {
+    position: relative !important;
+    background: #ffffff !important;
+}
+
+.card a {
+    text-decoration: none !important;
+}

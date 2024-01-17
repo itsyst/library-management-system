@@ -9,23 +9,23 @@
     {
         <div class="col-lg-3 col-md-6">
             <div class="row p-2">
-                <div class="col-12 p-1" style=" border:1px solid #212529; border-radius: 5px;">
+                <div class="col-12 p-1" style="border-radius: 5px;">
                     <div class="card">
-                        <a asp-controller="Books" asp-action="edit" class="  embed-responsive embed-responsive-1by1"
+                        <a asp-controller="Books" asp-action="edit" class="embed-responsive embed-responsive-1by1"
                             asp-route-id="@book.ID">
-                            <img src="@book.ImageBinary" class="d-block w-100 rounded card-img-top embed-responsive-item"
-                                alt="books" />
+                            <img src="@book.ImageBinary" class="d-block w-100 rounded card-img-top embed-responsive-item" alt="books" />
+
+                            <div class="card-body" style="height: 220px;">
+                                <div class="pb-0">
+                                    <p class="card-title h5 text-dark">@book.Title</p>
+                                    <p class="card-title text-info"><i>by @book.Author.Name</i></p>
+                                    <p class="card-title text-muted"><small>@book.Description</small></p>
+                                </div>
+                                <div class="pl-0">
+                                    <p><i>Copies: @book.Copies.Count</i></p>
+                                </div>
+                            </div>
                         </a>
-                        <div class="card-body" style="height: 220px;">
-                            <div class="pb-0">
-                                <p class="card-title h5 text-dark">@book.Title</p>
-                                <p class="card-title text-info"><i>by @book.Author.Name</i></p>
-                                <p class="card-title text-muted"><small>@book.Description</small></p>
-                            </div>
-                            <div class="pl-0">
-                                <p><i>Copies: @book.Copies.Count</i></p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
