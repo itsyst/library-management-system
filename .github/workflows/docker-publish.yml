@@ -38,6 +38,6 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
       - name: connect and pull
-        run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} -p ${{ secrets.SSH_PORT }}  "cd ${{ secrets.WORK_DIR }} && sh -c ./pre-up.sh && docker-compose up -d && exit"
+        run: ssh -T ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} -p ${{ secrets.SSH_PORT }} "cd ${{ secrets.WORK_DIR }} && sh -c ./pre-up.sh && docker-compose up -d && exit"
       - name: cleanup
         run: rm -rf ~/.ssh
