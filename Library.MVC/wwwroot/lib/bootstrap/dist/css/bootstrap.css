@@ -4784,6 +4784,12 @@ input[type="button"].btn-block {
     -ms-flex: 1 1 auto;
     flex: 1 1 auto;
     padding: 1.25rem;
+    position: relative !important;
+    background: #ffffff !important;
+}
+
+.card a {
+    text-decoration: none !important;
 }
 
 .card-title {
