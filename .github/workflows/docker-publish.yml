@@ -24,20 +24,20 @@ jobs:
           docker build . --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-  deploy:
-    needs: publish
-    name: deploy image
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: install ssh keys
-        # check this thread to understand why its needed:
-        # <https://stackoverflow.com/a/70447517>
-        run: |
-          install -m 600 -D /dev/null ~/.ssh/id_rsa
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
-      - name: connect and pull
-        run: ssh -T -vvv -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && sh -c ./pre-up.sh && docker-compose up -d && exit"
-      - name: cleanup
-        run: rm -rf ~/.ssh
+#  deploy:
+#    needs: publish
+#    name: deploy image
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: install ssh keys
+#        # check this thread to understand why its needed:
+#        # <https://stackoverflow.com/a/70447517>
+#        run: |
+#          install -m 600 -D /dev/null ~/.ssh/id_rsa
+#          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+#          ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
+#      - name: connect and pull
+#        run: ssh -T -vvv -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.WORK_DIR }} && sh -c ./pre-up.sh && docker-compose up -d && exit"
+#      - name: cleanup
+#        run: rm -rf ~/.ssh
