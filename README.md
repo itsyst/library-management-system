@@ -3,22 +3,22 @@
     <img alt="logo" src="https://res.cloudinary.com/dzltxlm9l/image/upload/v1601971370/logo_fd60ee4493.png" width="90"  />
   </a>
   <p> Library-Management-System </p>
-  <p>This Project is an open-source project updated from Asp.Net 3.1 to .NET Core 6.</p>
+  <p>This Project is an open-source project updated from Asp.Net 3.1 to .NET Core 8.</p>
 </div>
  
 ## Give a Star! :star:
 If you Like the project, please give a star ;)
 ## How to use:
-- You will need the latest Visual Studio 2022 and the latest .NET Core 6.
+- You will need the latest Visual Studio 2022 and the latest .NET Core 8.
 - The latest SDK and tools can be downloaded from https://dot.net/core.
 Also you can run this Project in Visual Studio Code (Windows, Linux or MacOS).
 To know more about how to setup your enviroment visit the [Microsoft .NET Download Guide](https://www.microsoft.com/net/download)
-Build a complete e-commerce application ASP.NET Core  MVC  .NET 6
+Build a complete e-commerce application ASP.NET Core  MVC  .NET 8
 
 ## Layout
  
 <a href="https://github.com/itsyst/Library-Management-System">
-  <img alt="logo" src="https://res.cloudinary.com/itsyst/image/upload/v1694675467/library-management-system.webp" width="500"  />
+  <img alt="logo" src="https://res.cloudinary.com/itsyst/image/upload/v1697232915/library_management_system_92e949e044_942a370012.webp" width="500"  />
 </a>
 
 ## Here is a quick check list you could follow to migrate your application from .Net 3.1 to .Net 6
