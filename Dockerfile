@@ -1,8 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 as base
 WORKDIR /app
-EXPOSE 5000
+EXPOSE 6000
 EXPOSE 443
-ENV ASPNETCORE_URLS=http://+:5000
+ENV ASPNETCORE_URLS=http://+:6000
 
 # Copy everything
 FROM mcr.microsoft.com/dotnet/sdk:8.0 as build
@@ -29,4 +29,4 @@ RUN dotnet publish "Library.MVC.csproj" -c Release -o /app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
-ENTRYPOINT ["dotnet", "Library.MVC.dll", "--server.urls", "http://0.0.0.0:5000"]
+ENTRYPOINT ["dotnet", "Library.MVC.dll", "--server.urls", "http://0.0.0.0:6000"]

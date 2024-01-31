@@ -9,7 +9,7 @@ services:
    image: docker.io/library/library-mvc 
    container_name: library-mvc
    ports:
-     - "8080:5000"
+     - "8080:6000"
    volumes:
      - ./Library.MVC/temp-keys:/root/.aspnet/DataProtection-Keys 
      - ./Library.MVC/appsettings.json:/app/appsettings.json
