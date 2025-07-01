@@ -47,6 +47,18 @@ namespace Library.MVC.Controllers
             }
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateInline([FromBody] Author model)
+        {
+            if (string.IsNullOrWhiteSpace(model.Name))
+                return Json(new { success = false, error = "Name required." });
+
+            var author = new Author { Name = model.Name };
+            await _authorService.AddAsync(author);
+            return Json(new { success = true, authorId = author.Id, authorName = author.Name });
+        }
+
         public async Task<IActionResult> Edit(int id)
         {
             if (id == 0)

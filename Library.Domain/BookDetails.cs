@@ -1,11 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Library.Domain.Utilities;
+using System.ComponentModel.DataAnnotations;
 
 namespace Library.Domain
 {
     public class BookDetails
     {
         public int ID { get; set; }
-        public string ISBN { get; set; } = "0000000000000";
+        public string ISBN { get; set; } = IsbnGenerator.GenerateRandomIsbn13();
         public string Title { get; set; } = string.Empty;
 
         [Display(Name = "Author")]

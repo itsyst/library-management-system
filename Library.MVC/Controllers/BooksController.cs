@@ -1,5 +1,6 @@
 ﻿using Library.Application.Interfaces;
 using Library.Domain;
+using Library.Domain.Utilities;
 using Library.MVC.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -61,55 +62,173 @@ namespace Library.MVC.Controllers
         {
             try
             {
-                //Create new book
+                // Handle cover image or default
+                string? imageBinary = null;
+                if (model.CoverImage != null && model.CoverImage.Length > 0)
+                {
+                    var imageResult = await ProcessCoverImageAsync(model.CoverImage);
+                    if (imageResult.Success)
+                    {
+                        imageBinary = imageResult.ImageBase64;
+                    }
+                    else
+                    {
+                        TempData["Error"] = imageResult.ErrorMessage;
+                        return await ReloadCreateView(model);
+                    }
+                }
+                else
+                {
+                    // Use default image from wwwroot/uploads/9780555816023.png
+                    var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "9780555816023.png");
+                    if (System.IO.File.Exists(path))
+                    {
+                        var bytes = await System.IO.File.ReadAllBytesAsync(path);
+                        imageBinary = "data:image/png;base64," + Convert.ToBase64String(bytes);
+                    }
+                }
+
+                // Generate random ISBN if not provided or invalid
+                string isbn = model.BookDetails?.ISBN ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(isbn) ||
+                    isbn == "0000000000000" ||
+                    !IsbnGenerator.IsValidIsbn13(isbn))
+                {
+                    isbn = IsbnGenerator.GenerateRandomIsbn13();
+                }
+
+                // Check for duplicate ISBN (generate new one if duplicate)
+                var books = await _bookService.GetAllAsync();
+                int attempts = 0;
+                const int maxAttempts = 10;
+
+                while (attempts < maxAttempts)
+                {
+                    bool isDuplicate = false;
+                    foreach (var item in books)
+                    {
+                        if (isbn.Equals(item.ISBN, StringComparison.OrdinalIgnoreCase))
+                        {
+                            isbn = IsbnGenerator.GenerateRandomIsbn13();
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+
+                    if (!isDuplicate) break;
+                    attempts++;
+                }
+
+                // Check for duplicate title
+                foreach (var item in books)
+                {
+                    if (model.BookDetails.Title.Trim().Equals(item.Title.Trim(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        TempData["Error"] = "Book title already exists.";
+                        return await ReloadCreateView(model);
+                    }
+                }
+
+                // Create new book
                 BookDetails bookDetails = new()
                 {
                     AuthorID = model.BookDetails.AuthorID,
                     Description = model.BookDetails.Description,
-                    ISBN = model.BookDetails.ISBN,
+                    ISBN = isbn,
                     Title = model.BookDetails.Title,
+                    ImageBinary = imageBinary,
                     Copies = new List<BookCopy>()
                 };
 
-                var books = await _bookService.GetAllAsync();
-
-                // Chech if the book already exists
-                foreach (var item in books)
-                {
-                    if (model.BookDetails.ISBN.ToLower().Trim() == item.ISBN.ToLower().Trim() || model.BookDetails.Title.ToLower().Trim() == item.Title.ToLower().Trim())
-                    {
-                        TempData["Error"] = "Book already exists.";
-                        return View(model);
-                    }
-                }
-
-                //Get the newqly new book
                 var addedBook = await _bookService.AddAsync(bookDetails);
 
+                // Add copies
                 for (var i = 0; i < model.Copies; i++)
                 {
-                    //Add book copies 
-                    addedBook.Copies.Add(
-                        new BookCopy
-                        {
-                            DetailsId = addedBook.ID,
-                            IsAvailable = true
-                        }
-                    );
+                    addedBook.Copies.Add(new BookCopy
+                    {
+                        DetailsId = addedBook.ID,
+                        IsAvailable = true
+                    });
                 }
+
                 await _bookService.UpdateAsync(addedBook);
-
-                TempData["Success"] = "Book created successfully.";
-
+                TempData["Success"] = $"Book created successfully with ISBN: {isbn}";
                 return RedirectToAction(nameof(Index));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                TempData["Error"] = "Something went wrong.";
-                return RedirectToAction(nameof(Index));
+                TempData["Error"] = "An error occurred: " + ex.Message;
+                return await ReloadCreateView(model);
             }
+        }
 
+        private async Task<IActionResult> ReloadCreateView(BookDetailsViewModel model)
+        {
+            var authors = await _authorService.GetAllAuthorsAsync(filter: null, orderBy: null, includeProperties: a => a.Books);
+            model.Authors = authors.Select(i => new SelectListItem
+            {
+                Text = i.Name,
+                Value = i.Id.ToString()
+            });
             return View(model);
+        }
+
+        // Add this helper method for image processing
+        private async Task<ImageProcessResult> ProcessCoverImageAsync(IFormFile imageFile)
+        {
+            const int maxFileSize = 5 * 1024 * 1024; // 5MB
+            var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/webp" };
+
+            try
+            {
+                if (imageFile.Length > maxFileSize)
+                {
+                    return new ImageProcessResult
+                    {
+                        Success = false,
+                        ErrorMessage = "Image file size must be less than 5MB."
+                    };
+                }
+
+                if (!allowedTypes.Contains(imageFile.ContentType.ToLower()))
+                {
+                    return new ImageProcessResult
+                    {
+                        Success = false,
+                        ErrorMessage = "Only JPEG, PNG, and WEBP images are allowed."
+                    };
+                }
+
+                using var memoryStream = new MemoryStream();
+                await imageFile.CopyToAsync(memoryStream);
+                var imageBytes = memoryStream.ToArray();
+                var base64String = Convert.ToBase64String(imageBytes);
+                var dataUri = $"data:{imageFile.ContentType};base64,{base64String}";
+
+                return new ImageProcessResult
+                {
+                    Success = true,
+                    ImageBase64 = dataUri
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ImageProcessResult
+                {
+                    Success = false,
+                    ErrorMessage = "Error processing image: " + ex.Message
+                };
+            }
+        }
+
+        // Add this helper class
+        public class ImageProcessResult
+        {
+            public bool Success { get; set; }
+            public string? ImageBase64 { get; set; }
+            public string? ErrorMessage { get; set; }
         }
 
         public async Task<IActionResult> Edit(int id)
@@ -217,6 +336,20 @@ namespace Library.MVC.Controllers
             }
 
             return Json(new { data = books });
+        }
+
+        [HttpPost]
+        public IActionResult GenerateIsbn()
+        {
+            try
+            {
+                var isbn = IsbnGenerator.GenerateRandomIsbn13();
+                return Json(new { success = true, isbn = isbn });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message });
+            }
         }
 
         //POST: Books/AddBookCopy /5

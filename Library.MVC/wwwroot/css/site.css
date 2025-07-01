@@ -1,13 +1,6 @@
 ﻿/* Please see documentation at https://docs.microsoft.com/aspnet/core/client-side/bundling-and-minification
 for details on configuring this project to bundle and minify static web assets. */
 
-a.navbar-brand {
-    white-space: normal;
-    text-align: center;
-    word-break: break-all;
-}
-
-
 /* Provide sufficient contrast against white background */
 a {
     color: #0366d6;
@@ -25,16 +18,27 @@ a {
     border-color: #1861ac;
 }
 
-/* Sticky footer styles
+/* STICKY FOOTER STYLES
 -------------------------------------------------- */
 html {
+    position: relative;
+    min-height: 100%;
     font-size: 14px;
 }
 
-@media (min-width: 768px) {
-    html {
-        font-size: 16px;
-    }
+body {
+    /*   Margin bottom by footer height */
+    margin-bottom: 60px;
+    background-color: #FCFCFD;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    white-space: nowrap;
+    line-height: 20px; /*Vertically center the text there */
+    background-color: #343A40;
 }
 
 .border-top {
@@ -54,34 +58,14 @@ button.accept-policy {
     line-height: inherit;
 }
 
-/* Sticky footer styles
--------------------------------------------------- */
-html {
-    position: relative;
-    min-height: 100%;
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
 }
 
-body {
-    /*   Margin bottom by footer height */
-    margin-bottom: 60px;
-    background-color: #FCFCFD;
-}
-
-.footer {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    white-space: nowrap;
-    line-height: 20px; /*Vertically center the text there */
-    background-color: #343A40;
-}
-
-.jonas-fula-text {
-    color: saddlebrown;
-    font-size: 40px;
-}
-
-/* Sweet alert styles
+/* SWEET ALERT STYLES
 -------------------------------------------------- */
 .swal2-icon.swal2-warning {
     border-color: #d33 !important;
@@ -91,30 +75,11 @@ body {
 .swal2-html-container {
     color: #d33 !important;
 }
-
-/* Button filter books
--------------------------------------------------- */
-a.books-button:hover {
-    color: #ffff !important;
-}
-
-a.books-button > span:hover {
-    color: #ffff !important;
+ 
+a.navbar-brand {
+    white-space: normal;
+    text-align: center;
+    word-break: break-all;
 }
 
 
-/* Card and image styles
--------------------------------------------------- */
-
-.embed-responsive-item {
-    height: 150% !important;
-}
-
-.card-body {
-    position: relative !important;
-    background: #ffff !important;
-}
-
-.card a {
-    text-decoration: none !important;
-}
