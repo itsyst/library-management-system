@@ -317,8 +317,34 @@ namespace Library.MVC.Controllers
         }
 
         #region API CALLS
+        [HttpGet]
+        public async Task<IActionResult> GetBook(int id)
+        {
+            var book = await _bookService.GetBookOrDefaultAsync(
+                b => b.ID == id,
+                includeProperties: "Author,Copies");
+
+            if (book == null)
+                return NotFound();
+
+            var result = new
+            {
+                id = book.ID,
+                title = book.Title,
+                author = book.Author?.Name ?? "Unknown",
+                isbn = book.ISBN,
+                description = book.Description ?? "No description",
+                totalCopies = book.Copies.Count,
+                availableCopies = book.Copies.Count(c => c.IsAvailable),
+                imageBinary = book.ImageBinary ?? "/uploads/9780555816023.png"
+            };
+
+            return Json(result);
+        }
+
         // GET: Authors/GetAll
         [HttpGet]
+        [ResponseCache(Duration = 60)]
         public async Task<IActionResult> GetAll(string status)
         {
             IEnumerable<BookDetails> books = await _bookService.GetAllAsync();

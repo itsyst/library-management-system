@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Discover books";
 }
- 
+
 <!-- ---------- BOOK GRID ---------- -->
 <div class="container">
     <div class="row g-4">
@@ -12,7 +12,7 @@
             <div class="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4">
                 <div class="modern-book-card position-relative">
                     <!-- Main card container -->
-                    <div class="card-wrapper h-100">
+                    <div class="book-card-inner">
                         <!-- Image container with overlay -->
                         <div class="image-container position-relative overflow-hidden">
                             <img src="@book.ImageBinary"
@@ -40,13 +40,11 @@
                         </div>
 
                         <!-- Content area -->
-                        <div class="flex-column">
+                        <div class="book-info">
                             <div class="card-content">
-                                <div class="book-info">
-                                    <h3 class="book-title">@book.Title</h3>
-                                    <p class="book-author">by: @book.Author?.Name</p>
-                                    <p class="book-description">@book.Description</p>
-                                </div>
+                                <h3 class="book-title">@book.Title</h3>
+                                <p class="book-author">by: @book.Author?.Name</p>
+                                <p class="book-description">@book.Description</p>
                             </div>
                             <!-- Action area -->
                             <div class="card-actions">
