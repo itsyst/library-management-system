@@ -11,7 +11,7 @@
             <div class="edit-header mb-5">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <h1 class="display-6 fw-bold mb-2">Add New Book</h1>
+                        <h1 class="display-6 fw-bold mb-2" style="color:var(--primary-color)">Add New Book</h1>
                         <p class="text-muted">Enter book details and upload a cover image</p>
                     </div>
                     <div class="header-actions">
@@ -117,17 +117,13 @@
                                         </span>
                                         <select asp-for="BookDetails.AuthorID"
                                                 asp-items="@Model.Authors"
-                                                class="form-select modern-input"
+                                                class="form-select modern-input rounded-0"
                                                 id="authorSelect"
                                                 required>
                                             <option value="">-- Select Author --</option>
                                         </select>
-                                        <button type="button"
-                                                class="btn btn-primary add-author-btn"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#addAuthorModal">
-                                            <i class="bi bi-plus-lg"></i>
-                                            Add New
+                                        <button type="button" class="btn btn-primary add-author-btn" onclick="addNewAuthor()">
+                                            <i class="bi bi-plus"></i> Add New
                                         </button>
                                     </div>
                                     <span asp-validation-for="BookDetails.AuthorID" class="validation-message"></span>
@@ -151,30 +147,6 @@
                 </div>
             </form>
         </div>
-    </div>
-</div>
-
-<!-- Add Author Modal -->
-<div class="modal fade" id="addAuthorModal" tabindex="-1" aria-labelledby="addAuthorModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <form id="addAuthorForm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addAuthorModalLabel">Add New Author</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="newAuthorName" class="form-label">Author Name</label>
-                        <input type="text" class="form-control" id="newAuthorName" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Author</button>
-                </div>
-            </div>
-        </form>
     </div>
 </div>
 
@@ -237,30 +209,76 @@
         }
 
         // Add Author Modal AJAX
-        document.getElementById('addAuthorForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const name = document.getElementById('newAuthorName').value.trim();
-            if (!name) return;
-
-            const response = await fetch('/Authors/CreateInline', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        async function addNewAuthor() {
+            const { value: authorName } = await Swal.fire({
+                title: 'Add New Author',
+                input: 'text',
+                inputLabel: 'Author Name',
+                inputPlaceholder: 'Enter author name...',
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-plus-circle"></i> Add Author',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                inputValidator: (value) => {
+                    if (!value || value.trim().length === 0) {
+                        return 'Please enter an author name';
+                    }
+                    if (value.trim().length < 2) {
+                        return 'Author name must be at least 2 characters';
+                    }
+                    if (value.trim().length > 100) {
+                        return 'Author name must be less than 100 characters';
+                    }
                 },
-                body: JSON.stringify({ Name: name })
-            });
-            const result = await response.json();
+                preConfirm: async (name) => {
+                    const trimmedName = name.trim();
 
-            if (result.success) {
-                const select = document.getElementById('authorSelect');
-                const option = new Option(result.authorName, result.authorId, true, true);
+                    // Show loading state
+                    Swal.showLoading();
+
+                    try {
+                        const response = await fetch('/Authors/CreateInline', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                            },
+                            body: JSON.stringify({ Name: trimmedName })
+                        });
+
+                        const result = await response.json();
+
+                        if (!result.success) {
+                            Swal.showValidationMessage(result.error || 'Failed to add author');
+                            return false;
+                        }
+
+                        return result;
+                    } catch (error) {
+                        console.error('Error adding author:', error);
+                        Swal.showValidationMessage('Network error occurred. Please try again.');
+                        return false;
+                    }
+                }
+            });
+
+            // Handle successful author creation with toastr
+            if (authorName) {
+                // Update the dropdown
+                const select = document.querySelector('[name="BookDetails.AuthorID"]');
+                const option = new Option(authorName.authorName, authorName.authorId, true, true);
                 select.add(option, 1);
-                $('#addAuthorModal').modal('hide');
-                document.getElementById('newAuthorName').value = '';
-            } else {
-                alert(result.error || 'Could not add author.');
+
+                // Show success with toastr - clean and consistent
+                toastr.success(`Author "${authorName.authorName}" added and selected!`, 'Success');
+
+                // Optional: Add visual feedback
+                select.classList.add('is-valid');
+                setTimeout(() => {
+                    select.classList.remove('is-valid');
+                }, 2000);
             }
-        });
+        }
     </script>
 }

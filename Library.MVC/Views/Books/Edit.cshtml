@@ -1,60 +1,793 @@
-﻿@model Library.MVC.ViewModels.BookDetailsViewModel;
-
+﻿@model Library.MVC.ViewModels.BookDetailsViewModel
+ 
 @{
-	ViewData["Title"] = "Edit";
-#pragma warning disable
+    ViewData["Title"] = "Edit Book";
 }
 
-<h1 class="text-primary mx-3">Edit Book</h1>
-<hr />
-<div class="row justify-content-center">
-	<div class="col-12 col-md-6 text-right mx-1">
-		@Html.ActionLink("Delete", "Delete", "Books", new { id = @Model.BookDetails.ID}, new { @class ="btn btn-danger mx-4" })
-	</div>
-	<div class="col-md-6">
-		<form asp-action="Edit" method="post">
-			<div asp-validation-summary="ModelOnly" class="text-danger"></div>
-			<input asp-for="BookDetails.ID" hidden />
-			<div class="row mx-1">
-				<div class="form-group  mb-3 col-6">
-					<label asp-for="BookDetails.ISBN" class="control-label"></label>
-					<input asp-for="BookDetails.ISBN" class="form-control" />
-					<span asp-validation-for="BookDetails.ISBN" class="text-danger"></span>
-				</div>
-				<div class="form-group  mb-3 col-6">
-					<label asp-for="BookDetails.Copies" class="control-label"></label>
-					<input asp-for="BookDetails.Copies.Count" class="form-control" disabled />
-					<span asp-validation-for="BookDetails.Copies" class="text-danger"></span>
-				</div>
-			</div>
-			<div class="form-group  mb-3 col-12">
-				<label asp-for="BookDetails.Title" class="control-label"></label>
-				<input asp-for="BookDetails.Title" class="form-control" />
-				<span asp-validation-for="BookDetails.Title" class="text-danger"></span>
-			</div>
-			<div class="form-group  mb-3 col-12">
-				<label asp-for="BookDetails.Description" class="control-label"></label>
-				<textarea asp-for="BookDetails.Description" class="form-control" rows="3"></textarea>
-				<span asp-validation-for="BookDetails.Description" class="text-danger"></span>
-			</div>
-			<div class="form-group mb-3 col-12">
-				<label asp-for="BookDetails.AuthorID" class="control-label"></label>
-				<select class="form-control" asp-for="BookDetails.AuthorID" asp-items="@Model.Authors" class="form-select">
-					<option disabled selected>--Select Author--</option>
-				</select>
-				<span asp-validation-for="BookDetails.AuthorID" class="text-danger"></span>
-			</div>
-			<div class="form-group mt-3 mx-3">
-				<input type="submit" value="Save" class="btn btn-primary" />
-				<a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
-			</div>
-		</form>
-	</div>
+<!-- Modern Edit Container -->
+<div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            <!-- Header Section -->
+            <div class="edit-header mb-5">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h1 class="display-6 fw-bold mb-2" style="color:var(--primary-color)">Edit Book</h1>
+                        <p class="text-muted" id="headerDescription">
+                            Update book details and manage cover image -
+                            <span id="headerCopyInfo">@(Model.BookDetails?.Copies?.Count ?? 0) copies total</span>
+                        </p>
+                    </div>
+                    <div class="header-actions">
+                        <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-arrow-left"></i> Back to Library
+                        </a>
+                        <a asp-action="Delete" asp-route-id="@Model.BookDetails.ID"
+                           class="btn btn-danger delete-btn">
+                            <i class="bi bi-trash"></i> Delete Book
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Main Form -->
+            <form asp-action="Edit" method="post" enctype="multipart/form-data" class="modern-form">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger modern-alert"></div>
+                <input asp-for="BookDetails.ID" type="hidden" />
+
+                <div class="row g-4">
+                    <!-- Left Column - Cover Image -->
+                    <div class="col-12 col-lg-4">
+                        <div class="cover-upload-section">
+                            <div class="cover-preview-container">
+                                <div class="current-cover">
+                                    <img src="@(Model.BookDetails?.ImageBinary ?? "/uploads/9780555816023.png")"
+                                         alt="@(Model.BookDetails?.Title ?? "Book")"
+                                         class="cover-image"
+                                         id="coverPreview" />
+                                    <div class="cover-overlay">
+                                        <i class="bi bi-camera-fill"></i>
+                                        <span>Change Cover</span>
+                                    </div>
+                                </div>
+
+                                <!-- Upload Area -->
+                                <div class="upload-area" id="uploadArea" style="display: none;">
+                                    <input type="file"
+                                           name="CoverImage"
+                                           id="coverInput"
+                                           accept="image/*"
+                                           class="file-input" />
+                                    <div class="upload-content">
+                                        <i class="bi bi-cloud-upload"></i>
+                                        <h5>Drop new image here</h5>
+                                        <p>or <span class="upload-link">browse files</span></p>
+                                        <small>JPG, PNG, WEBP up to 5MB</small>
+                                    </div>
+                                </div>
+
+                                <!-- Upload Actions -->
+                                <div class="upload-actions mt-3">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="triggerUpload()">
+                                        <i class="bi bi-upload"></i> Change Image
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="resetImage()">
+                                        <i class="bi bi-arrow-clockwise"></i> Reset
+                                    </button>
+                                </div>
+
+                                <!-- Current Image Info -->
+                                <div class="image-info mt-3">
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle"></i>
+                                        Current cover will be kept if no new image is uploaded
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Form Fields -->
+                    <div class="col-12 col-lg-8">
+                        <div class="form-card">
+                            <!-- Book Details -->
+                            <div class="form-section">
+                                <h4 class="section-title">Book Information</h4>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.ISBN" class="form-label">ISBN</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bi bi-upc-scan"></i>
+                                                </span>
+                                                <input asp-for="BookDetails.ISBN"
+                                                       class="form-control modern-input readonly-input"
+                                                       readonly
+                                                       title="ISBN cannot be changed after creation" />
+                                            </div>
+                                            <span asp-validation-for="BookDetails.ISBN" class="validation-message"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="form-label">Book Copies Management</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bi bi-files"></i>
+                                                </span>
+                                                <input value="@(Model.BookDetails?.Copies?.Count ?? 0)"
+                                                       class="form-control modern-input readonly-input"
+                                                       readonly
+                                                       title="Current number of book copies"
+                                                       id="copyCountInput" />
+
+                                                @if ((Model.BookDetails?.Copies?.Count ?? 0) < 5)
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-success add-copy-btn"
+                                                            onclick="addSingleCopy(@Model.BookDetails.ID, '@Model.BookDetails.Title')"
+                                                            title="Add one copy (Max 5 total)">
+                                                        <i class="bi bi-plus"></i> Add Copy
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-secondary"
+                                                            disabled
+                                                            title="Maximum limit of 5 copies reached">
+                                                        <i class="bi bi-check"></i> Max Reached
+                                                    </button>
+                                                }
+                                            </div>
+                                            <small class="text-muted" id="copyHelpText">
+                                                @{
+                                                    int currentCopies = Model.BookDetails?.Copies?.Count ?? 0;
+                                                    int remaining = 5 - currentCopies;
+                                                }
+                                                @if (remaining > 0)
+                                                {
+                                                    <text>You can add @remaining more copies (Max: 5 total)</text>
+                                                }
+                                                else
+                                                {
+                                                    <text>Maximum limit of 5 copies reached</text>
+                                                }
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="BookDetails.Title" class="form-label">
+                                        Title <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="BookDetails.Title"
+                                           class="form-control modern-input"
+                                           required
+                                           placeholder="Enter book title" />
+                                    <span asp-validation-for="BookDetails.Title" class="validation-message"></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label asp-for="BookDetails.Description" class="form-label">Description</label>
+                                    <textarea asp-for="BookDetails.Description"
+                                              class="form-control modern-input"
+                                              rows="4"
+                                              placeholder="Enter book description..."
+                                              maxlength="1000"></textarea>
+                                    <div class="form-text">
+                                        <small id="descriptionCount" class="text-muted">0/1000 characters</small>
+                                    </div>
+                                    <span asp-validation-for="BookDetails.Description" class="validation-message"></span>
+                                </div>
+
+                                <!-- Book Author -->
+                                <div class="form-group">
+                                    <label asp-for="BookDetails.AuthorID" class="form-label">
+                                        Author <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group author-input-group">
+                                        <span class="input-group-text">
+                                            <i class="bi bi-person"></i>
+                                        </span>
+                                        <select asp-for="BookDetails.AuthorID"
+                                                asp-items="@Model.Authors"
+                                                class="form-select modern-input rounded-0"
+                                                required>
+                                            <option value="">-- Select Author --</option>
+                                        </select>
+                                        @*<button type="button" class="btn btn-primary add-author-btn"
+                                                data-bs-toggle="modal" data-bs-target="#addAuthorModal">
+                                            Add New
+                                        </button> *@
+                                        <button type="button" class="btn btn-primary add-author-btn" onclick="addNewAuthor()">
+                                            <i class="bi bi-plus"></i> Add New
+                                        </button>
+                                    </div>
+                                    <span asp-validation-for="BookDetails.AuthorID" class="validation-message"></span>
+                                </div>
+                            </div>
+
+                            <!-- Book Statistics -->
+                            <div class="form-section">
+                                <h4 class="section-title">Book Statistics</h4>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="stat-card">
+                                            <div class="stat-icon text-primary">
+                                                <i class="bi bi-files"></i>
+                                            </div>
+                                            <div class="stat-info">
+                                                <h3 id="totalCopiesCount">@(Model.BookDetails?.Copies?.Count ?? 0)</h3>
+                                                <p>Total Copies</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="stat-card">
+                                            <div class="stat-icon text-success">
+                                                <i class="bi bi-check-circle"></i>
+                                            </div>
+                                            <div class="stat-info">
+                                                <h3 id="availableCopiesCount">@(Model.BookDetails?.Copies?.Count(c => c.IsAvailable) ?? 0)</h3>
+                                                <p>Available</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="stat-card">
+                                            <div class="stat-icon text-warning">
+                                                <i class="bi bi-clock"></i>
+                                            </div>
+                                            <div class="stat-info">
+                                                <h3 id="onLoanCopiesCount">@((Model.BookDetails?.Copies?.Count ?? 0) - (Model.BookDetails?.Copies?.Count(c => c.IsAvailable) ?? 0))</h3>
+                                                <p>On Loan</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions mt-5">
+                    <div class="d-flex gap-3 justify-content-end flex-wrap">
+                        <a asp-action="Index" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg save-btn ml-3">
+                            <i class="bi bi-check-circle"></i>
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
+<!-- Add Author Modal (same as Create view) -->
+@* <div class="modal fade" id="addAuthorModal" tabindex="-1" aria-labelledby="addAuthorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="addAuthorForm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addAuthorModalLabel">Add New Author</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newAuthorName" class="form-label">Author Name</label>
+                        <input type="text" class="form-control" id="newAuthorName" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Author</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div> *@
 
 @section Scripts {
-	@{
-	await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        // ====================================================================
+        // IMAGE UPLOAD FUNCTIONALITY
+        // ====================================================================
+
+        const coverInput = document.getElementById('coverInput');
+        const coverPreview = document.getElementById('coverPreview');
+        const uploadArea = document.getElementById('uploadArea');
+        const originalImageSrc = '@(Model.BookDetails?.ImageBinary ?? "/uploads/9780555816023.png")';
+
+        // Setup event listeners
+        if (coverInput) {
+            coverInput.addEventListener('change', handleFileSelect);
+        }
+        if (uploadArea) {
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('drop', handleDrop);
+            uploadArea.addEventListener('click', triggerUpload);
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (validateFile(file)) {
+                    previewImage(file);
+                } else {
+                    resetFileInput();
+                }
+            }
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                if (validateFile(file)) {
+                    coverInput.files = e.dataTransfer.files;
+                    previewImage(file);
+                }
+            }
+        }
+
+        function validateFile(file) {
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+            if (file.size > maxSize) {
+                showError('File size must be less than 5MB');
+                return false;
+            }
+
+            if (!allowedTypes.includes(file.type.toLowerCase())) {
+                showError('Only JPEG, PNG, and WEBP images are allowed');
+                return false;
+            }
+
+            return true;
+        }
+
+        function previewImage(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                coverPreview.src = e.target.result;
+                uploadArea.style.display = 'none';
+                showSuccess('New image selected successfully');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function triggerUpload() {
+            coverInput.click();
+        }
+
+        function resetImage() {
+            coverInput.value = '';
+            coverPreview.src = originalImageSrc;
+            uploadArea.style.display = 'none';
+            showInfo('Reset to original image');
+        }
+
+        function resetFileInput() {
+            coverInput.value = '';
+        }
+
+        // ====================================================================
+        // FORM ENHANCEMENTS
+        // ====================================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Character counter for description
+            const descriptionTextarea = document.querySelector('[name="BookDetails.Description"]');
+            const descriptionCount = document.getElementById('descriptionCount');
+
+            if (descriptionTextarea && descriptionCount) {
+                function updateCounter() {
+                    const length = descriptionTextarea.value.length;
+                    descriptionCount.textContent = `${length}/1000 characters`;
+                    descriptionCount.className = length > 900 ? 'text-warning' : 'text-muted';
+                }
+
+                descriptionTextarea.addEventListener('input', updateCounter);
+                updateCounter(); // Initial count
+            }
+
+            // Form validation enhancement
+            const form = document.querySelector('.modern-form');
+            const inputs = form.querySelectorAll('.modern-input:not(.readonly-input)');
+
+            inputs.forEach(input => {
+                input.addEventListener('blur', validateField);
+                input.addEventListener('input', clearValidation);
+            });
+
+            // Add smooth scroll to errors
+            const errors = document.querySelectorAll('.validation-message:not(:empty)');
+            if (errors.length > 0) {
+                errors[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+
+        function validateField(e) {
+            const field = e.target;
+            const value = field.value.trim();
+
+            if (field.hasAttribute('required') && !value) {
+                field.classList.add('is-invalid');
+                field.classList.remove('is-valid');
+            } else if (value) {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+            }
+        }
+
+        function clearValidation(e) {
+            const field = e.target;
+            field.classList.remove('is-invalid', 'is-valid');
+        }
+
+        // ====================================================================
+        // ADD AUTHOR MODAL
+        // ====================================================================
+
+        // document.getElementById('addAuthorForm').addEventListener('submit', async function (e) {
+        //     e.preventDefault();
+        //     const name = document.getElementById('newAuthorName').value.trim();
+        //     if (!name) return;
+
+        //     try {
+        //         const response = await fetch('/Authors/CreateInline', {
+        //             method: 'POST',
+        //             headers: {
+        //                 'Content-Type': 'application/json',
+        //                 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+        //             },
+        //             body: JSON.stringify({ Name: name })
+        //         });
+
+        //         const result = await response.json();
+
+        //         if (result.success) {
+        //             const select = document.querySelector('[name="BookDetails.AuthorID"]');
+        //             const option = new Option(result.authorName, result.authorId, true, true);
+        //             select.add(option, 1);
+
+        //             // Close modal and reset form
+        //             const modal = bootstrap.Modal.getInstance(document.getElementById('addAuthorModal'));
+        //             modal.hide();
+        //             document.getElementById('newAuthorName').value = '';
+
+        //             showSuccess(`Author "${result.authorName}" added successfully`);
+        //         } else {
+        //             showError(result.error || 'Could not add author');
+        //         }
+        //     } catch (error) {
+        //         console.error('Error adding author:', error);
+        //         showError('An error occurred while adding the author');
+        //     }
+        // });
+
+        // Replace the entire addAuthorForm event listener with this SweetAlert2 implementation
+         async function addNewAuthor() {
+            const { value: authorName } = await Swal.fire({
+                title: 'Add New Author',
+                input: 'text',
+                inputLabel: 'Author Name',
+                inputPlaceholder: 'Enter author name...',
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-plus-circle"></i> Add Author',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                inputValidator: (value) => {
+                    if (!value || value.trim().length === 0) {
+                        return 'Please enter an author name';
+                    }
+                    if (value.trim().length < 2) {
+                        return 'Author name must be at least 2 characters';
+                    }
+                    if (value.trim().length > 100) {
+                        return 'Author name must be less than 100 characters';
+                    }
+                },
+                preConfirm: async (name) => {
+                    const trimmedName = name.trim();
+
+                    // Show loading state
+                    Swal.showLoading();
+
+                    try {
+                        const response = await fetch('/Authors/CreateInline', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                            },
+                            body: JSON.stringify({ Name: trimmedName })
+                        });
+
+                        const result = await response.json();
+
+                        if (!result.success) {
+                            Swal.showValidationMessage(result.error || 'Failed to add author');
+                            return false;
+                        }
+
+                        return result;
+                    } catch (error) {
+                        console.error('Error adding author:', error);
+                        Swal.showValidationMessage('Network error occurred. Please try again.');
+                        return false;
+                    }
+                }
+            });
+
+            // Handle successful author creation with toastr
+            if (authorName) {
+                // Update the dropdown
+                const select = document.querySelector('[name="BookDetails.AuthorID"]');
+                const option = new Option(authorName.authorName, authorName.authorId, true, true);
+                select.add(option, 1);
+
+                // Show success with toastr - clean and consistent
+                toastr.success(`Author "${authorName.authorName}" added and selected!`, 'Success');
+
+                // Optional: Add visual feedback
+                select.classList.add('is-valid');
+                setTimeout(() => {
+                    select.classList.remove('is-valid');
+                }, 2000);
+            }
+        }
+
+        // ====================================================================
+        // SINGLE COPY ADDITION WITH LIMIT AND INSTANT UI UPDATES
+        // ====================================================================
+        // Add single copy with proper statistics update
+        async function addSingleCopy(bookId, bookTitle) {
+            debugger;
+            try {
+                // Show loading state
+                const addButton = document.querySelector('.add-copy-btn');
+                if (addButton) {
+                    addButton.disabled = true;
+                    addButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Adding...';
+                }
+
+                const response = await fetch(`/Books/AddBookCopy/${bookId}`, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': getAntiForgeryToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Show success toastr
+                    toastr.success(result.message, 'Copy Added!');
+
+                    // 💡 update visible copy counter
+                    document.getElementById('copyCountInput').value = result.totalCopies;
+  
+                    // Update all UI elements
+                    updateAllStatistics(result);
+
+                    // Disable button if max limit reached
+                    if (result.maxLimitReached) {
+                        disableAddCopyButton();
+                    } else {
+                        resetAddCopyButton();
+                    }
+                } else {
+                    toastr.error(result.message, 'Cannot Add Copy');
+                    resetAddCopyButton();
+                }
+            } catch (error) {
+                console.error('Error adding copy:', error);
+                toastr.error('Failed to add copy. Please try again.', 'Network Error');
+                resetAddCopyButton();
+            }
+        }
+
+        function updateAllStatistics(result) {
+            // Update copy count input field
+            updateCopyCountInput(result.totalCopies, result.maxLimitReached);
+
+            // Update statistics cards
+            updateStatisticsCards(result.totalCopies, result.availableCopies, result.onLoanCopies);
+
+            // Update header description
+            updateHeaderDescription(result.totalCopies, result.availableCopies);
+        }
+
+        function updateCopyCountInput(newCount, maxReached) {
+            // Update the input field
+            const copyInput = document.querySelector('copyCountInput');
+            if (copyInput) {
+                copyInput.value = newCount;
+
+                // Add visual feedback animation
+                copyInput.style.transition = 'all 0.3s ease';
+                copyInput.style.backgroundColor = '#d4edda';
+                copyInput.style.borderColor = '#c3e6cb';
+
+                setTimeout(() => {
+                    copyInput.style.backgroundColor = '';
+                    copyInput.style.borderColor = '';
+                }, 1500);
+            }
+
+            // Update the help text
+            const remaining = 5 - newCount;
+            const helpText = document.querySelector('.text-muted');
+            if (helpText) {
+                if (remaining > 0) {
+                    helpText.textContent = `You can add ${remaining} more copies (Max: 5 total)`;
+                    helpText.className = 'text-muted';
+                } else {
+                    helpText.textContent = 'Maximum limit of 5 copies reached';
+                    helpText.className = 'text-danger fw-bold';
+                }
+
+                // Add animation to help text
+                helpText.style.animation = 'fadeInScale 0.5s ease';
+            }
+        }
+
+        function updateStatisticsCards(totalCopies, availableCopies, onLoanCopies) {
+            // Update total copies stat card
+            const totalCopiesElement = document.getElementById('totalCopiesCount');
+            if (totalCopiesElement) {
+                animateCounterUpdate(totalCopiesElement, totalCopies);
+            }
+
+            // Update available copies stat card
+            const availableCopiesElement = document.getElementById('availableCopiesCount');
+            if (availableCopiesElement) {
+                animateCounterUpdate(availableCopiesElement, availableCopies);
+            }
+
+            // Update on loan stat card
+            const onLoanElement = document.getElementById('onLoanCopiesCount');
+            if (onLoanElement) {
+                animateCounterUpdate(onLoanElement, onLoanCopies);
+            }
+        }
+
+        function updateHeaderDescription(totalCopies, availableCopies) {
+            const headerCopyInfo = document.getElementById('headerCopyInfo');
+            if (headerCopyInfo) {
+                headerCopyInfo.textContent = `${totalCopies} copies total (${availableCopies} available)`;
+
+                // Add subtle animation
+                headerCopyInfo.style.animation = 'pulse 0.8s ease';
+                setTimeout(() => {
+                    headerCopyInfo.style.animation = '';
+                }, 800);
+            }
+        }
+
+        function animateCounterUpdate(element, newValue) {
+            const oldValue = parseInt(element.textContent) || 0;
+
+            if (oldValue !== newValue) {
+                // Animate the counter
+                element.style.animation = 'countUp 0.6s ease';
+                element.style.color = '#28a745';
+
+                // Count up animation
+                let current = oldValue;
+                const increment = newValue > oldValue ? 1 : -1;
+                const duration = 300; // ms
+                const steps = Math.abs(newValue - oldValue);
+                const stepDuration = duration / Math.max(steps, 1);
+
+                const counter = setInterval(() => {
+                    current += increment;
+                    element.textContent = current;
+
+                    if (current === newValue) {
+                        clearInterval(counter);
+                        setTimeout(() => {
+                            element.style.color = '';
+                            element.style.animation = '';
+                        }, 1000);
+                    }
+                }, stepDuration);
+            }
+        }
+
+        function disableAddCopyButton() {
+            const addButton = document.querySelector('.add-copy-btn');
+            if (addButton) {
+                addButton.outerHTML = `
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            disabled
+                            title="Maximum limit of 5 copies reached">
+                        <i class="bi bi-check"></i> Max Reached
+                    </button>
+                `;
+            }
+        }
+
+        function resetAddCopyButton() {
+            const addButton = document.querySelector('.add-copy-btn');
+            if (addButton) {
+                addButton.innerHTML = '<i class="bi bi-plus"></i> Add Copy';
+                addButton.disabled = false;
+            }
+        }
+
+        function getAntiForgeryToken() {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            return token ? token.value : '';
+        }
+
+        // ====================================================================
+        // UTILITY FUNCTIONS
+        // ====================================================================
+
+        function showSuccess(message) {
+            if (typeof toastr !== 'undefined') {
+                toastr.success(message);
+            }
+        }
+
+        function showError(message) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error(message);
+            }
+        }
+
+        function showInfo(message) {
+            if (typeof toastr !== 'undefined') {
+                toastr.info(message);
+            }
+        }
+
+        // Auto-save draft functionality (optional)
+        let autoSaveTimeout;
+        const form = document.querySelector('.modern-form');
+
+        if (form) {
+            form.addEventListener('input', function() {
+                clearTimeout(autoSaveTimeout);
+                autoSaveTimeout = setTimeout(() => {
+                    const formData = new FormData(form);
+                    localStorage.setItem(`book-edit-${@(Model.BookDetails?.ID ?? 0)}`,
+                        JSON.stringify({
+                            title: formData.get('BookDetails.Title'),
+                            description: formData.get('BookDetails.Description'),
+                            authorId: formData.get('BookDetails.AuthorID'),
+                            timestamp: Date.now()
+                        }));
+                }, 2000);
+            });
+        }
+    </script>
 }
-}
+
+

@@ -233,25 +233,32 @@ namespace Library.MVC.Controllers
 
         public async Task<IActionResult> Edit(int id)
         {
-            IEnumerable<Author> authors = await _authorService.GetAllAsync();
-
             if (id == 0)
                 return NotFound();
 
+            // Get book with Author and Copies included
+            var bookDetails = await _bookService.GetBookOrDefaultAsync(
+                b => b.ID == id,
+                includeProperties: "Author,Copies");
+
+            if (bookDetails == null)
+                return NotFound();
+
+            // Get authors for dropdown
+            IEnumerable<Author> authors = await _authorService.GetAllAsync();
+ 
             BookDetailsViewModel model = new()
             {
-                BookDetails = new(),
+                BookDetails = bookDetails,
                 Authors = authors.Select(i => new SelectListItem
                 {
                     Text = i.Name,
                     Value = i.Id.ToString()
                 }),
-                Copies = 0
+                Copies = bookDetails.Copies.Count
 
             };
-
-            // update
-            model.BookDetails = await _bookService.GetBookOrDefaultAsync(b => b.ID == id, includeProperties: "Copies");
+ 
             return View(model);
         }
 
@@ -261,29 +268,71 @@ namespace Library.MVC.Controllers
         {
             try
             {
-                if (id == 0)
+                if (id == 0 || model.BookDetails == null)
                     return NotFound();
 
-                BookDetails book = new()
+                // Get existing book (tracked entity)
+                var existingBook = await _bookService.GetBookOrDefaultAsync(
+                    b => b.ID == id,
+                    includeProperties: "Author,Copies");
+
+                if (existingBook == null)
+                    return NotFound();
+
+                // Handle cover image upload
+                if(model.CoverImage != null && model.CoverImage.Length > 0)
                 {
-                    ID = model.BookDetails!.ID,
-                    AuthorID = model.BookDetails.AuthorID,
-                    Description = model.BookDetails.Description,
-                    ISBN = model.BookDetails.ISBN,
-                    Title = model.BookDetails.Title
-                };
+                    var imageResult = await ProcessCoverImageAsync(model.CoverImage);
+                    if (imageResult != null) {
+                        existingBook.ImageBinary = imageResult.ImageBase64;
+                    }
+                    else {
+                        TempData["Error"] = imageResult.ErrorMessage;
+                        return await ReloadEditView(model);
+                    }
+                    // If no new image uploaded, keep existing image
+                }
+                // Validate title uniqueness (excluding current book)
+                var books = await _bookService.GetAllAsync();
+                foreach (var item in books.Where(b => b.ID != id))
+                {
+                    if (model.BookDetails.Title.Trim().Equals(item.Title.Trim(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        TempData["Error"] = "A book with this title already exists.";
+                        return await ReloadEditView(model);
+                    }
+                }
 
-                await _bookService.UpdateAsync(book);
-                TempData["Success"] = "Book copy created successfully.";
+                // Update properties on EXISTING tracked entity
+                existingBook.AuthorID = model.BookDetails.AuthorID;
+                existingBook.Description = model.BookDetails.Description;
+                existingBook.Title = model.BookDetails.Title;
+                // ISBN is not updated as it's readonly in edit
 
+                // Save changes using tracked entity (no need to call UpdateAsync)
+                await _bookService.UpdateAsync(existingBook);
+
+                TempData["Success"] = "Book updated successfully.";
                 return RedirectToAction(nameof(Index));
             }
-            catch (DbException)
+            catch (Exception ex)
             {
-                TempData["Error"] = "an unexpected error has occurred.";
-                return View();
+                TempData["Error"] = "An unexpected error occurred: " + ex.Message;
+                return await ReloadEditView(model);
             }
         }
+
+        private async Task<IActionResult> ReloadEditView(BookDetailsViewModel model)
+        {
+            var authors = await _authorService.GetAllAsync();
+            model.Authors = authors.Select(i => new SelectListItem
+            {
+                Text = i.Name,
+                Value = i.Id.ToString()
+            });
+            return View(model);
+        }
+
 
         public async Task<IActionResult> Delete(int? id)
         {
@@ -378,34 +427,68 @@ namespace Library.MVC.Controllers
             }
         }
 
-        //POST: Books/AddBookCopy /5
+        // POST: Books/AddBookCopy (id)
         [HttpPost]
         public async Task<IActionResult> AddBookCopy(int id)
         {
             try
             {
-                BookDetails book = await _bookService.GetBookOrDefaultAsync(c => c.ID == id, includeProperties: "Author");
+                // 1. Pull the book with its copies (tracked entity)
+                var book = await _bookService.GetBookOrDefaultAsync(
+                               b => b.ID == id,
+                               includeProperties: "Author,Copies");
 
-                //Create new book
-                BookCopy copy = new()
+                if (book == null)
+                    return Json(new { success = false, message = "Book not found." });
+
+                if (book.Copies.Count >= 5)
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"Cannot add more copies. Maximum limit of 5 copies reached for \"{book.Title}\"."
+                    });
+
+
+                // 2. Create & save the new copy (always available by default),
+                var initialBookCopies = book.Copies.Count;
+                var newCopy = await _bookCopyService.AddAsync(new BookCopy
                 {
                     DetailsId = book.ID,
-                    Details = await _bookService.GetBookOrDefaultAsync(b => b.ID == id),
-                    IsAvailable = true,
-                };
+                    Details = book,
+                    IsAvailable = true
+                });
 
-                BookCopy addedCopy = await _bookCopyService.AddAsync(copy);
+                // 3. Re-query only the copies list to get fresh counts
+                var total = initialBookCopies + 1;                 // we know one was added
+                var avail = book.Copies.Count(c => c.IsAvailable);
+                var onLoan = total - avail;
+                var remaining = 5 - total;
 
-                return Json(new { success = true, message = "Book copy " + addedCopy.BookCopyId + " added successfully." });
+                // 4. Compose the response (ISBN is **not** modified)
+                var msg = $"Book copy {newCopy.BookCopyId} added successfully to \"{book.Title}\". ";
 
+                return Json(new
+                {
+                    success = true,
+                    message = msg,
+                    totalCopies = total,
+                    availableCopies = avail,
+                    onLoanCopies = onLoan,
+                    maxLimitReached = total >= 5,
+                    bookId = book.ID,
+                    bookTitle = book.Title,
+                 });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return Json(new { error = true, message = "Something went wrong!" });
+                return Json(new
+                {
+                    success = false,
+                    message = $"Error adding copy: {ex.Message}"
+                });
             }
-
-            return Json(new { error = true, message = "An unexpected error occurred!" });
         }
+
 
         //DELETE: Books/Delete /5
         [HttpDelete]

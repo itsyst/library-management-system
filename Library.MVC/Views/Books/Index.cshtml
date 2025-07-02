@@ -1,4 +1,5 @@
 ﻿@model IEnumerable<Library.Domain.BookDetails>
+@Html.AntiForgeryToken()
 
 @{
     ViewData["Title"] = "Books Library";
@@ -76,9 +77,9 @@
     <div class="books-grid" id="booksGrid">
         @foreach (var book in Model)
         {
-            <div class="book-card" 
-                 data-title="@book.Title.ToLower()" 
-                 data-author="@(book.Author?.Name?.ToLower() ?? "")" 
+            <div class="book-card"
+                 data-title="@book.Title.ToLower()"
+                 data-author="@(book.Author?.Name?.ToLower() ?? "")"
                  data-isbn="@book.ISBN.ToLower()"
                  data-book-id="@book.ID">
                 <div class="book-card-inner">
@@ -145,7 +146,7 @@
             </div>
         }
     </div>
- 
+
     <div class="empty-state" id="emptyState" style="display: none;">
         <div class="empty-content">
             <i class="bi bi-book"></i>
@@ -164,7 +165,7 @@
         // ====================================================================
         // CONFIGURATION & INITIALIZATION
         // ====================================================================
-        
+
         // Configure toastr
         if (typeof toastr !== 'undefined') {
             toastr.options = {
@@ -193,7 +194,7 @@
         // ====================================================================
         // SEARCH FUNCTIONALITY
         // ====================================================================
-        
+
         document.getElementById('searchInput').addEventListener('input', function(e) {
             const searchTerm = e.target.value.toLowerCase();
             const bookCards = document.querySelectorAll('.book-card');
@@ -238,10 +239,10 @@
         // ====================================================================
         // FILTER FUNCTIONALITY
         // ====================================================================
-        
+
         async function handleFilterChange(event, status) {
             event.preventDefault();
-            
+
             // Update active filter button
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -250,7 +251,7 @@
 
             // Load new data
             await loadBooksData(status);
-            
+
             // Update URL without page reload
             const newUrl = `${window.location.pathname}?status=${status}`;
             window.history.pushState({ status }, '', newUrl);
@@ -259,20 +260,20 @@
         // ====================================================================
         // DATA LOADING
         // ====================================================================
-        
+
         async function loadBooksData(status) {
             try {
                 showLoading(true);
-                
+
                 const response = await fetch(`/Books/GetAll?status=${status}`);
                 const result = await response.json();
-                
+
                 if (result && result.data) {
                     currentBooks = result.data;
                     filteredBooks = [...currentBooks];
                     renderBooks(currentBooks);
                     currentStatus = status;
-                    
+
                     showSuccess(`Loaded ${currentBooks.length} books`);
                 } else {
                     throw new Error('Invalid response format');
@@ -288,10 +289,10 @@
         // ====================================================================
         // BOOK RENDERING
         // ====================================================================
-        
+
         function renderBooks(books) {
             const booksGrid = document.getElementById('booksGrid');
-            
+
             if (books.length === 0) {
                 booksGrid.innerHTML = '';
                 document.getElementById('emptyState').style.display = 'block';
@@ -299,9 +300,9 @@
             }
 
             document.getElementById('emptyState').style.display = 'none';
-            
+
             booksGrid.innerHTML = books.map((book, index) => createBookCardHTML(book, index)).join('');
-            
+
             // Animate cards entrance
             setTimeout(() => {
                 const cards = document.querySelectorAll('.book-card');
@@ -311,7 +312,7 @@
                     }, index * 50);
                 });
             }, 100);
-            
+
             updateResultsCount(books.length);
         }
 
@@ -330,9 +331,9 @@
             });
 
             return `
-                <div class="book-card" 
-                     data-title="${book.title.toLowerCase()}" 
-                     data-author="${(book.author?.name || '').toLowerCase()}" 
+                <div class="book-card"
+                     data-title="${book.title.toLowerCase()}"
+                     data-author="${(book.author?.name || '').toLowerCase()}"
                      data-isbn="${book.isbn.toLowerCase()}"
                      data-book-id="${book.id}"
                      style="animation-delay: ${index * 50}ms">
@@ -396,7 +397,7 @@
         // ====================================================================
         // BOOK ACTIONS
         // ====================================================================
-        
+
         // Show book details in SweetAlert modal
         async function showBookDetails(bookId) {
             try {
@@ -444,8 +445,8 @@
                 showError('Failed to load book details');
             }
         }
- 
-        // Add book copy with SweetAlert confirmation
+
+        // Add book copy with proper statistics update
         async function addBookCopy(bookId, bookTitle) {
             const result = await Swal.fire({
                 title: 'Add Book Copy',
@@ -471,25 +472,80 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        await Swal.fire({
-                            title: 'Success!',
-                            text: data.message,
-                            icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                        
-                        showSuccess(data.message);
-                        await loadBooksData(currentStatus);
+                        // Show success toastr
+                        toastr.success(data.message, 'Copy Added!');
+
+                        // Update the specific book card statistics
+                        updateBookCardStatistics(bookId, data.totalCopies, data.availableCopies);
+
                     } else {
-                        showError(data.message || 'Failed to add book copy');
+                        toastr.error(data.message, 'Cannot Add Copy');
                     }
                 } catch (error) {
                     console.error('Error adding book copy:', error);
-                    showError('An error occurred while adding the book copy');
+                    toastr.error('Failed to add copy. Please try again.', 'Network Error');
                 }
             }
         }
+
+        // Update book card statistics without full page reload
+        function updateBookCardStatistics(bookId, totalCopies, availableCopies) {
+            // Find the specific book card
+            const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
+
+            if (bookCard) {
+                // Update total copies stat
+                const totalCopiesElement = bookCard.querySelector('.stat-item:first-child span');
+                if (totalCopiesElement) {
+                    totalCopiesElement.textContent = `${totalCopies} copies`;
+
+                    // Add visual feedback
+                    totalCopiesElement.style.animation = 'countUp 0.6s ease';
+                    totalCopiesElement.style.color = '#28a745';
+                    setTimeout(() => {
+                        totalCopiesElement.style.color = '';
+                        totalCopiesElement.style.animation = '';
+                    }, 1000);
+                }
+
+                // Update available copies stat
+                const availableCopiesElement = bookCard.querySelector('.stat-item:last-child span');
+                if (availableCopiesElement) {
+                    availableCopiesElement.textContent = `${availableCopies} available`;
+
+                    // Add visual feedback
+                    availableCopiesElement.style.animation = 'countUp 0.6s ease';
+                    availableCopiesElement.style.color = '#28a745';
+                    setTimeout(() => {
+                        availableCopiesElement.style.color = '';
+                        availableCopiesElement.style.animation = '';
+                    }, 1000);
+                }
+
+                // Update status badge if book was unavailable
+                const statusBadge = bookCard.querySelector('.status-badge');
+                if (statusBadge && statusBadge.classList.contains('unavailable')) {
+                    statusBadge.classList.remove('unavailable');
+                    statusBadge.classList.add('available');
+                    statusBadge.innerHTML = '<i class="bi bi-check-circle-fill"></i> Available';
+                }
+
+                // Add highlight effect to the entire card
+                bookCard.style.outline = '2px solid #28a745';
+                bookCard.style.outlineOffset = '4px';
+                setTimeout(() => {
+                    bookCard.style.outline = '';
+                    bookCard.style.outlineOffset = '';
+                }, 1500);
+            }
+        }
+
+        // Utility function for anti-forgery token
+        function getAntiForgeryToken() {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            return token ? token.value : '';
+        }
+
 
         // Delete book with SweetAlert confirmation
         async function deleteBook(bookId, bookTitle) {
@@ -528,7 +584,7 @@
                             timer: 2000,
                             showConfirmButton: false
                         });
-                        
+
                         showSuccess(data.message);
                         await loadBooksData(currentStatus);
                     } else {
@@ -544,7 +600,7 @@
         // ====================================================================
         // UTILITY FUNCTIONS
         // ====================================================================
-        
+
         function updateResultsCount(count, searchTerm = '') {
             const countElement = document.getElementById('resultsCount');
             if (countElement) {
@@ -559,7 +615,7 @@
         function showLoading(show) {
             const spinner = document.getElementById('loadingSpinner');
             const grid = document.getElementById('booksGrid');
-            
+
             if (spinner) spinner.style.display = show ? 'inline-block' : 'none';
             if (grid) grid.style.opacity = show ? '0.6' : '1';
         }
@@ -590,7 +646,7 @@
         // ====================================================================
         // INITIALIZATION
         // ====================================================================
-        
+
         document.addEventListener('DOMContentLoaded', function() {
             // Animate initial cards
             const bookCards = document.querySelectorAll('.book-card');
@@ -612,7 +668,7 @@
                     e.preventDefault();
                     document.getElementById('searchInput').focus();
                 }
-                
+
                 // Escape to clear search
                 if (e.key === 'Escape') {
                     const searchInput = document.getElementById('searchInput');
