@@ -237,29 +237,37 @@ namespace Library.MVC.Controllers
                 return NotFound();
 
             // Get book with Author and Copies included
-            var bookDetails = await _bookService.GetBookOrDefaultAsync(
+            var book = await _bookService.GetBookOrDefaultAsync(
                 b => b.ID == id,
                 includeProperties: "Author,Copies");
 
-            if (bookDetails == null)
+            if (book is null)
                 return NotFound();
 
+            // Pull the copies that belong to this book
+            var copies = await _bookCopyService.GetAllBookCopiesAsync(c => c.DetailsId == id);
+
             // Get authors for dropdown
-            IEnumerable<Author> authors = await _authorService.GetAllAsync();
- 
-            BookDetailsViewModel model = new()
+            var authors = await _authorService.GetAllAsync();
+
+            var viewModel = new BookDetailsViewModel
             {
-                BookDetails = bookDetails,
+                BookDetails = book,
                 Authors = authors.Select(i => new SelectListItem
                 {
                     Text = i.Name,
                     Value = i.Id.ToString()
                 }),
-                Copies = bookDetails.Copies.Count
+                Copies = copies.Count,
+                BookCopies = copies.Select(c => new SelectListItem
+                {
+                    Text = c.BookCopyId.ToString(),
+                    Value = c.BookCopyId.ToString()
+                })
 
             };
- 
-            return View(model);
+
+            return View(viewModel);
         }
 
         [HttpPost]
@@ -280,13 +288,15 @@ namespace Library.MVC.Controllers
                     return NotFound();
 
                 // Handle cover image upload
-                if(model.CoverImage != null && model.CoverImage.Length > 0)
+                if (model.CoverImage != null && model.CoverImage.Length > 0)
                 {
                     var imageResult = await ProcessCoverImageAsync(model.CoverImage);
-                    if (imageResult != null) {
+                    if (imageResult != null)
+                    {
                         existingBook.ImageBinary = imageResult.ImageBase64;
                     }
-                    else {
+                    else
+                    {
                         TempData["Error"] = imageResult.ErrorMessage;
                         return await ReloadEditView(model);
                     }
@@ -305,6 +315,7 @@ namespace Library.MVC.Controllers
 
                 // Update properties on EXISTING tracked entity
                 existingBook.AuthorID = model.BookDetails.AuthorID;
+                existingBook.Description = model.BookDetails.Description;
                 existingBook.Description = model.BookDetails.Description;
                 existingBook.Title = model.BookDetails.Title;
                 // ISBN is not updated as it's readonly in edit
@@ -332,8 +343,7 @@ namespace Library.MVC.Controllers
             });
             return View(model);
         }
-
-
+ 
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == 0)
@@ -362,7 +372,7 @@ namespace Library.MVC.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAll(BookDetailsViewModel model)
         {
-            return View(model);
+            return RedirectToAction(nameof(Index));
         }
 
         #region API CALLS
@@ -477,7 +487,7 @@ namespace Library.MVC.Controllers
                     maxLimitReached = total >= 5,
                     bookId = book.ID,
                     bookTitle = book.Title,
-                 });
+                });
             }
             catch (Exception ex)
             {
@@ -548,6 +558,7 @@ namespace Library.MVC.Controllers
             return Json(new { error = true, message = "An unexpected error occurred." });
         }
 
+        //DELETE: Books/Delete /5
         [HttpDelete]
         public async Task<IActionResult> Delete(int id)
         {
@@ -587,7 +598,6 @@ namespace Library.MVC.Controllers
             {
                 return Json(new { error = true, message = "Something went wrong." });
             }
-            return Json(new { error = true, message = "An unexpected error occurred." });
         }
         #endregion
 

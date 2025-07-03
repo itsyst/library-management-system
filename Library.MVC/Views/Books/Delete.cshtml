@@ -1,45 +1,209 @@
 ﻿@model Library.MVC.ViewModels.BookDetailsViewModel
-
 @{
-    ViewData["Title"] = "Delete";
-
-#pragma warning disable
+    ViewData["Title"] = "Delete Copies";
 }
+@Html.AntiForgeryToken()
 
-<h2 class="text-primary">Delete Copies</h2>
-<hr />
-<div class="row">
-    <div class="col-12 col-md-8" id="js-destroy">
-        <div class="form-group mb-3">
-            <label asp-for="BookDetails.Title" class="control-label"></label>
-            <input asp-for="BookDetails.Title" class="form-control" disabled />
-        </div>
-        <div>
-            <input type="hidden" asp-for="BookDetails.ID " />
-            <div class="form-group">
-                <label for="formControlSelect">Copies</label>
-                <select class="form-control" id="formControlSelect">
-                    <option selected>---Select Book Copy---</option>
-                    @if (Model.Copies != 0)
-                    {
-                        @foreach (var item in @Model.BookCopies)
-                        {
-                            <option id="copy-item" data-copy-id=@item.Value>@item.Value</option>
-                        }
-                    }
-                </select>
-            </div>
-            <div class="custom-control custom-switch">
-                <input type="checkbox" class="custom-control-input" name="toggle" data-copies=@Model.Copies data-book-id=@Model.BookDetails.ID id="customSwitch">
-                <label class="custom-control-label" for="customSwitch">Delete All</label>
-            </div>
-            <div class="mt-3">
-                <a class="btn btn-danger text-white js-delete" data-book-details="@Model.BookDetails.ID">Delete</a>
-                <a class="btn btn-outline-danger" asp-controller="Books" asp-action="Index">Back to List</a>
-            </div>
+<div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+
+            <!-- ── HEADER ───────────────────────────────────────── -->
+            <header class="edit-header mb-5 d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 fw-bold mb-2" style="color:var(--primary-color)">Delete Copies</h1>
+                    <p class="text-muted">
+                        @Model.BookDetails?.Title •
+                        <span id="total-copies-badge"
+                              class="badge-danger badge-pill">
+                            @Model.Copies @((Model.Copies <= 1) ? "copy" : "copies")
+                        </span>
+                    </p>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a asp-action="Edit"
+                       asp-route-id="@Model.BookDetails?.ID"
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </a>
+
+                    <button type="button"
+                            class="btn btn-danger delete-btn delete-book-btn ml-2"
+                            data-book-id="@Model.BookDetails?.ID">
+                        <i class="bi bi-trash"></i> Delete Book
+                    </button>
+                </div>
+            </header>
+
+            <!-- ── COPIES GRID ─────────────────────────────────── -->
+            <section id="copies-grid" class="row g-4 mb-4">
+                @foreach (var copy in Model.BookCopies ?? Enumerable.Empty<SelectListItem>())
+                {
+                    <div class="col-6 col-md-4 col-lg-2 mb-4">
+                        <article class="copy-card rounded-3 shadow-sm border border-1"
+                                 tabindex="0"
+                                 data-copy-id="@copy.Value">
+                            <img src="@(Model.BookDetails?.ImageBinary ?? "/uploads/9780555816023.png")"
+                                 class="w-100 rounded copy-image"
+                                 alt="Book cover" />
+
+                            <div class="copy-overlay d-flex align-items-center justify-content-center">
+                                <i class="bi bi-check-circle-fill fs-1 text-white"></i>
+                            </div>
+
+                            <footer class="text-center mt-2">
+                                <span class="badge bg-info rounded-pill mb-2">Id: @copy.Value</span>
+                            </footer>
+                        </article>
+                    </div>
+                }
+            </section>
+
+            <!-- ── BULK TOOLBAR ────────────────────────────────── -->
+            <footer id="bulk-toolbar" class="bulk-toolbar d-flex align-items-center justify-content-between p-3 bg-light rounded-top shadow-sm">
+                <div>
+                    <label class="form-check m-0">
+                        <input id="select-all" type="checkbox" class="form-check-input" hidden>
+                    </label>
+
+                    <span id="select-copies-badge"
+                          class="badge bg-primary-subtle text-primary-emphasis">
+                        0 of @Model.Copies selected
+                    </span>
+                </div>
+                <div>
+                    <a asp-action="Index"
+                        class="btn btn-outline-secondary mr-2">
+                        <i class="bi bi-arrow-left"></i> Back to Library
+                    </a>
+                    <button id="delete-selected-btn"
+                            class="btn btn-danger delete-btn"
+                            disabled>
+                        <i class="bi bi-trash-fill"></i> Delete Selected
+                    </button>
+                </div>
+            </footer>
+
         </div>
     </div>
 </div>
+
 @section Scripts {
-<script src="~/js/bookCopies.js"></script>
-    }
+    <script type="module">
+        /* ── SETUP ───────────────────────────────────────────────────── */
+        const token        = document.querySelector('[name="__RequestVerificationToken"]').value;
+        const grid         = document.getElementById('copies-grid');
+        const toolbar      = document.getElementById('bulk-toolbar');
+        const selectAllBox = document.getElementById('select-all');
+        const selectCounterBdg = document.getElementById('select-copies-badge');
+        const totalCounterBdg     = document.getElementById('total-copies-badge');
+        const deleteSelBtn = document.getElementById('delete-selected-btn');
+        const deleteBookBtn= document.querySelector('.delete-book-btn');
+        const chosen       = new Set();
+
+        /* simple fetch wrapper */
+        const del = (url) => fetch(url, { method: 'DELETE', headers:{ 'RequestVerificationToken': token }})
+                             .then(r => r.json());
+
+        /* ── UI helpers ─────────────────────────────────────────────── */
+        function refreshToolbar() {
+            const totalText = totalCounterBdg.textContent.trim();
+            const total = parseInt(totalText.split(' ')[0]);
+
+            // Update selection counter
+            selectCounterBdg.textContent = `${chosen.size} of ${total} selected`;
+
+            // Enable/disable delete button
+            deleteSelBtn.disabled = chosen.size === 0;
+           
+            // toolbar.classList.toggle('d-none', chosen.size === 0);
+            // selectAllBox.checked     = chosen.size &&
+            //                            chosen.size === grid.querySelectorAll('.copy-card:not(.disabled)').length;
+            
+            // Show/hide the select all checkbox and badge based on selection
+            if (chosen.size === 0) {
+                selectAllBox.parentElement.style.display = 'none'; // Hide select all
+            } else {
+                selectAllBox.parentElement.style.display = 'block'; // Show select all
+            }
+
+            // Update select all checkbox state
+            const availableCards = grid.querySelectorAll('.copy-card:not(.disabled)').length;
+            selectAllBox.checked = chosen.size > 0 && chosen.size === availableCards;
+        }
+
+        /* ── CARD TOGGLE ────────────────────────────────────────────── */
+        grid.addEventListener('click', e => {
+            const card = e.target.closest('.copy-card');
+            if (!card || card.classList.contains('disabled')) return;
+
+            card.classList.toggle('selected');
+            const id = card.dataset.copyId;
+            card.classList.contains('selected') ? chosen.add(id) : chosen.delete(id);
+            refreshToolbar();
+        });
+        grid.addEventListener('keydown', e => {
+            if (e.key === ' ') { e.preventDefault(); e.target.click(); }
+        });
+
+        /* ── SELECT ALL ─────────────────────────────────────────────── */
+        selectAllBox.addEventListener('change', () => {
+            chosen.clear();
+            grid.querySelectorAll('.copy-card:not(.disabled)').forEach(card => {
+                if (selectAllBox.checked !== card.classList.contains('selected')) card.click();
+            });
+        });
+
+        /* ── BULK DELETE ────────────────────────────────────────────── */
+        deleteSelBtn.addEventListener('click', async () => {
+            if (!chosen.size) return;
+            const ok = await Swal.fire({
+                title: `Delete ${chosen.size} ${chosen.size <= 1 ? 'copy' : 'copies'}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-trash"></i> Delete',
+                confirmButtonColor: '#dc3545'
+            }).then(r => r.isConfirmed);
+            if (!ok) return;
+
+            for (const id of chosen) {
+                const res = await del(`/Books/DeleteSingle/${id}`);
+                if (!res.success) { toastr.error(res.message); return; }
+                const card = grid.querySelector(`[data-copy-id="${id}"]`);
+                card?.classList.add('disabled');
+                card?.classList.remove('selected');
+            }
+
+            // Update total badge with proper singular/plural
+            const newTotal = parseInt(totalCounterBdg.textContent.trim().split(' ')[0]) - chosen.size;
+            totalCounterBdg.textContent = `${newTotal} ${newTotal === 1 ? 'copy' : 'copies'}`;
+
+            toastr.success(`${chosen.size} ${chosen.size === 1 ? 'copy' : 'copies'} deleted`);
+            chosen.clear();
+            refreshToolbar();
+        });
+
+        /* ── DELETE ENTIRE BOOK ─────────────────────────────────────── */
+        deleteBookBtn.addEventListener('click', async () => {
+            const confirmed = await Swal.fire({
+                title: 'Delete this book and all copies?',
+                icon : 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-trash"></i> Delete Book',
+                confirmButtonColor: '#dc3545'
+            }).then(r => r.isConfirmed);
+            if (!confirmed) return;
+
+            const id  = deleteBookBtn.dataset.bookId;
+            const res = await del(`/Books/Delete/${id}`);
+            res.success
+                ? (toastr.success(res.message), setTimeout(()=>location.href='/Books',1200))
+                :  toastr.error(res.message);
+        });
+
+        /* ── toastr default ─────────────────────────────────────────── */
+        toastr.options = { positionClass:'toast-top-right', timeOut:3500, progressBar:true };
+    </script>
+}
+ 

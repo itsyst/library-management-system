@@ -15,7 +15,9 @@
                         <h1 class="display-6 fw-bold mb-2" style="color:var(--primary-color)">Edit Book</h1>
                         <p class="text-muted" id="headerDescription">
                             Update book details and manage cover image -
-                            <span id="headerCopyInfo">@(Model.BookDetails?.Copies?.Count ?? 0) copies total</span>
+                            <span id="headerCopyInfo" class="badge-warning badge-pill">
+                                @Model.BookDetails?.Copies.Count @(Model.BookDetails?.Copies.Count <=1 ? "copy " : "copies ") total
+                            </span>
                         </p>
                     </div>
                     <div class="header-actions">
