@@ -18,6 +18,7 @@ namespace Library.Infrastructure.Services
             if (filter != null)
             {
                 query = query.Where(filter);
+
             }
             if (includeProperties != null)
             {
@@ -35,5 +36,24 @@ namespace Library.Infrastructure.Services
             return await query.ToListAsync();
 
         }
+
+        public async Task<Author?> GetAuthorOrDefaultAsync(Expression<Func<Author, bool>> filter,
+                    string? includeProperties = null, bool tracked = true)
+        {
+            IQueryable<Author> query = tracked ? _table : _table.AsNoTracking();
+
+            query = query.Where(filter);
+
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProp);
+                }
+            }
+
+            return await query.FirstOrDefaultAsync();
+        }
     }
 }
+

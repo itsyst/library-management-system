@@ -116,6 +116,30 @@ namespace Library.MVC.Controllers
             return Json(new { data = authors });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAuthor(int id)
+        {
+            var author = await _authorService.GetAuthorOrDefaultAsync(
+                a => a.Id == id,
+                includeProperties: "Books");
+
+            if (author == null)
+                return NotFound();
+
+            var result = new
+            {
+                id = author.Id,
+                name = author.Name,
+                books = author.Books?.Select(b => new
+                {
+                    id = b.ID,
+                    title = b.Title
+                })
+            };
+
+            return Json(result);
+        }
+
         // DELETE: Authors/Delete/5
         [HttpDelete]
         public async Task<IActionResult> Delete(int id)

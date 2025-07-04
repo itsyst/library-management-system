@@ -6,7 +6,6 @@
     /* Colors */
     --primary-color: #3b82f6;
     --primary-dark: #1d4ed8;
-    --primary-red-dark: #ffcccc;
     --success-color: #10b981;
     --danger-color: #ef4444;
     --warning-color: #f59e0b;
@@ -62,7 +61,6 @@
 /* ========================== FORM COMPONENTS ================================ */
 /* ============================================================================ */
 
-/* ----- FORM GROUPS & LABELS ----- */
 .form-group {
     margin-bottom: 1.5rem;
 }
@@ -87,7 +85,6 @@
     backdrop-filter: blur(10px);
 }
 
-/* ----- FORM INPUTS ----- */
 .modern-input {
     border: 2px solid var(--gray-200);
     border-radius: var(--radius-md);
@@ -128,7 +125,7 @@
         box-shadow: none !important;
     }
 
-/* ----- SEARCH COMPONENTS ----- */
+/* Search Components */
 .search-section {
     max-width: 600px;
     margin: 0 auto;
@@ -188,7 +185,7 @@
         color: var(--gray-700);
     }
 
-/* ----- UPLOAD AREAS ----- */
+/* Upload Areas */
 .upload-area {
     border: 2px dashed var(--gray-200);
     border-radius: var(--radius-md);
@@ -240,63 +237,54 @@
 /* ========================== BUTTON COMPONENTS ============================== */
 /* ============================================================================ */
 
-/* ----- PRIMARY BUTTONS ----- */
-.btn-modern {
+.btn-modern,
+.btn-add-new,
+.primary-action {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 12px 20px;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: var(--white);
     text-decoration: none;
+    border-radius: var(--radius-md);
     font-weight: 600;
-    font-size: 0.85rem;
-    transition: all var(--transition-normal);
-    overflow: hidden;
-    position: relative;
     border: none;
     cursor: pointer;
-    border-radius: var(--radius-lg);
+    transition: all var(--transition-normal);
+    justify-content: space-between;
 }
 
-    .btn-modern::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        transition: left var(--transition-normal);
-    }
+.btn-add-new {
+    background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+    box-shadow: var(--shadow-md);
+}
 
-    .btn-modern:hover::before {
-        left: 0;
-    }
-
-    .btn-modern span,
-    .btn-modern i {
-        position: relative;
-        z-index: 2;
-    }
-
-    .btn-modern:hover {
+    .btn-modern:hover,
+    .btn-add-new:hover,
+    .primary-action:hover {
+        transform: translateY(-2px);
         color: var(--white);
         text-decoration: none;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
 
-    .btn-modern i {
-        transition: transform var(--transition-normal);
-    }
+.btn-modern:hover {
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
 
+.btn-add-new:hover {
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.primary-action:hover {
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+    .primary-action:hover i,
     .btn-modern:hover i {
         transform: translateX(4px);
     }
 
-/* ----- SPECIALIZED BUTTONS ----- */
 .save-btn {
     background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
     border: none;
@@ -317,48 +305,7 @@
         box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
     }
 
-.btn-add-new {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
-    color: var(--white);
-    text-decoration: none;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    box-shadow: var(--shadow-md);
-    transition: all var(--transition-normal);
-}
-
-    .btn-add-new:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-        color: var(--white);
-        text-decoration: none;
-    }
-
-.add-copy-btn {
-    transition: all var(--transition-normal);
-}
-
-    .add-copy-btn:hover:not(:disabled) {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-    }
-
-    .add-copy-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-.btn-outline-secondary:disabled {
-    background-color: var(--gray-500);
-    color: var(--white);
-    border-color: var(--gray-500);
-}
-
-/* ----- FILTER BUTTONS ----- */
+/* Filter Buttons */
 .filter-group {
     display: flex;
     background: rgba(255, 255, 255, 0.9);
@@ -396,7 +343,7 @@
             color: var(--white);
         }
 
-/* ----- ACTION BUTTONS ----- */
+/* Action Buttons */
 .action-btn {
     width: 2.5rem;
     height: 2.5rem;
@@ -419,9 +366,13 @@
 .view-btn {
     background: var(--gray-600);
 }
- 
+
 .add-btn {
     background: var(--success-color);
+}
+
+.delete-btn.action-btn {
+    background: var(--danger-color);
 }
 
 .action-btn:hover {
@@ -431,51 +382,34 @@
 }
 
 /* ============================================================================ */
-/* ========================== BOOK CARD COMPONENTS ========================== */
+/* ========================== CARD COMPONENTS ================================ */
 /* ============================================================================ */
 
-/* ----- MODERN BOOK CARDS ----- */
-.modern-book-card {
-    height: 420px;
-    perspective: 1000px;
-}
-
-.card-wrapper {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: var(--radius-xl);
-    overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: var(--shadow-lg), 0 2px 8px rgba(0, 0, 0, 0.05);
-    height: 100%;
-}
-
-.modern-book-card:hover .card-wrapper {
-    transform: translateY(-12px) rotateX(5deg);
-    box-shadow: var(--shadow-xl), 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-/* ----- BOOKS GRID CARDS ----- */
-.books-grid {
+/* Universal Card Grid */
+.books-grid,
+.authors-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 2rem;
     margin-top: 2rem;
 }
 
-.book-card {
+/* Universal Card Base */
+.book-card,
+.author-card {
     opacity: 0;
     transform: translateY(20px);
     transition: all 0.6s ease;
 }
 
-    .book-card.loaded {
+    .book-card.loaded,
+    .author-card.loaded {
         opacity: 1;
         transform: translateY(0);
     }
 
-.book-card-inner {
+.book-card-inner,
+.author-card-inner {
     background: rgba(255, 255, 255, 0.95);
     border-radius: var(--radius-lg);
     overflow: hidden;
@@ -488,50 +422,55 @@
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.book-card:hover .book-card-inner {
+.book-card:hover .book-card-inner,
+.author-card:hover .author-card-inner {
     transform: translateY(-8px);
     box-shadow: var(--shadow-xl);
 }
 
-/* ----- BOOK COVER SECTIONS ----- */
-.image-container {
-    height: 240px;
-    position: relative;
-    overflow: hidden;
-}
-
-.book-cover {
+/* Cover/Avatar Sections */
+.book-cover,
+.author-avatar {
     position: relative;
     height: 200px;
     overflow: hidden;
 }
 
-.book-image,
-.cover-image {
+.author-avatar {
+    height: 180px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.cover-image,
+.book-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform var(--transition-slow);
 }
 
-.modern-book-card:hover .book-image,
-.book-card:hover .cover-image {
+.book-card:hover .cover-image,
+.book-card:hover .book-image {
     transform: scale(1.1);
 }
 
-.gradient-overlay {
+.avatar-circle {
     position: absolute;
-    inset: 0;
-    background: linear-gradient(45deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
-    opacity: 0;
-    transition: opacity var(--transition-normal);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: white;
 }
 
-.modern-book-card:hover .gradient-overlay {
-    opacity: 1;
-}
-
-/* ----- STATUS BADGES ----- */
+/* Status Badges */
 .status-badge {
     position: absolute;
     top: 1rem;
@@ -544,20 +483,21 @@
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    animation: badgeSlideIn 0.6s ease forwards;
 }
 
-    .status-badge.available {
+    .status-badge.available,
+    .status-badge.has-books {
         background: rgba(34, 197, 94, 0.9);
         color: var(--white);
     }
 
-    .status-badge.unavailable {
-        background: rgba(239, 68, 68, 0.9);
+    .status-badge.unavailable,
+    .status-badge.no-books {
+        background: rgba(156, 163, 175, 0.9);
         color: var(--white);
     }
 
-/* ----- QUICK ACTIONS ----- */
+/* Quick Actions Overlay */
 .quick-actions {
     position: absolute;
     inset: 0;
@@ -570,74 +510,27 @@
     transition: opacity var(--transition-normal);
 }
 
-.book-card:hover .quick-actions {
+.book-card:hover .quick-actions,
+.author-card:hover .quick-actions {
     opacity: 1;
 }
 
-/* ----- BOOK OVERLAYS ----- */
-.book-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 20px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
-    transform: translateY(100%);
-    transition: transform var(--transition-normal);
-}
-
-.modern-book-card:hover .book-overlay {
-    transform: translateY(0);
-}
-
-.book-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: end;
-}
-
-.copies-count {
-    font-weight: bold;
-    text-align: center;
-    color: var(--white);
-}
-
-.count-number {
-    display: block;
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.count-label {
-    font-size: 0.75rem;
-    opacity: 0.8;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* ----- BOOK INFORMATION ----- */
-.card-content {
-    padding: 20px;
-    /*height: 140px;*/
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.book-info {
+/* Card Content */
+.book-info,
+.author-info {
     padding: 1.5rem;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
 }
 
-.book-title {
+.book-title,
+.author-name {
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--gray-900);
     margin-bottom: 0.5rem;
-    line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -659,19 +552,9 @@
     font-family: monospace;
 }
 
-.book-description {
-    font-size: 0.8rem;
-    color: var(--gray-400);
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin-bottom: 0;
-}
-
-/* ----- BOOK STATS ----- */
-.book-stats {
+/* Stats */
+.book-stats,
+.author-stats {
     display: flex;
     gap: 1rem;
     margin-bottom: 1.5rem;
@@ -690,40 +573,41 @@
         color: var(--primary-color);
     }
 
-.primary-action {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    color: var(--white);
-    text-decoration: none;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    margin-top: auto;
-    transition: all var(--transition-normal);
+/* Books Preview (for authors) */
+.books-preview {
+    margin-bottom: 1rem;
 }
 
-    .primary-action:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-        color: var(--white);
-        text-decoration: none;
-    }
+.book-titles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
 
-    .primary-action i {
-        transition: transform var(--transition-normal);
-    }
+.book-title-pill {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 8px;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-    .primary-action:hover i {
-        transform: translateX(4px);
-    }
+.more-books {
+    font-size: 0.7rem;
+    color: var(--gray-500);
+    font-style: italic;
+}
 
 /* ============================================================================ */
 /* ========================== SPECIALIZED COMPONENTS ======================== */
 /* ============================================================================ */
 
-/* ----- AUTHOR INPUT GROUPS ----- */
+/* Author Input Groups */
 .author-input-group {
     box-shadow: var(--shadow-md);
     border-radius: var(--radius-md);
@@ -759,11 +643,7 @@
             transform: translateY(-1px);
         }
 
-        .author-input-group .add-author-btn i {
-            font-size: 0.875rem;
-        }
-
-/* ----- STATISTICS CARDS ----- */
+/* Statistics Cards */
 .stat-card {
     background: rgba(255, 255, 255, 0.9);
     border-radius: var(--radius-md);
@@ -797,115 +677,10 @@
     font-size: 0.9rem;
 }
 
-#totalCopiesCount,
-#availableCopiesCount,
-#onLoanCopiesCount {
-    transition: all var(--transition-normal);
-}
-
-#headerCopyInfo {
-    transition: all var(--transition-normal);
-}
-
-/* ----- UTILITY CLASSES ----- */
-.copy-limit-info {
-    font-size: 0.8rem;
-    color: var(--gray-500);
-    margin-top: 0.25rem;
-}
-
-.copy-input-updated {
-    background-color: #d4edda !important;
-    border-color: #c3e6cb !important;
-    transition: all var(--transition-normal) !important;
-}
-
-.book-card-updated {
-    transition: all var(--transition-normal);
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.2);
-}
-
-.search-match {
-    animation: highlightMatch var(--transition-normal) ease;
-}
-
-.stat-item.updated span {
-    color: var(--success-color) !important;
-    font-weight: 600;
-    animation: pulse 0.8s ease;
-}
-
-.results-info {
-    font-size: 0.9rem;
-    color: var(--gray-500);
-}
-
-.image-info {
-    background: rgba(108, 117, 125, 0.1);
-    border-radius: var(--radius-sm);
-    padding: 0.75rem;
-    text-align: center;
-}
-
-/* ============================================================================ */
-/* ========================== PAGE SPECIFIC STYLES ========================== */
-/* ============================================================================ */
-
-/* ----- HOME PAGE ----- */
-.hero-section {
-    min-height: 60vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    color: var(--white);
-}
-
-/* ----- BOOKS LIST PAGE ----- */
-.books-header {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
-    border-radius: var(--radius-lg);
-    padding: 2rem;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.header-content h1 {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-}
-
-.empty-content {
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-    .empty-content i {
-        font-size: 4rem;
-        color: var(--gray-400);
-        margin-bottom: 1rem;
-    }
-
-    .empty-content h3 {
-        color: var(--gray-700);
-        margin-bottom: 0.5rem;
-    }
-
-    .empty-content p {
-        color: var(--gray-500);
-        margin-bottom: 2rem;
-    }
-
-/* ----- EDIT PAGE ----- */
-.edit-header {
+/* Page Headers */
+.edit-header,
+.books-header,
+.authors-header {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
     border-radius: var(--radius-lg);
     padding: 2rem;
@@ -925,6 +700,7 @@
     gap: 12px;
 }
 
+/* Cover Upload */
 .cover-upload-section {
     position: sticky;
     top: 2rem;
@@ -974,6 +750,7 @@
     margin-bottom: 0.5rem;
 }
 
+/* Form Components */
 .form-card {
     background: rgba(255, 255, 255, 0.95);
     border-radius: var(--radius-xl);
@@ -1003,58 +780,95 @@
     border: 1px solid rgba(229, 231, 235, 0.5);
 }
 
-/* ----- DELETE PAGE ----- */
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-content {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+    .empty-content i {
+        font-size: 4rem;
+        color: var(--gray-400);
+        margin-bottom: 1rem;
+    }
+
+    .empty-content h3 {
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-content p {
+        color: var(--gray-500);
+        margin-bottom: 2rem;
+    }
+
+/* Results Info */
+.results-info {
+    font-size: 0.9rem;
+    color: var(--gray-500);
+}
+
+.search-match {
+    animation: highlightMatch var(--transition-normal) ease;
+}
+
+/* ============================================================================ */
+/* ========================== DELETE PAGE COMPONENTS ======================== */
+/* ============================================================================ */
+
 .copy-card {
     cursor: pointer;
-    transition: transform .2s,box-shadow .2s;
+    transition: transform .2s, box-shadow .2s;
     border-radius: .85rem;
     overflow: hidden;
-    position: relative
+    position: relative;
 }
+
     .copy-card:hover {
         transform: translateY(-6px);
-        box-shadow: 0 10px 25px rgba(0,0,0,.15)
+        box-shadow: 0 10px 25px rgba(0,0,0,.15);
     }
- 
-.copy-card.selected {
-    box-shadow: 0 0 0 3px var(--primary-dark)
-}
 
-.copy-card.disabled {
-    filter: grayscale(.75);
-    pointer-events: none
-}
+    .copy-card.selected {
+        box-shadow: 0 0 0 3px var(--primary-dark);
+    }
+
+    .copy-card.disabled {
+        filter: grayscale(.75);
+        pointer-events: none;
+    }
 
 .copy-overlay {
-    inset: 0;
     position: absolute;
+    inset: 0;
     background: rgba(220,53,69,.25);
     opacity: 0;
     transition: opacity .2s;
     display: flex;
     align-items: center;
-    justify-content: center
-} 
+    justify-content: center;
+}
 
 .copy-card.selected .copy-overlay {
-    opacity: 1
+    opacity: 1;
 }
 
 .copy-image {
     width: 100%;
     aspect-ratio: 3/4;
-    object-fit: cover
+    object-fit: cover;
 }
-/* toolbar */
+
 .bulk-toolbar {
-    display: flex;
-    justify-content: space-between;
     backdrop-filter: blur(10px);
     box-shadow: 0 -4px 12px rgba(0,0,0,.08);
     border-top-left-radius: 1rem;
     border-top-right-radius: 1rem;
-    padding: 1rem;
-    z-index: 1030
 }
 
 .delete-selected-copies-button {
@@ -1063,27 +877,21 @@
     border: none;
 }
 
-.delete-selected-copies-button:disabled {
-    pointer-events: none;
-    opacity: 0.6;
-    transition: none;
-}
+    .delete-selected-copies-button:disabled {
+        pointer-events: none;
+        opacity: 0.6;
+        transition: none;
+    }
 
-.delete-selected-copies-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 14px rgba(185,28,28,.35);
-    transition: transform .15s ease,box-shadow .15s;
-}
- 
+    .delete-selected-copies-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px rgba(185,28,28,.35);
+        transition: transform .15s ease, box-shadow .15s;
+    }
+
 /* ============================================================================ */
 /* ========================== ANIMATIONS ===================================== */
 /* ============================================================================ */
-
-@keyframes badgeSlideIn {
-    to {
-        transform: translateY(0);
-    }
-}
 
 @keyframes fadeIn {
     from {
@@ -1094,18 +902,6 @@
     to {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-@keyframes slideInFromLeft {
-    from {
-        opacity: 0;
-        transform: translateX(-30px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(0);
     }
 }
 
@@ -1124,18 +920,6 @@
     100% {
         transform: scale(1);
         color: var(--success-color);
-    }
-}
-
-@keyframes fadeInScale {
-    0% {
-        opacity: 0;
-        transform: scale(0.95);
-    }
-
-    100% {
-        opacity: 1;
-        transform: scale(1);
     }
 }
 
@@ -1163,23 +947,22 @@
         transform: scale(1);
     }
 }
+    /* ============================================================================ */
+    /* ========================== SWEETALERT2 CUSTOMIZATION ==================== */
+    /* ============================================================================ */
 
-/* ============================================================================ */
-/* ========================== SWEETALERT2 CUSTOMIZATION ==================== */
-/* ============================================================================ */
+    .swal2-popup {
+        width: 600px !important;
+        border-radius: var(--radius-lg) !important;
+    }
 
-.swal2-popup {
-    width: 600px !important;
-    border-radius: var(--radius-lg) !important;
-}
-
-.swal2-actions {
-    display: flex !important;
-    justify-content: space-between !important;
-    padding: 0 22px !important;
-    width: 100% !important;
-}
-
+    .swal2-actions {
+        display: flex !important;
+        justify-content: space-between !important;
+        padding: 0 22px !important;
+        width: 100% !important;
+    }
+ 
 /* ============================================================================ */
 /* ========================== RESPONSIVE DESIGN ============================== */
 /* ============================================================================ */
@@ -1208,24 +991,8 @@
 }
 
 @media (max-width: 768px) {
-    .modern-book-card {
-        height: 380px;
-    }
-
-    .image-container {
-        height: 200px;
-    }
-
-    .card-content {
-        height: 180px;
-        padding: 16px;
-    }
-
-    .book-title {
-        font-size: 1rem;
-    }
-
-    .grid-responsive {
+    .books-grid,
+    .authors-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
@@ -1236,7 +1003,8 @@
     }
 
     .edit-header,
-    .books-header {
+    .books-header,
+    .authors-header {
         padding: 1rem;
     }
 
@@ -1253,29 +1021,11 @@
         flex: 1;
         justify-content: center;
     }
-
-    .books-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
-    .search-section {
-        margin-top: 1rem;
-    }
 }
 
 @media (max-width: 480px) {
     .container-modern {
         padding: 0 1rem;
-    }
-
-    .modern-book-card {
-        height: 350px;
-    }
-
-    .card-content {
-        padding: 12px;
-        height: 150px;
     }
 }
 
@@ -1299,36 +1049,27 @@
         --black: #f9fafb;
     }
 
-    .card-wrapper,
-    .book-card-inner {
-        background: rgba(30, 30, 30, 0.95);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .book-title {
-        color: var(--gray-100);
-    }
-
-    .book-author,
-    .book-isbn {
-        color: var(--gray-400);
-    }
-
-    .book-description {
-        color: var(--gray-400);
-    }
-
+    .book-card-inner,
+    .author-card-inner,
     .edit-header,
     .books-header,
+    .authors-header,
     .cover-preview-container,
     .form-card {
         background: rgba(30, 30, 30, 0.95);
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
+    .book-title,
+    .author-name,
     .section-title,
     .form-label {
-        color: var(--gray-900);
+        color: var(--gray-100);
+    }
+
+    .book-author,
+    .book-isbn {
+        color: var(--gray-400);
     }
 
     .modern-input {
@@ -1376,6 +1117,11 @@
         background: rgba(55, 65, 81, 0.9);
     }
 
+    .book-title-pill {
+        background: var(--gray-700);
+        color: var(--gray-300);
+    }
+
     .swal2-popup {
         background: #2d3748 !important;
         color: #e2e8f0 !important;
@@ -1386,6 +1132,6 @@
     }
 
     .bulk-toolbar {
-        background: rgba(30,30,30,.85)
+        background: rgba(30,30,30,.85);
     }
 }
