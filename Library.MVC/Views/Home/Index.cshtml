@@ -10,17 +10,17 @@
         @foreach (var book in Model)
         {
             <div class="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4">
-                <div class="modern-book-card position-relative">
+                <div class="home-book-card position-relative">
                     <!-- Main card container -->
                     <div class="book-card-inner">
                         <!-- Image container with overlay -->
-                        <div class="image-container position-relative overflow-hidden">
+                        <div class="home-image-container position-relative overflow-hidden">
                             <img src="@book.ImageBinary"
                                  alt="@book.Title"
                                  class="book-image" />
 
                             <!-- Gradient overlay -->
-                            <div class="gradient-overlay"></div>
+                            <div class="home-gradient-overlay"></div>
 
                             <!-- Status badge -->
                             <div class="status-badge @(book.Copies.Any() ? "available" : "unavailable")">
@@ -29,22 +29,22 @@
                             </div>
 
                             <!-- Book info overlay -->
-                            <div class="book-overlay position-absolute">
-                                <div class="book-meta">
-                                    <div class="copies-count">
-                                        <span class="count-number">@book.Copies.Count()</span>
-                                        <span class="count-label">copies</span>
+                            <div class="home-book-overlay position-absolute">
+                                <div class="home-book-meta">
+                                    <div class="home-copies-count">
+                                        <span class="home-count-number">@book.Copies.Count()</span>
+                                        <span class="home-count-label">copies</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Content area -->
-                        <div class="book-info">
-                            <div class="card-content">
-                                <h3 class="book-title">@book.Title</h3>
-                                <p class="book-author">by: @book.Author?.Name</p>
-                                <p class="book-description">@book.Description</p>
+                        <div class="home-book-content">
+                            <div class="home-card-info">
+                                <h3 class="home-book-title">@book.Title</h3>
+                                <p class="home-book-author">by: @book.Author?.Name</p>
+                                <p class="home-book-description">@book.Description</p>
                             </div>
                             <!-- Action area -->
                             <div class="card-actions">

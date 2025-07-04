@@ -55,7 +55,7 @@
                         <!-- Status Badge -->
                         <div class="status-badge @(author.Books?.Any() == true ? "has-books" : "no-books")">
                             <i class="bi @(author.Books?.Any() == true ? "bi-book-fill" : "bi-book")"></i>
-                            @(author.Books?.Count ?? 0) Books
+                            @(author.Books?.Count ?? 0)  @(author.Books?.Count <= 1 ? "Book " : "Books")
                         </div>
 
                         <!-- Quick Actions Overlay -->
