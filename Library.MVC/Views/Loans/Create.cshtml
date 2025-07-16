@@ -1,104 +1,936 @@
 ﻿@using Library.Domain.Utilities
-@model Library.MVC.ViewModels.LoanViewModel;
+@model Library.MVC.ViewModels.LoanViewModel
 
 @{
-    ViewData["Title"] = "Create";
-#pragma warning disable
+    ViewData["Title"] = "Skapa nytt lån";
 }
+@Html.AntiForgeryToken()
 
-<h1 class="text-primary mx-2">Create Loan</h1>
-<hr />
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <form asp-action="Create" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group  mb-3 col-12">
-                <label class="control-label">Member Name</label>
-                <select asp-for="Member.Id" class="form-control">
-                    <option class="form-control" disabled selected>--Select Member--</option>
-                    @if (Model.Members.Count() != 0)
-                    { @foreach (var item in @Model.Members)
-                        {
-                            <option id="member-item" data-member-id=@item.Value>@item.Text</option>
-                        }
-                    }
-                </select>
-                <span asp-validation-for="BookCopy.BookCopyId" class="text-danger"></span>
-            </div>
-            @for (var i = 1; i <= LoanStatus.Max; i++)
-            {
-                <div class="form-group  mb-3 col-12">
-                    <label class="control-label"> Copy № (@(i)) </label>
-                    <select id=book-copy-@(i) class="form-control">
-                        <option class="form-control" disabled selected>--Select Book Copy--</option>
-                        @if (Model.Copies.Count() != 0)
-                        { @foreach (var item in @Model.Copies)
-                            {
-                                <option id="copy-item" data-copy-id=@item.Value>@item.Text</option>
-                            }
-                        }
-                    </select>
-                    <span asp-validation-for="BookCopy.BookCopyId" class="text-danger"></span>
+<!-- Skapandecontainer -->
+<div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            <!-- Rubriksektion -->
+            <div class="loan-header mb-5 text-center position-relative overflow-hidden">
+                <!-- Bakgrundsmönster -->
+                <div class="header-pattern position-absolute w-100 h-100"></div>
+
+                <div class="position-relative z-2">
+                    <div class="loan-creation-icon mb-3">
+                        <div class="icon-wrapper">
+                            <i class="bi bi-book-half"></i>
+                            <div class="icon-pulse"></div>
+                        </div>
+                    </div>
+
+                    <h1 class="display-5 fw-bold mb-2 header-title pb-1">Skapa nytt lån</h1>
+                    <p class="text-muted mb-0 fs-5">Låna ut böcker till biblioteksmedlemmar</p>
+
+                    <!-- Navigationsbrödsmulor -->
+                    <nav class="mt-3">
+                        <ol class="breadcrumb justify-content-center mb-0">
+                            <li class="breadcrumb-item">
+                                <a asp-action="Index" class="text-decoration-none">
+                                    <i class="bi bi-journal-bookmark"></i> Lån
+                                </a>
+                            </li>
+                            <li class="breadcrumb-item active">Skapa nytt</li>
+                        </ol>
+                    </nav>
                 </div>
-            }
-            <div class="form-group  mt-3  mx-3">
-                <input type="submit" value="Create" class="btn btn-primary js-create" />
-                <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
             </div>
-        </form>
+
+            <!-- Huvudsakande kort -->
+            <div class="creation-card">
+                <div class="card-body p-5">
+                    <form asp-action="Create" method="post" class="modern-loan-form" id="loanForm">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger modern-alert"></div>
+                        <div class="row g-4">
+                            <!-- Medlemsvalsektion -->
+                            <div class="col-12 col-lg-6">
+                                <div class="form-section">
+                                    <h4 class="section-title mb-4">
+                                        <i class="bi bi-person-circle mr-2"></i>
+                                        Medlemsinformation
+                                    </h4>
+
+                                    <!-- Medlemssökning och val -->
+                                    <div class="form-group mb-4">
+                                        <label class="form-label fw-semibold">
+                                            <i class="bi bi-person mr-1"></i>Välj medlem
+                                        </label>
+                                        <div class="member-selection-container">
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="bi bi-search"></i>
+                                                </span>
+                                                <input type="text"
+                                                       class="form-control border-start-0 ps-0"
+                                                       id="memberSearch"
+                                                       placeholder="Sök medlemmar på namn eller personnummer..."
+                                                       autocomplete="off">
+                                                <button class="btn btn-outline-secondary" type="button" id="clearMemberSearch">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </div>
+
+                                            <select asp-for="SelectedMemberId"
+                                                    class="form-select modern-input mt-3"
+                                                    id="memberSelect"
+                                                    required>
+                                                <option value="">-- Välj en medlem --</option>
+                                                @if (Model.Members != null)
+                                                {
+                                                    @foreach (var member in Model.Members)
+                                                    {
+                                                        <option value="@member.Value" data-member-info="@member.Text">
+                                                            @member.Text
+                                                        </option>
+                                                    }
+                                                }
+                                            </select>
+                                            <span asp-validation-for="SelectedMemberId" class="validation-message"></span>
+                                        </div>
+
+                                        <!-- Visning av medlemsdetaljer -->
+                                        <div id="memberDetails" class="member-details-card mt-3 d-none">
+                                            <div class="member-info">
+                                                <div class="member-avatar">
+                                                    <i class="bi bi-person-fill"></i>
+                                                </div>
+                                                <div class="member-data">
+                                                    <h6 id="memberName" class="mb-1"></h6>
+                                                    <p id="memberEmail" class="text-muted mb-1"></p>
+                                                    <div class="member-stats">
+                                                        <span class="badge bg-primary text-white mr-2">
+                                                            <span id="activeLoans">0</span>/<span class="text-white" id="maxLoans">0</span> Aktiva lån
+                                                        </span>
+                                                        <span class="badge bg-success text-white" id="memberStatus">Aktiv</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Låninställningar -->
+                                    <div class="form-group mb-4">
+                                        <label asp-for="LoanPeriodDays" class="form-label fw-semibold">
+                                            <i class="bi bi-calendar-event mr-1"></i>Låneperiod
+                                        </label>
+                                        <div class="input-group">
+                                            <input asp-for="LoanPeriodDays"
+                                                   type="number"
+                                                   class="form-control modern-input"
+                                                   min="1"
+                                                   max="90"
+                                                   value="14"
+                                                   id="loanPeriod">
+                                            <span class="input-group-text">dagar</span>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            <i class="bi bi-info-circle mr-1"></i>
+                                            Återlämningsdatum: <span id="dueDate" class="fw-semibold">--</span>
+                                        </small>
+                                        <span asp-validation-for="LoanPeriodDays" class="validation-message"></span>
+                                    </div>
+
+                                    <!-- Anteckningar -->
+                                    <div class="form-group">
+                                        <label asp-for="Notes" class="form-label fw-semibold">
+                                            <i class="bi bi-chat-text mr-1"></i>Anteckningar (Valfritt)
+                                        </label>
+                                        <textarea asp-for="Notes"
+                                                  class="form-control modern-input"
+                                                  rows="3"
+                                                  placeholder="Lägg till eventuella särskilda anteckningar för detta lån..."></textarea>
+                                        <span asp-validation-for="Notes" class="validation-message"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bokvalsektion -->
+                            <div class="col-12 col-lg-6">
+                                <div class="form-section">
+                                    <h4 class="section-title mb-4">
+                                        <i class="bi bi-books mr-2"></i>
+                                        Bokurval
+                                    </h4>
+
+                                    <!-- Boksökning -->
+                                    <div class="form-group mb-4">
+                                        <label class="form-label fw-semibold">
+                                            <i class="bi bi-search mr-1"></i>Sök tillgängliga böcker
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0">
+                                                <i class="bi bi-book"></i>
+                                            </span>
+                                            <input type="text"
+                                                   class="form-control border-start-0 ps-0"
+                                                   id="bookSearch"
+                                                   placeholder="Sök på titel, författare eller ISBN..."
+                                                   autocomplete="off">
+                                            <button class="btn btn-outline-secondary" type="button" id="clearBookSearch">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lista över tillgängliga böcker -->
+                                    <div class="available-books-container">
+                                        <div class="books-header d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="mb-0">Tillgängliga böcker</h6>
+                                            <span class="badge bg-info text-white" id="availableBooksCount">
+                                                @(Model.Copies?.Count() ?? 0) tillgängliga
+                                            </span>
+                                        </div>
+
+                                        <div class="books-list" id="availableBooksList">
+                                            @if (Model.Copies != null && Model.Copies.Any())
+                                            {
+                                                @foreach (var book in Model.Copies)
+                                                {
+                                                    <div class="book-item" data-book-id="@book.Value" data-book-title="@book.Text">
+                                                        <div class="book-info">
+                                                            <div class="book-cover">
+                                                                <i class="bi bi-book"></i>
+                                                            </div>
+                                                            <div class="book-details text-start">
+                                                                <h6 class="book-title">@book.Text</h6>
+                                                                <p class="book-meta text-muted">Exemplar Id: @book.Value</p>
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" class="btn btn-outline-primary btn-sm add-book-btn" data-book-id="@book.Value">
+                                                            <i class="bi bi-plus"></i>
+                                                        </button>
+                                                    </div>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <div class="empty-state text-center py-4">
+                                                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                                                    <p class="text-muted">Inga tillgängliga böcker</p>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <!-- Valda böcker -->
+                                    <div class="selected-books-container mt-4">
+                                        <div class="selected-header d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="mb-0">Valda böcker</h6>
+                                            <span class="badge bg-success text-white" id="selectedBooksCount">0 valda</span>
+                                        </div>
+
+                                        <div class="selected-books-list" id="selectedBooksList">
+                                            <div class="empty-selection text-center py-4">
+                                                <i class="bi bi-bookmark-plus fs-1 text-muted"></i>
+                                                <p class="text-muted">Inga böcker valda ännu</p>
+                                                <small class="text-muted">Klicka på +- knappen för att lägga till böcker</small>
+                                            </div>
+                                        </div>
+
+                                        <input type="hidden" asp-for="SelectedBookCopyIds" id="selectedBookCopyIds" />
+                                        <span asp-validation-for="Loan.BookCopyLoans" class="validation-message"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Formuläråtgärder -->
+                        <div class="form-actions d-flex gap-3 justify-content-end flex-wrap mt-5 pt-4 border-top">
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg px-4">
+                                <i class="bi bi-arrow-left mr-2"></i>
+                                Avbryt
+                            </a>
+
+                            <button type="submit" class="btn btn-success btn-lg px-4 mx-2" id="submitBtn">
+                                <i class="bi bi-bookmark-plus mr-2"></i>
+                                Skapa lån
+                                <div class="btn-loading d-none">
+                                    <div class="spinner-border spinner-border-sm ml-2"></div>
+                                </div>
+                            </button>
+                        </div>
+
+                        <!-- Information om tangentbordsgenvägar -->
+                        <div class="shortcuts-info mt-4 text-center">
+                            <small class="text-muted">
+                                <i class="bi bi-keyboard mr-1"></i>
+                                <kbd class="text-black-50">Ctrl</kbd> + <kbd class="text-black-50">Enter</kbd> för att skapa • <kbd class="text-black-50">Esc</kbd> för att avbryta
+                            </small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Container för framgångsanimation -->
+            <div id="successAnimation" class="success-animation d-none">
+                <div class="success-content">
+                    <div class="success-icon">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <h3>Lån skapat!</h3>
+                    <p>Böcker har lånat ut till medlem</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     @{
-    await Html.RenderPartialAsync("_ValidationScriptsPartial");
-}
-<script>
-   $(document).ready(function(){
-        var send = false;
-        var items  = [];
-        var member = 0;
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 
-        $(`#Member_Id`).change(function(){
-            member = $(this).find(':selected')[0].attributes["data-member-id"].value;
-        });
+    <script>
+        // Konfigurera toastr
+        toastr.options = {
+            closeButton: true,
+            newestOnTop: true,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            timeOut: "3500",
+            showMethod: "fadeIn",
+            hideMethod: "fadeOut"
+        };
 
-        for(var i=1; i<=@LoanStatus.Max; i++){
-            $(`#book-copy-${i}`).each(function(){
-                $(`#book-copy-${i}`).change(function(){
-                    // Avoide using the same bookc copy id more than ones
-                    var selection = $(this).find(':selected')[0].attributes["data-copy-id"].value;
+        document.addEventListener('DOMContentLoaded', function() {
+            const memberSelect = document.getElementById('memberSelect');
+            const memberSearch = document.getElementById('memberSearch');
+            const memberDetails = document.getElementById('memberDetails');
+            const bookSearch = document.getElementById('bookSearch');
+            const availableBooksList = document.getElementById('availableBooksList');
+            const selectedBooksList = document.getElementById('selectedBooksList');
+            const selectedBookCopyIds = document.getElementById('selectedBookCopyIds');
+            const loanPeriod = document.getElementById('loanPeriod');
+            const dueDate = document.getElementById('dueDate');
+            const form = document.getElementById('loanForm');
+            const submitBtn = document.getElementById('submitBtn');
 
-                    items.push(selection);
+            let selectedBooks = [];
+            let availableBooks = @Html.Raw(Json.Serialize(Model.Copies?.ToDictionary(c => c.Value, c => c.Text) ?? new Dictionary<string, string>()));
 
-                    $(`select`).children(`option[data-copy-id=${selection}]`).hide();
-                })
-            })
-        }
+            // Initialisera beräkning av återlämningsdatum
+            updateDueDate();
 
-        $(".js-create").on('click', function(e){
-            e.preventDefault();
-            send = true;
-            //TODO
-            items = items.slice(0, @LoanStatus.Max);
-            if(items.length <= @LoanStatus.Max && send) {
-                $.ajax({
-                    type: 'POST',
-                    url: "@Url.Action("Create","Loans")",
-                    dataType: 'json',
-                    traditional: true,
-                    data: { ids: items , id:  member},
-                    success: function (data) {
-                        if (data.success) {
-                            window.location.replace('/Loans/Index');
-                            toastr.success(data.message);
-                        }else{
-                            toastr.warning(data.message, {timeOut: 10000});
+            // Funktionalitet för medlemssökning
+            memberSearch.addEventListener('input', function() {
+              const searchTerm = this.value.trim().toLowerCase();
+              const select = document.getElementById('memberSelect');
+              const options = Array.from(select.options);
+
+              // Show or hide each option based on search
+              options.forEach(opt => {
+                if (opt.value === '') return; // keep placeholder always visible
+                opt.hidden = !opt.text.toLowerCase().includes(searchTerm);
+              });
+
+              // If the currently selected option is hidden, reset selection
+              if (select.selectedIndex > 0 && select.options[select.selectedIndex].hidden) {
+                select.value = '';
+                memberDetails.classList.add('d-none');
+                // document.getElementById('memberDetails').classList.add('d-none');
+              }
+
+              // Optionally, you can show the first matching option
+              const firstVisible = options.find(opt => !opt.hidden && opt.value);
+              if (firstVisible) {
+                select.selectedIndex = options.indexOf(firstVisible);
+                select.dispatchEvent(new Event('change')); // trigger your existing handler
+              }
+            });
+
+
+            // Rensa medlemssökning och visa alla alternativ vid klick på X
+            document.getElementById('clearMemberSearch').addEventListener('click', function() {
+              memberSearch.value = '';
+              Array.from(memberSelect.options).forEach(opt => opt.hidden = false);
+              memberSelect.value = '';
+              memberDetails.classList.add('d-none');
+              memberSearch.focus();
+            });
+
+
+            // Ändring av medlemsval
+            memberSelect.addEventListener('change', async function() {
+                const memberId = this.value;
+                if (memberId) {
+                    await loadMemberDetails(memberId);
+                } else {
+                    memberDetails.classList.add('d-none');
+                }
+            });
+
+            // Funktionalitet för boksökning
+            bookSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const bookItems = availableBooksList.querySelectorAll('.book-item');
+
+                bookItems.forEach(item => {
+                    const title = item.dataset.bookTitle.toLowerCase();
+                    item.style.display = title.includes(searchTerm) ? '' : 'none';
+                });
+
+                updateBookCounts();
+            });
+
+            // Rensa boksökning
+            document.getElementById('clearBookSearch').addEventListener('click', function() {
+                bookSearch.value = '';
+                availableBooksList.querySelectorAll('.book-item').forEach(item => {
+                    item.style.display = '';
+                });
+                bookSearch.focus();
+                updateBookCounts();
+            });
+
+            // Lägg till bok i urval
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.add-book-btn')) {
+                    const btn = e.target.closest('.add-book-btn');
+                    const bookId = btn.dataset.bookId;
+                    const bookItem = btn.closest('.book-item');
+                    const bookTitle = bookItem.dataset.bookTitle;
+
+                    addBookToSelection(bookId, bookTitle);
+                }
+            });
+
+            // Ta bort bok från urval
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.remove-book-btn')) {
+                    const btn = e.target.closest('.remove-book-btn');
+                    const bookId = btn.dataset.bookId;
+
+                    removeBookFromSelection(bookId);
+                }
+            });
+
+            // Ändring av låneperiod
+            loanPeriod.addEventListener('change', updateDueDate);
+
+            // Formulärinlämning
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const memberId = memberSelect.value;
+                const bookIds = selectedBooks;
+
+                if (!memberId) {
+                    toastr.error('Vänligen välj en medlem');
+                    memberSelect.focus();
+                    return;
+                }
+
+                if (bookIds.length === 0) {
+                    toastr.error('Vänligen välj minst en bok');
+                    return;
+                }
+
+                // Visa laddningstillstånd
+                submitBtn.disabled = true;
+                const loadingSpinner = submitBtn.querySelector('.btn-loading');
+                loadingSpinner.classList.remove('d-none');
+                submitBtn.querySelector('i').classList.add('d-none');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('memberId', memberId);
+                    formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+                    bookIds.forEach(id => {
+                        formData.append('bookCopyIds', id);
+                    });
+
+                    if (document.getElementById('Notes').value) {
+                        formData.append('Notes', document.getElementById('Notes').value);
+                    }
+
+                    const response = await fetch('/Loans/Create', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showSuccessAnimation();
+                        toastr.success(result.message);
+                        setTimeout(() => {
+                            window.location.href = '/Loans';
+                        }, 2000);
+                    } else {
+                        toastr.error(result.message);
+                        resetSubmitButton();
+                    }
+                } catch (error) {
+                    console.error('Fel vid skapande av lån:', error);
+                    toastr.error('Ett oväntat fel inträffade');
+                    resetSubmitButton();
+                }
+            });
+
+            // Hjälpfunktioner
+            async function loadMemberDetails(memberId) {
+                try {
+                    const response = await fetch(`/Loans/GetMemberDetails?memberId=${memberId}`);
+                    const result = await response.json();
+
+                    if (result.success) {
+                        const member = result.member;
+                        document.getElementById('memberName').textContent = member.name;
+                        document.getElementById('memberEmail').textContent = member.email;
+                        document.getElementById('activeLoans').textContent = member.activeLoans;
+                        document.getElementById('maxLoans').textContent = member.maxLoans;
+                        document.getElementById('memberStatus').textContent = member.status === 'Active' ? 'Aktiv' : member.status;
+                        document.getElementById('memberStatus').className = `badge ${member.status === 'Active' ? 'bg-success text-white' : 'bg-warning text-white'}`;
+
+                        memberDetails.classList.remove('d-none');
+
+                        if (!member.canBorrow) {
+                            toastr.warning(`Medlemmen har nått maxgränsen för lån (${member.activeLoans}/${member.maxLoans})`);
                         }
                     }
-                });
+                } catch (error) {
+                    console.error('Fel vid laddning av medlemsdetaljer:', error);
+                }
             }
+
+            function addBookToSelection(bookId, bookTitle) {
+                if (selectedBooks.includes(bookId)) {
+                    toastr.warning('Boken är redan vald');
+                    return;
+                }
+
+                selectedBooks.push(bookId);
+                updateSelectedBookCopyIds();
+                renderSelectedBooks();
+                hideAvailableBook(bookId);
+                updateBookCounts();
+
+                toastr.success(`Lade till "${bookTitle}" i urvalet`);
+            }
+
+            function removeBookFromSelection(bookId) {
+                const index = selectedBooks.indexOf(bookId);
+                if (index > -1) {
+                    selectedBooks.splice(index, 1);
+                    updateSelectedBookCopyIds();
+                    renderSelectedBooks();
+                    showAvailableBook(bookId);
+                    updateBookCounts();
+
+                    toastr.info('Bok borttagen från urval');
+                }
+            }
+
+            function renderSelectedBooks() {
+                if (selectedBooks.length === 0) {
+                    selectedBooksList.innerHTML = `
+                        <div class="empty-selection text-center py-4">
+                            <i class="bi bi-bookmark-plus fs-1 text-muted"></i>
+                            <p class="text-muted">Inga böcker valda ännu</p>
+                            <small class="text-muted">Klicka på +- knappen för att lägga till böcker</small>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const selectedBooksHtml = selectedBooks.map(bookId => {
+                    const bookTitle = availableBooks[bookId] || `Bok ${bookId}`;
+                    return `
+                        <div class="selected-book-item" data-book-id="${bookId}">
+                            <div class="book-info">
+                                <div class="book-cover selected">
+                                    <i class="bi bi-bookmark-check"></i>
+                                </div>
+                                <div class="book-details">
+                                    <h6 class="book-title">${bookTitle}</h6>
+                                    <p class="book-meta text-muted">Exemplar Id: ${bookId}</p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-book-btn" data-book-id="${bookId}">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+                selectedBooksList.innerHTML = selectedBooksHtml;
+            }
+
+            function hideAvailableBook(bookId) {
+                const bookItem = availableBooksList.querySelector(`[data-book-id="${bookId}"]`);
+                if (bookItem) {
+                    bookItem.style.display = 'none';
+                }
+            }
+
+            function showAvailableBook(bookId) {
+                const bookItem = availableBooksList.querySelector(`[data-book-id="${bookId}"]`);
+                if (bookItem) {
+                    bookItem.style.display = '';
+                }
+            }
+
+            function updateSelectedBookCopyIds() {
+                selectedBookCopyIds.value = selectedBooks.join(',');
+            }
+
+            function updateBookCounts() {
+                const visibleBooks = availableBooksList.querySelectorAll('.book-item[style=""], .book-item:not([style])').length;
+                document.getElementById('availableBooksCount').textContent = `${visibleBooks} tillgängliga`;
+                document.getElementById('selectedBooksCount').textContent = `${selectedBooks.length} valda`;
+            }
+
+            function updateDueDate() {
+                const days = parseInt(loanPeriod.value) || 14;
+                const due = new Date();
+                due.setDate(due.getDate() + days);
+                dueDate.textContent = due.toLocaleDateString('sv-SE');
+            }
+
+            function resetSubmitButton() {
+                submitBtn.disabled = false;
+                const loadingSpinner = submitBtn.querySelector('.btn-loading');
+                loadingSpinner.classList.add('d-none');
+                submitBtn.querySelector('i').classList.remove('d-none');
+            }
+
+            function showSuccessAnimation() {
+                const animation = document.getElementById('successAnimation');
+                animation.classList.remove('d-none');
+
+                setTimeout(() => {
+                    animation.classList.add('d-none');
+                }, 3000);
+            }
+
+            // Tangentbordsgenvägar
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+Enter för att skicka
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (memberSelect.value && selectedBooks.length > 0) {
+                        form.dispatchEvent(new Event('submit'));
+                    }
+                }
+
+                // Escape för att avbryta
+                if (e.key === 'Escape') {
+                    if (confirm('Är du säker på att du vill avbryta? Alla osparade ändringar kommer att förloras.')) {
+                        window.location.href = '/Loans';
+                    }
+                }
+            });
+
+            // Initialisera räknare
+            updateBookCounts();
         });
-    })
-</script>
+    </script>
 }
+
+<style>
+    /* Rubrikstyling */
+    .loan-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+        border-radius: var(--radius-xl);
+        padding: 3rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .header-pattern {
+        background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+    }
+
+    .header-title {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Ikon för lånskapande */
+    .loan-creation-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    .icon-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+
+    .icon-pulse {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        border: 2px solid var(--primary-color);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+        opacity: 0.6;
+    }
+
+    @@keyframes pulse {
+        0% {
+            transform: scale(1);
+            opacity: 0.6;
+        }
+
+        50% {
+            transform: scale(1.1);
+            opacity: 0.3;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 0.6;
+        }
+    }
+
+    /* Skapandekort */
+    .creation-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-xl);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all var(--transition-normal);
+    }
+
+    /* Formulärsektioner */
+    .form-section {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(5px);
+    }
+
+    .section-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+    }
+
+    /* Kort för medlemsdetaljer */
+    .member-details-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .member-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .member-avatar {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    /* Boklistor */
+    .books-list {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.9);
+    }
+
+    .book-item, .selected-book-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        margin-bottom: 0.5rem;
+        background: white;
+        transition: all var(--transition-fast);
+    }
+
+        .book-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+    .book-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+    }
+
+    .book-cover {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+    }
+
+        .book-cover.selected {
+            background: linear-gradient(135deg, var(--success-color) 0%, var(--success-dark) 100%);
+        }
+
+    .book-title {
+        margin: 0;
+        padding:.2rem 0;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .book-meta {
+        margin: 0;
+        font-size: 0.8rem;
+    }
+
+    .selected-books-list {
+        min-height: 200px;
+        border: 2px dashed var(--gray-300);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        background: rgba(248, 250, 252, 0.8);
+    }
+
+    /* Framgångsanimation */
+    .success-animation {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .success-content {
+        background: white;
+        padding: 3rem;
+        border-radius: var(--radius-xl);
+        text-align: center;
+        box-shadow: var(--shadow-xl);
+        animation: successPop 0.6s ease;
+    }
+
+    .success-icon {
+        font-size: 4rem;
+        color: var(--success-color);
+        margin-bottom: 1rem;
+    }
+
+    @@keyframes successPop {
+        0% {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    /* Tomma tillstånd */
+    .empty-state, .empty-selection {
+        color: var(--gray-400);
+    }
+
+    /* Modern input */
+    .modern-input {
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        padding: 0.75rem;
+        transition: all var(--transition-normal);
+        background: rgba(255, 255, 255, 0.9);
+    }
+
+        .modern-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background: white;
+            outline: none;
+        }
+
+    /* Responsiv design */
+    @@media (max-width: 768px) {
+        .loan-header {
+            padding: 2rem 1rem;
+        }
+
+        .creation-card .card-body {
+            padding: 2rem 1.5rem;
+        }
+
+        .form-section {
+            padding: 1.5rem;
+        }
+
+        .books-list {
+            max-height: 300px;
+        }
+    }
+
+    /* Tangentbordsgenvägar */
+    .shortcuts-info kbd {
+        background: var(--gray-100);
+        border: 1px solid var(--gray-300);
+        border-radius: 4px;
+        padding: 0.2rem 0.4rem;
+        font-size: 0.8rem;
+    }
+
+    /* Anpassad rullningslist */
+    .books-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .books-list::-webkit-scrollbar-track {
+        background: var(--gray-100);
+        border-radius: 3px;
+    }
+
+    .books-list::-webkit-scrollbar-thumb {
+        background: var(--gray-300);
+        border-radius: 3px;
+    }
+
+        .books-list::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-400);
+        }
+</style>

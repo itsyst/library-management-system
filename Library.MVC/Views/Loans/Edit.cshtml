@@ -1,0 +1,1764 @@
+﻿@using Library.Domain
+@using Library.Domain.Entities
+@using Library.Domain.Enums
+@using Library.Domain.Utilities
+@model Library.MVC.ViewModels.LoanViewModel
+
+@{
+    ViewData["Title"] = $"Redigera lån - #{Model?.Loan?.Id}";
+    var currentBooks = ViewBag.CurrentBooks as IEnumerable<BookCopyLoan>;
+    var members = ViewBag.Members as IEnumerable<Member>;
+}
+@Html.AntiForgeryToken()
+
+<!-- Modern lånredigeringscontainer -->
+<div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-11">
+            <!-- rubriksektion -->
+            <div class="edit-header mb-5 position-relative overflow-hidden">
+                <!-- Bakgrundsmönster -->
+                <div class="header-pattern position-absolute w-100 h-100"></div>
+
+                <div class="position-relative z-2">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="edit-icon mb-3">
+                                <div class="icon-wrapper">
+                                    <i class="bi bi-pencil-square"></i>
+                                    <div class="status-indicator @GetStatusClass(Model.Loan.Status)">
+                                        <i class="@GetStatusIcon(Model.Loan.Status)"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h1 class="display-6 fw-bold mb-2 header-title pb-1">Redigera lån</h1>
+                            <p class="text-muted mb-3 fs-5">
+                                Lån #@Model.Loan.Id •
+                                <span class="badge bg-@GetStatusBadgeClass(Model.Loan.Status) text-white">
+                                    @GetSwedishLoanStatus(Model.Loan.Status)
+                                </span>
+                            </p>
+
+                            <!-- Snabbinformation -->
+                            <div class="quick-stats d-flex flex-wrap gap-3">
+                                <div class="stat-item m-1">
+                                    <i class="bi bi-person mr-1"></i>
+                                    <span>@Model.Loan.Member?.Name</span>
+                                </div>
+                                <div class="stat-item m-1">
+                                    <i class="bi bi-book mr-1"></i>
+                                    <span class="stat-value">@Model.Loan.TotalBooks</span>
+                                    <span>@(Model.Loan.Fee > 1 ? "böcker" : "bok")</span>
+                                </div>
+                                <div class="stat-item m-1">
+                                    <i class="bi bi-currency-exchange mr-1"></i>
+                                    <span class="@(Model.Loan.Fee > 0 ? "text-danger" : "text-success") stat-value">
+                                        @FormatSwedishCurrency(Model.Loan.Fee)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4 text-lg-end">
+                            <div class="header-actions d-flex flex-column gap-2">
+                                <a asp-action="Index" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left mr-1"></i>
+                                    Tillbaka till lån
+                                </a>
+                                @if (Model.Loan.Status != LoanStatus.Returned)
+                                {
+                                    <button type="button" class="row btn btn-success m-1" onclick="returnLoan(@Model.Loan.Id)">
+                                        <i class="bi bi-check-circle mr-1"></i>
+                                        Återlämna böcker
+                                    </button>
+                                }
+                                <div class="action-group d-flex gap-2">
+                                    @if (Model.Loan.Status != LoanStatus.Returned)
+                                    {
+                                        <button type="button" class="row btn btn-outline-primary m-1" onclick="extendLoan(@Model.Loan.Id)">
+                                            <i class="bi bi-calendar-plus mr-1"></i>
+                                            Förlänga lån
+                                        </button>
+                                    }
+                                    <a asp-action="Details" asp-route-id="@Model.Loan.Id" class="btn btn-outline-primary m-1">
+                                        <i class="bi bi-eye mr-1"></i>
+                                        Visa detaljer
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form asp-action="Edit" asp-route-id="@Model.Loan.Id" method="post" id="loanEditForm" class="needs-validation" novalidate>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger modern-alert"></div>
+                <input asp-for="Loan.Id" type="hidden" />
+                <input asp-for="Loan.MemberId" type="hidden" />
+                <input asp-for="Loan.BookCopyLoans" type="hidden" />
+
+                <div class="row g-4">
+                    <!-- Låneinformationskort -->
+                    <div class="col-12 col-lg-8 mb-3">
+                        <div class="form-card loan-form-card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-journal-text mr-1"></i>
+                                    Låneinformation
+                                </h5>
+                            </div>
+                            <div class="card-body" style="padding: 10px 0 !important">
+                                <div class="row g-3">
+                                    <!-- Medlemsval -->
+                                    <div class="col-12">
+                                        <div class="form-section">
+                                            <h6 class="section-subtitle">
+                                                <i class="bi bi-person mr-1"></i>
+                                                Medlemsinformation
+                                            </h6>
+                                            <div class="member-selector">
+                                                <label asp-for="Loan.MemberId" class="form-label">Välj medlem *</label>
+                                                <select asp-for="SelectedMemberId" class="form-select" id="memberSelect" required
+                                                        disabled="@(Model.Loan.Status == LoanStatus.Returned ? true : false)">
+                                                    <option value="">Välj en medlem...</option>
+                                                    @if (members != null)
+                                                    {
+                                                        @foreach (var member in members)
+                                                        {
+                                                            <option value="@member.Id"
+                                                                    data-name="@member.Name"
+                                                                    data-ssn="@member.SSN"
+                                                                    data-email="@member.Email"
+                                                                    data-active-loans="@member.ActiveLoansCount"
+                                                                    data-max-loans="@member.MaxLoans"
+                                                                    selected="@(member.Id == Model.Loan.MemberId)">
+                                                                @member.Name - @member.SSN
+                                                            </option>
+                                                        }
+                                                    }
+                                                </select>
+                                                <span asp-validation-for="SelectedMemberId" class="text-danger"></span>
+                                                <div id="memberInfo" class="member-info-preview mt-3" style="display: none;">
+                                                    <div class="alert alert-info">
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="bi bi-info-circle mr-2"></i>
+                                                            <div>
+                                                                <strong id="memberInfoName"></strong> - <span id="memberInfoSSN"></span><br>
+                                                                <small>Aktiva lån: <span id="memberInfoLoans"></span> / <span id="memberInfoMaxLoans"></span></small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lånedatum -->
+                                    <div class="col-md-6">
+                                        <div class="form-section">
+                                            <h6 class="section-subtitle">
+                                                <i class="bi bi-calendar mr-1"></i>
+                                                Lånedatum
+                                            </h6>
+                                            <div class="mb-3">
+                                                <label asp-for="Loan.StartDate" class="form-label">Startdatum *</label>
+                                                <input asp-for="Loan.StartDate" type="date" class="form-control" required
+                                                       readonly="@(Model.Loan.Status == LoanStatus.Returned ? true : false)" />
+                                                <span asp-validation-for="Loan.StartDate" class="text-danger"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label asp-for="Loan.DueDate" class="form-label">Förfallodatum *</label>
+                                                <input asp-for="Loan.DueDate" type="date" class="form-control" required
+                                                       readonly="@(Model.Loan.Status == LoanStatus.Returned ? true : false)" />
+                                                <span asp-validation-for="Loan.DueDate" class="text-danger"></span>
+                                            </div>
+                                            @if (Model.Loan.ReturnDate.HasValue)
+                                            {
+                                                <div class="mb-3">
+                                                    <label asp-for="Loan.ReturnDate" class="form-label">Återlämningsdatum</label>
+                                                    <input asp-for="Loan.ReturnDate" type="date" class="form-control"
+                                                           readonly="@(Model.Loan.Status == LoanStatus.Returned ? true : false)" />
+                                                    <span asp-validation-for="Loan.ReturnDate" class="text-danger"></span>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <!-- Lånestatus och avgift -->
+                                    <div class="col-md-6">
+                                        <div class="form-section">
+                                            <h6 class="section-subtitle">
+                                                <i class="bi bi-gear mr-1"></i>
+                                                Status & avgift
+                                            </h6>
+                                            <div class="mb-3">
+                                                <label asp-for="Loan.Status" class="form-label">Status</label>
+                                                <select asp-for="Loan.Status" class="form-select" disabled="@(Model.Loan.Status == LoanStatus.Returned ? true : false)">
+                                                    @foreach (LoanStatus status in Enum.GetValues<LoanStatus>())
+                                                    {
+                                                        <option value="@status" selected="@(status == Model.Loan.Status)">@GetSwedishLoanStatus(status)</option>
+                                                    }
+                                                </select>
+                                                <span asp-validation-for="Loan.Status" class="text-danger"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label asp-for="Loan.Fee" class="form-label">Avgift (SEK) *</label>
+                                                <div class="input-group">
+                                                    <input asp-for="Loan.Fee" type="number" step="0.01" min="0" max="999999.99" class="form-control" id="feeInput" required
+                                                           data-val-required="Avgift är obligatoriskt."
+                                                           data-val-range="Avgiften måste vara mellan 0 och 999999,99 SEK."
+                                                           readonly="@(Model.Loan.Status == LoanStatus.Returned ? true : false)" />
+                                                    <span class="input-group-text">kr</span>
+                                                </div>
+                                                <span asp-validation-for="Loan.Fee" class="text-danger"></span>
+                                                <div class="form-text">
+                                                    @if (Model.Loan.Status != LoanStatus.Returned)
+                                                    {
+                                                        <button type="button" class="d-flex btn btn-link btn-sm p-0" onclick="calculateFeeautomat()">
+                                                            <i class="bi bi-calculator mr-1"></i>
+                                                            Beräkna avgift automatiskt
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </div>
+
+
+                                        </div>
+                                    </div>
+
+                                    <!-- Anteckningar -->
+                                    <div class="col-12">
+                                        <div class="form-section">
+                                            <h6 class="section-subtitle">
+                                                <i class="bi bi-chat-text mr-1"></i>
+                                                Ytterligare anteckningar
+                                            </h6>
+                                            <label asp-for="Loan.Notes" class="form-label">Anteckningar</label>
+                                            <textarea asp-for="Loan.Notes" class="form-control" rows="3"
+                                                      placeholder="Lägg till eventuella anteckningar om detta lån..."
+                                                      disabled="@(Model.Loan.Status == LoanStatus.Returned ? true : false)"></textarea>
+                                            <span asp-validation-for="Loan.Notes" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Snabbåtgärder kort -->
+                    <div class="col-12 col-lg-4">
+                        <div class="form-card quick-actions-card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-lightning mr-1"></i>
+                                    Snabbåtgärder
+                                </h5>
+                            </div>
+                            @if (Model.Statistics != null)
+                            {
+                                <div class="quick-stats d-flex flex-column flex-wrap gap-3">
+                                    <div class="stat-item mt-2">
+                                        <i class="bi bi-journal-check mr-1"></i>
+                                        <span class="stat-value">@Model.Loans.Count</span>
+                                        <span class="stat-label">lån sedan start</span>
+                                    </div>
+                                    <div class="card-body" style="padding:10px 0 !important">
+                                        @if (Model.Loan.Status == LoanStatus.Active)
+                                        {
+                                            <div class="action-group mb-3">
+                                                <h6 class="action-title">Lånehantering</h6>
+                                                <div class="d-grid gap-2">
+                                                    <button type="button" class="row btn btn-success m-1" onclick="returnLoan(@Model.Loan.Id)">
+                                                        <i class="bi bi-check-circle mr-1"></i>
+                                                        Återlämna alla böcker
+                                                    </button>
+                                                    <button type="button" class="row btn btn-outline-primary m-1" onclick="extendLoanDialog()">
+                                                        <i class="bi bi-calendar-plus mr-1"></i>
+                                                        Förläng förfallodatum
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        }
+
+                                        <div class="action-group mb-3">
+                                            <h6 class="action-title">Avgiftshantering</h6>
+                                            <div class="fee-display">
+                                                <div class="current-fee">
+                                                    <span class="fee-label">Nuvarande avgift:</span>
+                                                    <span class="fee-value @(Model.Loan.Fee > 0 ? "text-danger" : "text-success") mr-1">
+                                                        @FormatSwedishCurrency(Model.Loan.Fee)
+                                                    </span>
+                                                </div>
+                                                @if (Model.Loan.IsOverdue)
+                                                {
+                                                    <div class="overdue-info">
+                                                        <small class="text-danger">
+                                                            <i class="bi bi-exclamation-triangle mr-1"></i>
+                                                            @Model.Loan.DaysOverdue dagar försenat
+                                                        </small>
+                                                    </div>
+                                                }
+                                            </div>
+                                            <div class="d-grid gap-2 mt-2">
+                                                @if (Model.Loan.Status != LoanStatus.Returned)
+                                                {
+                                                    <button type="button" class="row btn btn-outline-info btn-sm m-1" onclick="calculateFee()">
+                                                        <i class="bi bi-calculator mr-1"></i>
+                                                        Beräkna om avgift
+                                                    </button>
+                                                    <button type="button" class="row btn btn-outline-warning btn-sm m-1" onclick="clearFee()">
+                                                        <i class="bi bi-x-circle mr-1"></i>
+                                                        Rensa avgift
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <div class="action-group">
+                                            <h6 class="action-title">Rapporter & data</h6>
+                                            <div class="d-grid gap-2">
+                                                <button type="button" class="row btn btn-outline-secondary btn-sm m-1" onclick="generateLoanReport()">
+                                                    <i class="bi bi-file-text mr-1"></i>
+                                                    Generera rapport
+                                                </button>
+                                                <button type="button" class="row btn btn-outline-info btn-sm m-1" onclick="viewLoanHistory()">
+                                                    <i class="bi bi-clock-history mr-1"></i>
+                                                    Visa historik
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Hantering av bokexemplar -->
+                    <div class="col-12">
+                        <div class="form-card books-management-card">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">
+                                        <i class="bi bi-book mr-1"></i>
+                                        Hantering av bokexemplar
+                                    </h5>
+
+                                    @if (Model.Loan.Status != LoanStatus.Returned)
+                                    {
+                                        <button id="add-book-copy" type="button" class="d-flex btn btn-primary btn-sm m-1" onclick="addBookToLoan()">
+                                            <i class="bi bi-plus-circle mr-1"></i>
+                                            Lägg till bok
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                            <div class="card-body" style="padding: 10px 0 !important">
+                                <!-- Nuvarande böcker -->
+                                @if (currentBooks != null && currentBooks.Any())
+                                {
+                                    <div class="current-books mb-4">
+                                        <h6 class="books-subtitle">
+                                            <i class="bi bi-bookmark-check mr-1"></i>
+                                            Nuvarande böcker (@currentBooks.Count())
+                                        </h6>
+                                        <div class="books-grid">
+                                            @foreach (var bookLoan in currentBooks)
+                                            {
+                                                <div class="book-item" data-book-copy-loan-id="@bookLoan.BookCopyId">
+                                                    <div class="book-cover">
+                                                        <img src="@(bookLoan.BookCopy?.Details?.ImageBinary ?? "/uploads/9780555816023.png")"
+                                                             alt="@bookLoan.BookCopy?.Details?.Title"
+                                                             class="cover-image" />
+
+                                                        @if (Model.Loan.Status != LoanStatus.Returned)
+                                                        {
+                                                            <div class="book-overlay">
+                                                                <button type="button" class="d-flex action-btn remove-btn"
+                                                                        onclick="removeBookFromLoan(@bookLoan.BookCopyId, '@Html.Raw(bookLoan.BookCopy?.Details?.Title?.Replace("'", "\\'"))')"
+                                                                        title="Ta bort från lån">
+                                                                    <i class="bi bi-x mr-1"></i>
+                                                                </button>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                    <div class="book-details">
+                                                        <h6 class="book-title">@bookLoan.BookCopy?.Details?.Title</h6>
+                                                        <p class="book-author">av @(bookLoan.BookCopy?.Details?.Author?.Name ?? "Okänd")</p>
+                                                        <div class="book-meta">
+                                                            <span class="meta-item">
+                                                                <i class="bi bi-hash mr-1"></i>
+                                                                Exemplar #@bookLoan.BookCopyId
+                                                            </span>
+                                                            <span class="meta-item">
+                                                                <i class="bi bi-bookmark m-1"></i>
+                                                                @bookLoan.BookCopy?.Details?.ISBN
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="no-books-message text-center py-4">
+                                        <i class="bi bi-inbox fs-1 text-muted"></i>
+                                        <h6 class="text-muted mt-2">Inga böcker i detta lån</h6>
+                                        <p class="text-muted">Lägg till böcker för att slutföra lånet</p>
+                                        <button type="button" class="d-flex btn btn-primary m-1" onclick="addBookToLoan()">
+                                            <i class="bi bi-plus-circle mr-1"></i>
+                                            Lägg till första boken
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formuläråtgärder -->
+                <div class="form-actions mt-5 pt-4 border-top">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex gap-2 flex-wrap">
+                                @if (Model.Loan.Status != LoanStatus.Returned)
+                                {
+                                    <button type="button" class="d-flex btn btn-success m-1" onclick="returnLoan(@Model.Loan.Id)">
+                                        <i class="bi bi-check-circle mr-1"></i>
+                                        Återlämna alla böcker
+                                    </button>
+                                    <button type="button" class="d-flex btn btn-outline-primary m-1" onclick="extendLoan(@Model.Loan.Id)">
+                                        <i class="bi bi-calendar-plus mr-1"></i>
+                                        Förlänga lån
+                                    </button>
+                                    <button type="button" class="d-flex btn btn-outline-warning m-1" onclick="editLoanNotes(@Model.Loan.Id)">
+                                        <i class="bi bi-pencil mr-1"></i>
+                                        Redigera anteckningar
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <div class="d-flex gap-2 flex-wrap justify-content-md-end">
+                                @if (Model.Loan.Status != LoanStatus.Returned)
+                                {
+                                    <button type="button" class="d-flex btn btn-outline-warning m-1" onclick="resetForm()">
+                                        <i class="bi bi-arrow-clockwise mr-1"></i>
+                                        Återställ ändringar
+                                    </button>
+                                    <button type="submit" class="d-flex btn btn-success save-btn m-1">
+                                        <i class="bi bi-check-circle mr-1"></i>
+                                        Spara ändringar
+                                    </button>
+                                }
+                                @if (Model.Loan.Status != LoanStatus.Returned)
+                                {
+                                    <button type="button" class="d-flex btn btn-outline-danger m-1" onclick="deleteLoan(@Model.Loan.Id)">
+                                        <i class="bi bi-trash mr-1"></i>
+                                        Ta bort lån
+                                    </button>
+                                }
+                                <a asp-action="Index" class="btn btn-outline-secondary m-1">
+                                    <i class="bi bi-arrow-left mr-1"></i>
+                                    Avbryt
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Lägg till bok modal -->
+<div class="modal fade" id="addBookModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="header-section border-bottom">
+                    <h5 class="modal-title">Lägg till bok till lån</h5>
+                    <button type="button" class="d-flex btn btn-secondary mb-2" data-bs-dismiss="modal">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <div class="search-section mb-4">
+                    <label class="form-label">Sök tillgängliga böcker</label>
+                    <input type="text" id="bookSearchInput" class="form-control" placeholder="Sök på titel, författare eller ISBN...">
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="availableBooksGrid" class="books-grid"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="d-flex btn btn-secondary" data-bs-dismiss="modal">Stäng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetStatusClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "status-active",
+            LoanStatus.Returned => "status-returned",
+            LoanStatus.Overdue => "status-overdue",
+            LoanStatus.Lost => "status-lost",
+            LoanStatus.Cancelled => "status-cancelled",
+            _ => "status-unknown"
+        };
+    }
+
+    private string GetStatusIcon(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "bi bi-play-circle",
+            LoanStatus.Returned => "bi bi-check-circle",
+            LoanStatus.Overdue => "bi bi-exclamation-circle",
+            LoanStatus.Lost => "bi bi-x-circle",
+            LoanStatus.Cancelled => "bi bi-slash-circle",
+            _ => "bi bi-question-circle"
+        };
+    }
+
+    private string GetStatusBadgeClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "primary",
+            LoanStatus.Returned => "success",
+            LoanStatus.Overdue => "danger",
+            LoanStatus.Lost => "dark",
+            LoanStatus.Cancelled => "secondary",
+            _ => "light"
+        };
+    }
+
+    private string GetSwedishLoanStatus(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "Aktiv",
+            LoanStatus.Returned => "Återlämnad",
+            LoanStatus.Overdue => "Försenad",
+            LoanStatus.Lost => "Förlorad",
+            LoanStatus.Cancelled => "Avbruten",
+            _ => "Okänd"
+        };
+    }
+
+    private string FormatSwedishCurrency(decimal amount)
+    {
+        var swedishCulture = new System.Globalization.CultureInfo("sv-SE");
+        var numberFormat = (System.Globalization.NumberFormatInfo)swedishCulture.NumberFormat.Clone();
+        numberFormat.CurrencyPositivePattern = 3;
+        numberFormat.CurrencyNegativePattern = 8;
+        numberFormat.CurrencySymbol = "kr";
+        return amount.ToString("C", numberFormat);
+    }
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // Global constants
+        let addBookModal;
+        let currentLoanId = @(Model?.Loan?.Id ?? 0);
+        const MAX_BOOK_COPIES = 5;
+
+        // Configure toastr
+        toastr.options = {
+            closeButton: true,
+            newestOnTop: true,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            timeOut: "3500"
+        };
+
+        // ====================================================================
+        // HJÄLPFUNKTIONER
+        // ====================================================================
+        // Anti-forgery token helper
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value ||
+                   document.querySelector('meta[name="__RequestVerificationToken"]')?.content;
+        }
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            addBookModal = new bootstrap.Modal(document.getElementById('addBookModal'));
+            document.getElementById('memberSelect').addEventListener('change', handleMemberSelection);
+            setupFormValidation();
+            document.querySelector('[name="Loan.StartDate"]').addEventListener('change', autoCalculateDueDate);
+
+            // Book search functionality
+            const bookSearchInput = document.getElementById('bookSearchInput');
+            if (bookSearchInput) {
+                let searchTimeout;
+
+                bookSearchInput.addEventListener('input', function(e) {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        const term = e.target.value.trim();
+                        searchAvailableBooks(term);
+                    }, 300); // delay for better UX
+                });
+            }
+
+            @if (TempData["Success"] != null)
+            {
+                <text>toastr.success('@TempData["Success"]');</text>
+            }
+
+            @if (TempData["Error"] != null)
+            {
+               <text>toastr.error('@TempData["Error"]');</text>
+            }
+
+            handleMemberSelection();
+        });
+ 
+        // Member selection handler
+        function handleMemberSelection() {
+            const memberSelect = document.getElementById('memberSelect');
+            const memberInfo = document.getElementById('memberInfo');
+            const selectedOption = memberSelect.options[memberSelect.selectedIndex];
+
+            if (selectedOption.value) {
+                document.getElementById('memberInfoName').textContent = selectedOption.dataset.name;
+                document.getElementById('memberInfoSSN').textContent = selectedOption.dataset.ssn;
+                document.getElementById('memberInfoLoans').textContent = selectedOption.dataset.activeLoans;
+                document.getElementById('memberInfoMaxLoans').textContent = selectedOption.dataset.maxLoans;
+                memberInfo.style.display = 'block';
+
+                const activeLoans = parseInt(selectedOption.dataset.activeLoans);
+                const maxLoans = parseInt(selectedOption.dataset.maxLoans);
+
+                if (activeLoans >= maxLoans) {
+                    memberInfo.className = 'member-info-preview mt-3 alert alert-warning';
+                    memberInfo.querySelector('.alert').innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle mr-1"></i>
+                            <div>
+                                <strong>${selectedOption.dataset.name}</strong> - ${selectedOption.dataset.ssn}<br>
+                                <small>⚠️ Medlemmen har nått maxgränsen för lån (${activeLoans}/${maxLoans})</small>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                memberInfo.style.display = 'none';
+            }
+        }
+
+        // Form validation and submission handler
+        function setupFormValidation() {
+            const form = document.getElementById('loanEditForm');
+
+            if (!form) {
+                console.error('Form with ID "loanEditForm" not found');
+                return;
+            }
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                console.log('Form submission started');
+
+                // Check form validity
+                if (!form.checkValidity()) {
+                    form.classList.add('was-validated');
+                    toastr.error('Vänligen fyll i alla obligatoriska fält korrekt');
+
+                    const firstInvalidField = form.querySelector(':invalid');
+                    if (firstInvalidField) {
+                        firstInvalidField.focus();
+                        firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return;
+                }
+
+                // Show confirmation dialog
+                const result = await Swal.fire({
+                    title: 'Spara ändringar?',
+                    text: 'Är du säker på att du vill spara alla ändringar av detta lån?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="bi bi-check-circle mr-1"></i> Ja, spara',
+                    cancelButtonText: 'Avbryt'
+                });
+
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                // Disable submit button and show loading state
+                const submitButton = form.querySelector('button[type="submit"]');
+                const originalButtonContent = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Sparar...';
+
+                try {
+                    // Create FormData from form
+                    const formData = new FormData(form);
+
+                    // Get and append anti-forgery token
+                    const token = getAntiForgeryToken();
+                    if (token) formData.append('__RequestVerificationToken', token);
+
+                    // Submit form using fetch with timeout
+                    const response = await fetchWithTimeout(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'RequestVerificationToken': token
+                        },
+                        timeout: 10000 // 10 seconds timeout
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const contentType = response.headers.get('content-type');
+
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await response.json();
+
+                        if (data.success) {
+                            toastr.success(data.message);
+                            setTimeout(() => window.location.href = data.redirectUrl || `/Loans/Details/${currentLoanId}`, 1000);
+                        }
+                        else {
+                            // Show validation errors
+                            if (data.errors) showServerErrors(data.errors);         
+                            else  toastr.error(data.message || 'Ett fel inträffade vid uppdatering');
+                        }
+                    } else {
+                        // Handle non-JSON response (redirect or HTML)
+                        toastr.success('Lån uppdaterat framgångsrikt');
+                        setTimeout(() => {
+                            window.location.href = `/Loans/Details/${currentLoanId}`;
+                        }, 1000);
+                    }
+
+                } catch (error) {
+                    if (error.name === 'AbortError')  toastr.error('Begäran tog för lång tid. Försök igen.');
+                    else if (error.message.includes('NetworkError')) toastr.error('Nätverksfel. Kontrollera din internetanslutning.');
+                    else toastr.error('Ett oväntat fel inträffade vid sparande.');
+                } finally {
+                    // Always restore button state
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonContent;
+                }
+            });
+        }
+
+        // Fetch with timeout to prevent hanging
+        async function fetchWithTimeout(url, options = {}) {
+            const { timeout = 8000, ...fetchOptions } = options;
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+            try {
+                const response = await fetch(url, {
+                    ...fetchOptions,
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                return response;
+            } catch (error) {
+                clearTimeout(timeoutId);
+                throw error;
+            }
+        }
+
+        // Show server validation errors
+        function showServerErrors(errors) {
+            let errorHtml = '<div class="validation-errors"><ul>';
+
+            Object.entries(errors).forEach(([field, messages]) => {
+                    messages.forEach(message => {
+                        errorHtml += `<li><strong>${field}:</strong> ${message}</li>`;
+                    });
+            });
+ 
+            errorHtml += '</ul></div>';
+
+            Swal.fire({
+                title: 'Valideringsfel',
+                html: errorHtml,
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+
+        // Initialize form validation when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFormValidation();
+
+            // Initialize other components
+            if (typeof handleMemberSelection === 'function') {
+                handleMemberSelection();
+            }
+        });
+
+        // ====================================================================
+        // BOKÅTGÄRDER
+        // ====================================================================
+        // Book management functions
+        async function addBookToLoan() {
+            try {
+                toastr.info('Laddar tillgängliga böcker...');
+                const response = await fetch('/Loans/GetAvailableBooks', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    }
+                });
+
+                const currentCount = document.querySelectorAll('.book-item').length;
+
+                if (currentCount >= MAX_BOOK_COPIES) {
+                    toastr.error(`Du kan inte lägga till fler än ${MAX_BOOK_COPIES} böcker i ett lån.`);
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.success && data.books) {
+                   renderAvailableBooks(data.books);
+                   addBookModal.show();
+               } else {
+                   toastr.error('Inga tillgängliga böcker hittades');
+               }
+           } catch (error) {
+               console.error('Fel vid laddning av tillgängliga böcker:', error);
+               toastr.error('Misslyckades med att ladda tillgängliga böcker');
+           }
+        }
+
+        function renderAvailableBooks(books) {
+            const grid = document.getElementById('availableBooksGrid');
+
+            if (books.length === 0) {
+                grid.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox fs-1 text-muted"></i>
+                        <p class="text-muted mt-2">Inga tillgängliga böcker hittades</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = books.map(book => `
+                <div class="book-item">
+                    <div class="book-cover">
+                        <img src="${book.imageBinary || '/uploads/9780555816023.png'}"
+                             alt="${book.title}" class="cover-image" />
+                    </div>
+                    <div class="book-details">
+                        <h6 class="book-title">${book.title}</h6>
+                        <p class="book-author">av ${book.author || 'Okänd'}</p>
+                        <div class="book-meta">
+                            <span class="meta-item d-block">
+                                <i class="bi bi-hash mr-1"></i>
+                                Exemplar #${book.copyId}
+                            </span>
+                             <span class="meta-item d-block">
+                                <i class="bi bi-upc mr-1"></i>
+                                ISBN: ${book.isbn || 'N/A'}
+                            </span>
+                         </div>
+                        <button type="button" class="d-flex btn btn-primary btn-sm w-100"
+                                onclick="selectBookForLoan(${book.copyId}, '${book.title.replace("'", "\\'")}')" >
+                            <i class="bi bi-plus mr-1"></i>
+                            Lägg till i lån
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function selectBookForLoan(copyId, bookTitle) {
+            try {
+                const response = await fetch(`/Loans/AddBookToLoan/${currentLoanId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ bookCopyId: copyId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    toastr.success(`"${bookTitle}" tillagd i lånet framgångsrikt`);
+                    addBookModal.hide();
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    toastr.error(data.message || 'Misslyckades med att lägga till bok i lånet');
+                }
+            } catch (error) {
+                console.error('Fel vid tillägg av bok till lån:', error);
+                toastr.error('Misslyckades med att lägga till bok i lånet');
+            }
+        }
+
+        async function removeBookFromLoan(copyId, bookTitle) {
+            const result = await Swal.fire({
+                title: 'Ta bort bok?',
+                html: `Ta bort "${bookTitle}" från detta lån?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash"></i> Ja, ta bort',
+                cancelButtonText: 'Avbryt'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/Loans/RemoveBookFromLoan/${currentLoanId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        },
+                        body: JSON.stringify({ bookCopyId: copyId })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        toastr.success(`"${bookTitle}" borttagen från lånet`);
+                        const bookItem = document.querySelector(`[data-book-copy-loan-id="${copyId}"]`);
+                        if (bookItem) {
+                            bookItem.style.animation = 'fadeOut 0.5s ease';
+                            setTimeout(() => {
+                                bookItem.remove();
+                            }, 500);
+                        } else {
+                            setTimeout(() => window.location.reload(), 1000);
+                        }
+                    } else {
+                        toastr.error(data.message || 'Misslyckades med att ta bort bok från lånet');
+                    }
+                } catch (error) {
+                    console.error('Fel vid borttagning av bok från lån:', error);
+                    toastr.error('Misslyckades med att ta bort bok från lånet');
+                }
+            }
+        }
+
+        async function searchAvailableBooks(searchTerm) {
+            try {
+                const term = searchTerm ? searchTerm.trim().toLowerCase() : '';
+                const response = await fetch(`/Loans/SearchAvailable?term=${encodeURIComponent(term)}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    renderAvailableBooks(data.books);
+                }
+            } catch (error) {
+                console.error('Fel vid sökning av böcker:', error);
+            }
+        }
+        // ====================================================================
+        // LÅNEÅTGÄRDER
+        // ====================================================================
+        // Loan action functions
+        async function returnLoan(id) {
+            const result = await Swal.fire({
+                title: 'Återlämna böcker?',
+                text: 'Är du säker på att du vill markera alla böcker i detta lån som återlämnade?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-check-circle"></i> Ja, återlämna böcker',
+                cancelButtonText: 'Avbryt'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/Loans/Return/${id}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Framgång!',
+                            text: 'Böckerna har återlämnats framgångsrikt.',
+                            icon: 'success',
+                            confirmButtonColor: '#28a745'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        toastr.error(data.message || 'Misslyckades med att återlämna böcker');
+                    }
+                } catch (error) {
+                    console.error('Fel:', error);
+                    toastr.error('Misslyckades med att återlämna böcker. Vänligen försök igen.');
+                }
+            }
+        }
+
+        async function extendLoan(id) {
+            const { value: days } = await Swal.fire({
+                title: 'Förlänga lån',
+                input: 'number',
+                inputLabel: 'Antal dagar att förlänga',
+                inputPlaceholder: 'Ange antal dagar (1-30)',
+                inputAttributes: {
+                    min: 1,
+                    max: 30,
+                    step: 1
+                },
+                showCancelButton: true,
+                confirmButtonColor: '#007bff',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-calendar-plus"></i> Förlänga lån',
+                cancelButtonText: 'Avbryt',
+                inputValidator: (value) => {
+                    if (!value || value < 1 || value > 30) {
+                        return 'Vänligen ange ett nummer mellan 1 och 30';
+                    }
+                }
+            });
+
+            if (days) {
+                try {
+                    const response = await fetch(`/Loans/Extend/${id}?days=${days}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        toastr.success(`Lån förlängt med ${days} dagar.`);
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        toastr.error(data.message || 'Misslyckades med att förlänga lån');
+                    }
+                } catch (error) {
+                    console.error('Fel:', error);
+                    toastr.error('Misslyckades med att förlänga lån. Vänligen försök igen.');
+                }
+            }
+        }
+
+        async function extendLoanDialog() {
+            const { value: days } = await Swal.fire({
+                title: 'Förläng lån',
+                input: 'number',
+                inputLabel: 'Antal dagar att förlänga',
+                inputPlaceholder: 'Ange antal dagar (1-30)',
+                inputAttributes: {
+                    min: 1,
+                    max: 30,
+                    step: 1
+                },
+                showCancelButton: true,
+                confirmButtonColor: '#007bff',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-calendar-plus"></i> Förläng',
+                inputValidator: (value) => {
+                    if (!value || value < 1 || value > 30) {
+                        return 'Vänligen ange ett nummer mellan 1 och 30';
+                    }
+                }
+            });
+
+            if (days) {
+                const dueDateInput = document.querySelector('[name="Loan.DueDate"]');
+                const currentDueDate = new Date(dueDateInput.value);
+                currentDueDate.setDate(currentDueDate.getDate() + parseInt(days));
+                dueDateInput.value = currentDueDate.toISOString().split('T')[0];
+                toastr.info(`Förfallodatum förlängt med ${days} dagar. Kom ihåg att spara ändringar.`);
+            }
+        }
+
+        // Utility functions
+         async function calculateFee() {
+            try {
+                const response = await fetch(`/Loans/CalculateFee/${currentLoanId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const feeInput = document.querySelector('[name="Loan.Fee"]');
+                    const feeValueSpan = document.querySelector('.fee-value');
+                    const overdueInfo = document.querySelector('.overdue-info');
+
+                    feeInput.value = data.fee.toFixed(2);
+                    feeValueSpan.textContent = data.formattedFee;
+                    feeValueSpan.className = data.fee > 0 ? 'fee-value text-danger fw-bold' : 'fee-value text-success';
+
+                    if (data.daysOverdue > 0 && overdueInfo) {
+                        overdueInfo.innerHTML = `<small class="text-danger"><i class="bi bi-exclamation-triangle mr-1"></i>${data.daysOverdue} dagar försenat</small>`;
+                        overdueInfo.style.display = 'block';
+                    } else if (overdueInfo) {
+                        overdueInfo.style.display = 'none';
+                    }
+
+                    toastr.success(data.message);
+                } else {
+                    toastr.error(data.message);
+                }
+            } catch (error) {
+                console.error('Fel vid beräkning av avgift:', error);
+                toastr.error('Misslyckades med att beräkna avgift');
+            }
+        }
+
+        // Automatisk beräkning vid sidladdning
+        document.addEventListener('DOMContentLoaded', function() {
+            calculateFeeautomat(true); // true för att indikera automatisk beräkning utan DB-uppdatering
+        });
+
+        // Funktion för att beräkna avgift (automatiskt eller manuellt)
+        async function calculateFeeautomat(isAuto = false) {
+            try {
+                const response = await fetch(`/Loans/CalculateFee/${currentLoanId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const feeInput = document.getElementById('feeInput');
+                    feeInput.value = data.fee.toFixed(2); // Uppdatera input-fältet
+
+                    // Uppdatera visad valuta (t.ex. i en span om det finns)
+                    const feeDisplay = document.querySelector('.fee-value');
+                    if (feeDisplay) {
+                        feeDisplay.textContent = data.formattedFee;
+                    }
+
+                    if (!isAuto) {
+                        toastr.success('Avgift uppdaterad i databasen.');
+                    }
+                } else {
+                    toastr.error(data.message);
+                }
+            } catch (error) {
+                console.error('Fel vid beräkning av avgift:', error);
+                toastr.error('Misslyckades med att beräkna avgift');
+            }
+        }
+
+        function clearFee() {
+            const feeInput = document.querySelector('[name="Loan.Fee"]');
+            const feeValueSpan = document.querySelector('.fee-value');
+            const overdueInfo = document.querySelector('.overdue-info');
+
+            feeInput.value = '0.00';
+            feeValueSpan.textContent = '0 kr';
+            feeValueSpan.className = 'fee-value text-success';
+
+            if (overdueInfo) {
+                overdueInfo.style.display = 'none';
+            }
+
+            toastr.info('Avgift rensad');
+        }
+
+        function autoCalculateDueDate() {
+            const startDateInput = document.querySelector('[name="Loan.StartDate"]');
+            const dueDateInput = document.querySelector('[name="Loan.DueDate"]');
+
+            if (startDateInput.value && !dueDateInput.value) {
+                const startDate = new Date(startDateInput.value);
+                const dueDate = new Date(startDate);
+                dueDate.setDate(dueDate.getDate() + 14);
+                dueDateInput.value = dueDate.toISOString().split('T')[0];
+            }
+        }
+
+        function resetForm() {
+            Swal.fire({
+                title: 'Återställ ändringar?',
+                text: 'Detta kommer återställa alla ändringar till deras ursprungliga värden.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Återställ',
+                cancelButtonText: 'Avbryt'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById('loanEditForm');
+                    form.classList.remove('was-validated');
+                    form.reset();
+                    window.location.reload();
+                }
+            });
+        }
+
+        // Additional utility functions
+        async function editLoanNotes(id) {
+            const currentNotes = '@Html.Raw(Model?.Loan?.Notes?.Replace("\"", "\\\"").Replace("\n", "\\n") ?? "")';
+
+            const { value: notes } = await Swal.fire({
+                title: 'Redigera låneanteckningar',
+                input: 'textarea',
+                inputLabel: 'Låneanteckningar',
+                inputPlaceholder: 'Ange eventuella anteckningar om detta lån...',
+                inputValue: currentNotes,
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-save"></i> Spara anteckningar',
+                cancelButtonText: 'Avbryt'
+            });
+
+            if (notes !== undefined) {
+                try {
+                    const response = await fetch(`/Loans/UpdateNotes/${id}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        },
+                        body: JSON.stringify({ notes: notes })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        toastr.success('Anteckningar uppdaterade framgångsrikt');
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        toastr.error(data.message || 'Misslyckades med att uppdatera anteckningar');
+                    }
+                } catch (error) {
+                    console.error('Fel:', error);
+                    toastr.error('Misslyckades med att uppdatera anteckningar');
+                }
+            }
+        }
+
+        async function deleteLoan(id) {
+            const result = await Swal.fire({
+                title: 'Ta bort lån?',
+                text: 'Är du säker på att du vill ta bort detta lån? Denna åtgärd kan inte ångras.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash"></i> Ja, ta bort',
+                cancelButtonText: 'Avbryt'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/Loans/Delete/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Borttaget!',
+                            text: 'Lån borttaget framgångsrikt.',
+                            icon: 'success',
+                            confirmButtonColor: '#28a745'
+                        }).then(() => {
+                            window.location.href = '/Loans';
+                        });
+                    } else {
+                        toastr.error(data.message || 'Misslyckades med att ta bort lån');
+                    }
+                } catch (error) {
+                    console.error('Fel:', error);
+                    toastr.error('Misslyckades med att ta bort lån. Vänligen försök igen.');
+                }
+            }
+        }
+
+        async function generateLoanReport() {
+            try {
+                const response = await fetch(`/Loans/GenerateReport/${currentLoanId}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `lånerapport_${currentLoanId}_${new Date().toISOString().split('T')[0]}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    toastr.success('Rapport genererad framgångsrikt');
+                } else {
+                    toastr.error('Misslyckades med att generera rapport');
+                }
+            } catch (error) {
+                console.error('Fel vid generering av rapport:', error);
+                toastr.error('Misslyckades med att generera rapport');
+            }
+        }
+
+        function viewLoanHistory() {
+            window.open(`/Loans/History/${currentLoanId}`, '_blank');
+        }
+    </script>
+}
+
+<style>
+    /* Rubrikstyling */
+    .edit-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+        border-radius: var(--radius-xl);
+        padding: 3rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .header-pattern {
+        background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+    }
+
+    .header-title {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Redigeringsikon */
+    .edit-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    .icon-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+
+    .status-indicator {
+        position: absolute;
+        bottom: -5px;
+        right: -5px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        color: white;
+        border: 3px solid white;
+    }
+
+    .status-active {
+        background: var(--primary-color);
+    }
+
+    .status-returned {
+        background: var(--success-color);
+    }
+
+    .status-overdue {
+        background: var(--danger-color);
+    }
+
+    /* Snabbinformation */
+    .quick-stats {
+        margin-top: 1.5rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.05rem .5rem;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        font-size: 0.9rem;
+    }
+
+    .stat-value {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--primary-color);
+    }
+
+    /* Formulärkort */
+    .form-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all var(--transition-normal);
+    }
+
+        .form-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-card .card-header {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            padding: 1.5rem;
+        }
+
+    .card-title {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    /* Formulärsektioner */
+    .form-section {
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .section-subtitle {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+    }
+
+    /* Medlemsval */
+    .member-selector {
+        position: relative;
+    }
+
+    .member-info-preview {
+        animation: slideDown 0.3s ease;
+    }
+
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Snabbåtgärder */
+    .quick-actions-card .action-group {
+        padding: 1rem;
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .action-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .fee-display {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(229, 231, 235, 0.3);
+    }
+
+    .current-fee {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .fee-label {
+        font-weight: 500;
+        color: var(--gray-600);
+    }
+
+    .fee-value {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    /* Bokhantering */
+    .books-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .book-item {
+        display: flex;
+        justify-content: space-between;
+        flex-direction: column;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid var(--gray-200);
+        transition: all var(--transition-normal);
+        position: relative;
+    }
+
+        .book-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+    .book-cover {
+        position: relative;
+        width: 80px;
+        height: 120px;
+        margin: 0 auto 1rem;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .cover-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .book-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(220, 53, 69, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all var(--transition-normal);
+    }
+
+    .book-item:hover .book-overlay {
+        opacity: 1;
+    }
+
+    .remove-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(220, 53, 69, 0.9);
+        color: white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+        .remove-btn:hover {
+            background: var(--danger-color);
+            transform: scale(1.1);
+        }
+
+    .book-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 0.5rem;
+        line-height: 1.3;
+    }
+
+    .book-author {
+        font-size: 0.9rem;
+        color: var(--gray-600);
+        margin-bottom: 0.75rem;
+    }
+
+    .book-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .meta-item {
+        font-size: 0.8rem;
+        color: var(--gray-500);
+        display: flex;
+        align-items: center;
+    }
+
+    .books-subtitle {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+    }
+
+    /* Formuläråtgärder */
+    .form-actions {
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .action-buttons-left,
+    .action-buttons-right {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    /* Ingen böcker meddelande */
+    .no-books-message {
+        color: var(--gray-400);
+    }
+
+    /* Modal styling */
+    .modal-content {
+        border-radius: var(--radius-xl);
+        border: none;
+        box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+        border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        display: block;
+    }
+
+    /* Formulärkontroller */
+    .form-control, .form-select {
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-normal);
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+    /* Sök */
+    .header-section {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .search-section {
+        display: block;
+        max-width: 100% !important;
+        padding: .5rem 0;
+        margin: 20px;
+    }
+
+        .search-section input {
+            padding: .5rem;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-normal);
+        }
+
+    /* Animation för borttagna objekt */
+    @@keyframes fadeOut {
+        0% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        100% {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+    }
+
+    /* Responsiv design */
+    @@media (max-width: 768px) {
+        .edit-header {
+            padding: 2rem 1rem;
+        }
+
+        .quick-info {
+            flex-direction: column;
+        }
+
+        .books-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .action-buttons-left,
+        .action-buttons-right {
+            justify-content: center;
+        }
+
+        .header-actions {
+            text-align: center;
+        }
+    }
+</style>

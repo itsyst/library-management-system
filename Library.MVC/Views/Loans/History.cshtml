@@ -1,0 +1,911 @@
+﻿@using Library.Domain.Entities
+@using Library.Domain.Enums
+@using Library.MVC.Controllers
+@using Library.MVC.ViewModels
+@model Library.MVC.ViewModels.LoanViewModel
+
+@{
+    ViewData["Title"] = $"Loan History - #{Model.Loan.Id}";
+    var memberHistory = ViewBag.MemberLoanHistory as IEnumerable<Loan>;
+    var bookHistory = ViewBag.BookLoanHistory as IEnumerable<Loan>;
+    var stats = ViewBag.HistoryStatistics as LoanHistoryStatistics;
+    var bookCopyLoans = ViewBag.BookCopyLoans as IEnumerable<BookCopyLoan>;
+}
+
+<!-- Modern Loan History Container -->
+<div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-11">
+            <!-- Creative Header Section -->
+            <div class="history-header mb-5 position-relative overflow-hidden">
+                <!-- Background Pattern -->
+                <div class="header-pattern position-absolute w-100 h-100"></div>
+
+                <div class="position-relative z-2">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="history-icon mb-3">
+                                <div class="icon-wrapper">
+                                    <i class="bi bi-clock-history"></i>
+                                    <div class="timeline-indicator"></div>
+                                </div>
+                            </div>
+
+                            <h1 class="display-6 fw-bold mb-2 header-title">Loan History</h1>
+                            <p class="text-muted mb-3 fs-5">
+                                Complete history for Loan #@Model.Loan.Id
+                            </p>
+
+                            <!-- Quick Overview -->
+                            <div class="loan-overview">
+                                <div class="overview-item">
+                                    <i class="bi bi-person me-2"></i>
+                                    <span>@Model.Loan.Member?.Name</span>
+                                </div>
+                                <div class="overview-item">
+                                    <i class="bi bi-calendar me-2"></i>
+                                    <span>@Model.Loan.StartDate.ToString("MMM dd, yyyy") - @(Model.Loan.ReturnDate?.ToString("MMM dd, yyyy") ?? "Ongoing")</span>
+                                </div>
+                                <div class="overview-item">
+                                    <i class="bi bi-books me-2"></i>
+                                    <span>@Model.Loan.TotalBooks books borrowed</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4 text-lg-end">
+                            <div class="header-actions d-flex flex-column gap-2">
+                                <a asp-action="Details" asp-route-id="@Model.Loan.Id" class="btn btn-primary">
+                                    <i class="bi bi-eye me-2"></i>
+                                    View Loan Details
+                                </a>
+                                <button onclick="printHistory()" class="btn btn-outline-secondary">
+                                    <i class="bi bi-printer me-2"></i>
+                                    Print History
+                                </button>
+                                <a asp-action="Index" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>
+                                    Back to Loans
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Overview -->
+            @if (stats != null)
+            {
+                <div class="statistics-section mb-5">
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <h3 class="section-title">
+                                <i class="bi bi-graph-up me-2"></i>
+                                History Statistics
+                            </h3>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card member-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-person-check"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4>@stats.TotalMemberLoans</h4>
+                                    <p>Total Member Loans</p>
+                                    <small class="text-muted">@stats.MemberActiveLoans currently active</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card fees-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-currency-exchange"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4>@FormatSwedishCurrency(stats.MemberTotalFees)</h4>
+                                    <p>Total Member Fees</p>
+                                    <small class="text-muted">Across all loans</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card books-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-books"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4>@stats.TotalBooksLoaned</h4>
+                                    <p>Books in This Loan</p>
+                                    <small class="text-muted">@stats.AverageBookPopularity avg. popularity</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card membership-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-calendar-heart"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4>@stats.DaysSinceMembership</h4>
+                                    <p>Days as Member</p>
+                                    <small class="text-muted">Since @stats.MemberSince.ToString("MMM yyyy")</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="row g-4">
+                <!-- Current Loan Books -->
+                <div class="col-12 col-lg-6">
+                    <div class="history-card current-loan-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-book-half me-2"></i>
+                                Books in This Loan
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (bookCopyLoans != null && bookCopyLoans.Any())
+                            {
+                                <div class="current-books-list">
+                                    @foreach (var bookLoan in bookCopyLoans)
+                                    {
+                                        <div class="book-history-item">
+                                            <div class="book-cover-small">
+                                                <img src="@(bookLoan.BookCopy?.Details?.ImageBinary ?? "/uploads/9780555816023.png")"
+                                                     alt="@bookLoan.BookCopy?.Details?.Title"
+                                                     class="cover-image-small" />
+                                            </div>
+                                            <div class="book-info">
+                                                <h6 class="book-title">@bookLoan.BookCopy?.Details?.Title</h6>
+                                                <p class="book-author">by @(bookLoan.BookCopy?.Details?.Author?.Name ?? "Unknown")</p>
+                                                <div class="book-meta">
+                                                    <span class="meta-tag">Copy #@bookLoan.BookCopyId</span>
+                                                    <span class="meta-tag">@bookLoan.BookCopy?.Condition</span>
+                                                </div>
+                                            </div>
+                                            <div class="book-actions">
+                                                <a asp-controller="Books" asp-action="Details" asp-route-id="@bookLoan.BookCopy?.Details?.Id"
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="bi bi-eye me-1"></i>
+                                                    View
+                                                </a>
+                                                <a asp-action="BookHistory" asp-route-bookId="@bookLoan.BookCopy?.Details?.Id"
+                                                   class="btn btn-outline-info btn-sm">
+                                                    <i class="bi bi-clock-history me-1"></i>
+                                                    History
+                                                </a>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="empty-message">
+                                    <i class="bi bi-inbox"></i>
+                                    <p>No books in this loan</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Member History -->
+                <div class="col-12 col-lg-6">
+                    <div class="history-card member-history-card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-person-lines-fill me-2"></i>
+                                    @Model.Loan.Member?.Name's Loan History
+                                </h5>
+                                <a asp-action="MemberHistory" asp-route-memberId="@Model.Loan.MemberId"
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-list me-1"></i>
+                                    View All
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if (memberHistory != null && memberHistory.Any())
+                            {
+                                <div class="history-timeline">
+                                    @foreach (var loan in memberHistory)
+                                    {
+                                        <div class="timeline-item">
+                                            <div class="timeline-marker @GetStatusClass(loan.Status)">
+                                                <i class="bi bi-@GetStatusIcon(loan.Status)"></i>
+                                            </div>
+                                            <div class="timeline-content">
+                                                <div class="loan-summary">
+                                                    <h6 class="loan-title">
+                                                        <a asp-action="Details" asp-route-id="@loan.Id">
+                                                            Loan #@loan.Id
+                                                        </a>
+                                                        <span class="status-badge status-@GetStatusClass(loan.Status)">
+                                                            @loan.Status
+                                                        </span>
+                                                    </h6>
+                                                    <div class="loan-details">
+                                                        <span class="detail-item">
+                                                            <i class="bi bi-calendar me-1"></i>
+                                                            @loan.StartDate.ToString("MMM dd, yyyy")
+                                                        </span>
+                                                        <span class="detail-item">
+                                                            <i class="bi bi-books me-1"></i>
+                                                            @loan.TotalBooks books
+                                                        </span>
+                                                        @if (loan.Fee > 0)
+                                                        {
+                                                            <span class="detail-item text-danger">
+                                                                <i class="bi bi-currency-dollar me-1"></i>
+                                                                @FormatSwedishCurrency(loan.Fee)
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="empty-message">
+                                    <i class="bi bi-clock"></i>
+                                    <p>No previous loans for this member</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Book History -->
+                <div class="col-12">
+                    <div class="history-card book-history-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-book-half me-2"></i>
+                                Book Loan History
+                            </h5>
+                            <p class="card-subtitle">Other loans involving books from this loan</p>
+                        </div>
+                        <div class="card-body">
+                            @if (bookHistory != null && bookHistory.Any())
+                            {
+                                <div class="book-history-grid">
+                                    @foreach (var loan in bookHistory.Take(8))
+                                    {
+                                        <div class="history-loan-card">
+                                            <div class="loan-header">
+                                                <div class="loan-info">
+                                                    <h6 class="loan-number">
+                                                        <a asp-action="Details" asp-route-id="@loan.Id">
+                                                            #@loan.Id
+                                                        </a>
+                                                    </h6>
+                                                    <span class="member-name">@loan.Member?.Name</span>
+                                                </div>
+                                                <span class="status-indicator @GetStatusClass(loan.Status)">
+                                                    @loan.Status
+                                                </span>
+                                            </div>
+                                            <div class="loan-dates">
+                                                <div class="date-item">
+                                                    <span class="date-label">Start:</span>
+                                                    <span class="date-value">@loan.StartDate.ToString("MMM dd")</span>
+                                                </div>
+                                                <div class="date-item">
+                                                    <span class="date-label">Due:</span>
+                                                    <span class="date-value">@loan.DueDate.ToString("MMM dd")</span>
+                                                </div>
+                                                @if (loan.ReturnDate.HasValue)
+                                                {
+                                                    <div class="date-item">
+                                                        <span class="date-label">Returned:</span>
+                                                        <span class="date-value">@loan.ReturnDate.Value.ToString("MMM dd")</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                            <div class="loan-footer">
+                                                <span class="book-count">@loan.TotalBooks books</span>
+                                                @if (loan.Fee > 0)
+                                                {
+                                                    <span class="loan-fee text-danger">@FormatSwedishCurrency(loan.Fee)</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                @if (bookHistory.Count() > 8)
+                                {
+                                    <div class="text-center mt-3">
+                                        <p class="text-muted">Showing 8 of @bookHistory.Count() related loans</p>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="empty-message">
+                                    <i class="bi bi-search"></i>
+                                    <p>No other loans found for these books</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetStatusClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "status-active",
+            LoanStatus.Returned => "status-returned",
+            LoanStatus.Overdue => "status-overdue",
+            LoanStatus.Lost => "status-lost",
+            LoanStatus.Cancelled => "status-cancelled",
+            _ => "status-unknown"
+        };
+    }
+
+    private string GetStatusIcon(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "play-circle",
+            LoanStatus.Returned => "check-circle",
+            LoanStatus.Overdue => "exclamation-circle",
+            LoanStatus.Lost => "x-circle",
+            LoanStatus.Cancelled => "slash-circle",
+            _ => "question-circle"
+        };
+    }
+
+    private string FormatSwedishCurrency(decimal amount)
+    {
+        var swedishCulture = new System.Globalization.CultureInfo("sv-SE");
+        var numberFormat = (System.Globalization.NumberFormatInfo)swedishCulture.NumberFormat.Clone();
+        numberFormat.CurrencyPositivePattern = 3;
+        numberFormat.CurrencyNegativePattern = 8;
+        numberFormat.CurrencySymbol = "kr";
+
+        return amount.ToString("C", numberFormat);
+    }
+}
+
+@section Scripts {
+    <script>
+        function printHistory() {
+            window.print();
+        }
+
+        // Animate timeline items on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            timelineItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.classList.add('loaded');
+                }, index * 100);
+            });
+
+            const loanCards = document.querySelectorAll('.history-loan-card');
+            loanCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('loaded');
+                }, index * 50);
+            });
+        });
+    </script>
+}
+
+<style>
+    /* History Header */
+    .history-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+        border-radius: var(--radius-xl);
+        padding: 3rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .header-pattern {
+        background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+    }
+
+    .header-title {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* History Icon */
+    .history-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    .icon-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+
+    .timeline-indicator {
+        position: absolute;
+        bottom: -5px;
+        right: -5px;
+        width: 30px;
+        height: 30px;
+        background: var(--success-color);
+        border-radius: 50%;
+        border: 3px solid white;
+        animation: pulse 2s infinite;
+    }
+
+    /* Loan Overview */
+    .loan-overview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .overview-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: var(--radius-lg);
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--gray-700);
+    }
+
+    /* Statistics Section */
+    .statistics-section {
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-xl);
+        padding: 2rem;
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .section-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: all var(--transition-normal);
+        height: 100%;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .member-stats .stat-icon {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .fees-stats .stat-icon {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .books-stats .stat-icon {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .membership-stats .stat-icon {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+
+    .stat-content h4 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+        color: var(--gray-800);
+    }
+
+    .stat-content p {
+        margin: 0;
+        font-weight: 500;
+        color: var(--gray-600);
+    }
+
+    /* History Cards */
+    .history-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all var(--transition-normal);
+        height: 100%;
+    }
+
+        .history-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-card .card-header {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            padding: 1.5rem;
+        }
+
+    .card-title {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .card-subtitle {
+        color: var(--gray-500);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    /* Current Books List */
+    .current-books-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .book-history-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(229, 231, 235, 0.5);
+        transition: all var(--transition-normal);
+    }
+
+        .book-history-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+    .book-cover-small {
+        width: 60px;
+        height: 80px;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        flex-shrink: 0;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .cover-image-small {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .book-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .book-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin: 0 0 0.25rem 0;
+        line-height: 1.3;
+    }
+
+    .book-author {
+        font-size: 0.9rem;
+        color: var(--gray-600);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .book-meta {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .meta-tag {
+        background: var(--gray-100);
+        color: var(--gray-600);
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .book-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-direction: column;
+    }
+
+    /* History Timeline */
+    .history-timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+
+        .history-timeline::before {
+            content: '';
+            position: absolute;
+            left: 0.75rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--gray-200);
+        }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+        opacity: 0;
+        transform: translateX(-20px);
+        transition: all var(--transition-normal);
+    }
+
+        .timeline-item.loaded {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+    .timeline-marker {
+        position: absolute;
+        left: -2rem;
+        top: 0.5rem;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        color: white;
+        z-index: 1;
+    }
+
+        .timeline-marker.status-active {
+            background: var(--primary-color);
+        }
+
+        .timeline-marker.status-returned {
+            background: var(--success-color);
+        }
+
+        .timeline-marker.status-overdue {
+            background: var(--danger-color);
+        }
+
+    .timeline-content {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .loan-summary .loan-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .loan-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.85rem;
+        color: var(--gray-600);
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Book History Grid */
+    .book-history-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .history-loan-card {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        border: 1px solid rgba(229, 231, 235, 0.5);
+        transition: all var(--transition-normal);
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+        .history-loan-card.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .history-loan-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+    .loan-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .loan-number {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .member-name {
+        font-size: 0.9rem;
+        color: var(--gray-600);
+    }
+
+    .status-indicator {
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+        .status-indicator.status-active {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+        }
+
+        .status-indicator.status-returned {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-indicator.status-overdue {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+        }
+
+    .loan-dates {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+    }
+
+    .date-item {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .date-label {
+        color: var(--gray-500);
+        font-weight: 500;
+    }
+
+    .date-value {
+        color: var(--gray-700);
+        font-weight: 600;
+    }
+
+    .loan-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    /* Status Badges */
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    /* Empty Messages */
+    .empty-message {
+        text-align: center;
+        padding: 2rem;
+        color: var(--gray-400);
+    }
+
+        .empty-message i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+    /* Print Styles */
+    @@media print {
+        .header-actions, .btn
+
+    {
+        display: none !important;
+    }
+
+    .history-header {
+        background: none !important;
+        box-shadow: none !important;
+    }
+
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .history-header
+
+    {
+        padding: 2rem 1rem;
+    }
+
+    .loan-overview {
+        flex-direction: column;
+    }
+
+    .book-history-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .book-history-item {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .book-actions {
+        flex-direction: row;
+        justify-content: center;
+    }
+
+    }
+</style>
