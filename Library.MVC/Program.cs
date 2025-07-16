@@ -16,14 +16,28 @@ builder.Services.AddControllersWithViews()
 builder.Services.AddDbContext<ApplicationDbContext>(options => options
     .UseSqlite(builder.Configuration.GetConnectionString("LibrarySystem"), b => b.MigrationsAssembly("Library.Infrastructure"))
 );
-
-//Services configuration
+ 
+// Services configuration
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IAuthorService, AuthorService>();
 builder.Services.AddScoped<IBookCopyService, BookCopyService>();
 builder.Services.AddScoped<ILoanService, LoanService>();
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IBookCopyLoanService, BookCopyLoanService>();
+
+
+// Logging
+builder.Services.AddLogging();
+
+// Swedish culture globally
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = new[] { "sv-SE", "en-US" };
+    options.SetDefaultCulture("sv-SE")
+           .AddSupportedCultures(supportedCultures)
+           .AddSupportedUICultures(supportedCultures);
+});
+
 
 builder.Services.AddRazorPages();
 
@@ -45,11 +59,8 @@ app.UseRouting();
 
 app.MapRazorPages();
 
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllerRoute(
-        name: "default",
-        pattern: "{controller=Home}/{action=Index}/{id?}");
-});
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

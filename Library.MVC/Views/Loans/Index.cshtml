@@ -1,123 +1,1345 @@
-﻿@model Library.MVC.ViewModels.LoanViewModel
+﻿@using Library.Domain.Entities
+@using Library.Domain.Enums
 @using Library.Domain.Utilities
+@model Library.MVC.ViewModels.LoanViewModel
 
 @{
-    ViewData["Title"] = "Loans";
-
-    var status = Context.Request.Query["satatus"];
-    var isActive = "text-secondary";
-    var all = "text-secondary";
-
-    switch (status)
-    {
-        case "isActive":
-            isActive = "active text-white";
-            break;
-        case "all":
-            all = "active text-white";
-            break;
-        default:
-            break;
-    }
-#pragma warning disable
+    ViewData["Title"] = "Lånehantering";
+    var loans = ViewBag.Loans as List<Loan> ?? Model.Loans?.ToList() ?? new List<Loan>();
+    var status = Context.Request.Query["status"].ToString();
+    var search = Context.Request.Query["search"].ToString();
+    var memberId = Context.Request.Query["memberId"].ToString();
+    var sortBy = Context.Request.Query["sort"].ToString() ?? "dueDate";
+    var members = ViewBag.Members as IEnumerable<Member> ?? Enumerable.Empty<Member>(); // Fix
 }
+@Html.AntiForgeryToken()
 
-<div class="p-3">
-    <div class="d-flex justify-content-between pt-4">
-        <div class="">
-            <h2 class="text-primary">Loans</h2>
-        </div>
-        <div class="row">
-            <ul class="list-group list-group-horizontal-sm col-12">
-                <li class="btn-group btn-group-toggle">
-                    <a style="text-decoration:none;" class="books-button btn btn-outline-secondary mt-2 mt-sm-0 py-2 px-3 @isActive" asp-controller="Loans" asp-action"Index" asp-route-satatus="isActive">
-                        <span>Active loans</span>
-                    </a>
-                    <a style="text-decoration:none;" class="books-button btn btn-outline-secondary mt-2 mt-sm-0 py-2 px-3 @all" asp-controller="Loans" asp-action"Index" asp-route-satatus="all">
-                        <span>Show All</span>
-                    </a>
-                </li>
+<!-- Modern lånecontainer -->
+<div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-11">
+            <!-- Kreativ rubriksektion -->
+            <div class="loans-header mb-5 position-relative overflow-hidden">
+                <!-- Bakgrundsmönster -->
+                <div class="header-pattern position-absolute w-100 h-100"></div>
 
-                <a class="btn btn-primary mt-2 mt-sm-0 ml-sm-3 py-2 px-3" style="text-decoration:none; vertical-align: middle;" asp-controller="Loans" asp-action="Create">
-                    <i class="align-middle  bi bi-plus-circle"></i> <span class="align-middle">&nbsp; New</span>
-                </a>
+                <div class="position-relative z-2">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="loans-icon mb-3">
+                                <div class="icon-wrapper">
+                                    <i class="bi bi-journal-bookmark"></i>
+                                    <div class="icon-pulse"></div>
+                                </div>
+                            </div>
 
-            </ul>
-        </div>
-    </div>
-</div>
-<div class="p-3">
-    <table id="loans" class="table table-hover">
-        <thead>
-            <tr class="bg-light">
-                <th> @Html.DisplayName("Member SSN")</th>
-                <th> @Html.DisplayName("Member Name")</th>
-                <th> @Html.DisplayName("Copies")</th>
-                <th> @Html.DisplayNameFor(model => model.Loan.StartDate)</th>
-                <th> @Html.DisplayNameFor(model => model.Loan.DueDate)</th>
-                <th> @Html.DisplayNameFor(model => model.Loan.ReturnDate)</th>
-                <th> @Html.DisplayNameFor(model => model.Loan.Fee)</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model.Loans)
-            {
-                <tr>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.Member.SSN)
-                    </td>
-                    <td>
-                        @Html.ActionLink(item.Member.Name, "Details", "Members", new {id = item.MemberID})
-                    </td>
-                    @{
-                        var bookCopyLoans = item.BookCopyLoans.Where(l => l.LoanId == item.LoanId).Select(x => x.BookCopy.Details.Title).Count();
-                        <td>
-                            @Html.DisplayName(bookCopyLoans.ToString())
-                        </td>
-                    }
-                    <td>
-                        @Html.DisplayName(item.StartDate.ToShortDateString())
-                    </td>
-                    <td>
-                        @if (DateTime.Now > item.DueDate && item.Fee > 0)
-                        {
-                            <span class="bg badge-danger p-1">
-                                @Html.DisplayName(item.DueDate.ToShortDateString())
-                            </span>
-                        }
-                        else
-                        {
-                            @Html.DisplayName(item.DueDate.ToShortDateString())
-                        }
+                            <h1 class="display-5 fw-bold mb-2 header-title pb-1">Lånehantering</h1>
+                            <p class="text-muted mb-3 fs-5">Spåra och hantera alla boklån effektivt</p>
 
-                    </td>
-                    @if (item.ReturnDate < item.StartDate)
+                            <!-- Snabbstatistik -->
+                            @if (Model.Statistics != null)
+                            {
+                                <div class="quick-stats d-flex flex-wrap gap-3">
+                                    <div class="stat-item m-1">
+                                        <i class="bi bi-journal-check me-2"></i>
+                                        <span class="stat-value">@Model.Statistics.ActiveLoans</span>
+                                        <span class="stat-label">Aktiva</span>
+                                    </div>
+                                    <div class="stat-item m-1">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        <span class="stat-value text-danger">@Model.Statistics.OverdueLoans</span>
+                                        <span class="stat-label">Försenade</span>
+                                    </div>
+                                    <div class="stat-item m-1">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        <span class="stat-value text-success">@Model.Statistics.ReturnedLoans</span>
+                                        <span class="stat-label">Återlämnade idag</span>
+                                    </div>
+                                    <div class="stat-item m-1">
+                                        <i class="bi bi-currency-exchange me-2"></i>
+                                        <span class="stat-value">@FormatSwedishCurrency(Model.Statistics.TotalFees)</span>
+                                        <span class="stat-label">Totala avgifter</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="col-lg-4 text-lg-end">
+                            <div class="header-actions d-flex flex-column gap-2">
+                                <a asp-action="Create" class="btn btn-success btn-lg m-1
+                                    <i class="bi bi-plus-circle me-2"></i>
+                                    Skapa nytt lån
+                                </a>
+                                <div class="export-actions d-flex gap-2">
+                                    <button onclick="exportToCSV()" class="btn btn-outline-success btn-sm m-1">
+                                        <i class="bi bi-file-earmark-spreadsheet mr-1">
+                                        </i>
+                                        Exportera CSV
+                                    </button>
+                                    <button onclick="generateReport()" class="btn btn-outline-info btn-sm m-1">
+                                        <i class="bi bi-file-text mr-1"></i>
+                                        Rapport
+                                    </button>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Avancerad sök- och filtersektion -->
+            <div class="search-filter-section mb-4">
+                <form method="get" asp-action="Index" class="search-form">
+                    <div class="row g-3">
+                        <!-- Sökinmatning -->
+                        <div class="col-md-4">
+                            <div class="search-container">
+                                <input type="text"
+                                       name="search"
+                                       value="@search"
+                                       class="form-control search-input"
+                                       placeholder="Sök på medlemsnamn, personnummer eller boktitel..."
+                                       id="searchInput">
+                                <i class="bi bi-search search-icon"></i>
+                                @if (!string.IsNullOrEmpty(search))
+                                {
+                                    <button type="button" class="clear-search" onclick="clearSearch()">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                }
+                            </div>
+                            <!-- Keyboard shortcut hint -->
+                            <div class="keyboard-hint text-muted small mt-1">
+                                <span class="d-none d-md-inline p-0 m-0">Tips: Använd</span>
+                                <kbd>Ctrl/Cmd + K</kbd> för att fokusera och <kbd>Esc</kbd> för att rensa
+                            </div>
+                        </div>
+
+                        <!-- Statusfilter -->
+                        <div class="col-md-2">
+                            <select name="status" class="form-control" onchange="this.form.submit()">
+                                <option value="">Alla lån</option>
+                                <option value="active" selected="@(status == "active")">Aktiva</option>
+                                <option value="overdue" selected="@(status == "overdue")">Försenade</option>
+                                <option value="returned" selected="@(status == "returned")">Återlämnade</option>
+                                <option value="lost" selected="@(status == "lost")">Förlorade</option>
+                                <option value="cancelled" selected="@(status == "cancelled")">Avbrutna</option>
+                            </select>
+                        </div>
+
+                        <!-- Medlemsfilter -->
+                        <div class="col-md-2">
+                            <select name="memberId" class="form-control" onchange="this.form.submit()">
+                                <option value="">Alla medlemmar</option>
+                                @if (ViewBag.Members != null)
+                                {
+                                    @foreach (var member in members)
+                                    {
+                                        <option value="@member.Id" selected="@(memberId == member.Id.ToString())">@member.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Datumintervallfilter -->
+                        <div class="col-md-2">
+                            <select name="daterange" class="form-control" onchange="this.form.submit()">
+                                <option value="">Alla datum</option>
+                                <option value="today">Idag</option>
+                                <option value="week">Denna vecka</option>
+                                <option value="month">Denna månad</option>
+                                <option value="year">Detta år</option>
+                            </select>
+                        </div>
+                        <!-- Sorteringsalternativ -->
+                        <div class="col-md-2">
+                            <select name="sort" class="form-control" onchange="this.form.submit()">
+                                <option value="dueDate" selected="@(sortBy == "dueDate")">Förfallodatum</option>
+                                <option value="startDate_desc" selected="@(sortBy == "startDate_desc")">Nyaste först</option>
+                                <option value="startDate" selected="@(sortBy == "startDate")">Äldsta först</option>
+                                <option value="member" selected="@(sortBy == "member")">Medlemsnamn</option>
+                                <option value="fee_desc" selected="@(sortBy == "fee_desc")">Högsta avgift</option>
+                            </select>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+
+            <!-- Resultatinformation -->
+            <div class="results-info mb-4 d-flex justify-content-between align-items-center">
+                <div class="results-text mx-4">
+                    @if (!string.IsNullOrEmpty(search))
                     {
-                        <td>
-                            <a asp-action="Return" class="btn btn-success" asp-route-id="@item.LoanId">Return</a>
-                        </td>
+                        <span>Hittade <strong>@loans.Count</strong> lån som matchar "<em>@search</em>"</span>
                     }
                     else
                     {
-                        <td>
-                            @Html.DisplayName(item.ReturnDate.ToShortDateString())
-                        </td>
+                        <span>Visar <strong>@loans.Count</strong> lån</span>
                     }
-                    <td>
-                        @Html.DisplayName(item.Fee.ToString("c"))
-                    </td>
-                    <td>
-                        <a class='btn-link js-delete' data-loan-id=@item.LoanId>
-                            <i class='bi bi-trash-fill' style='color: #ff4136; cursor:pointer;'></i>
-                        </a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                </div>
+
+                <div class="view-options">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary active" onclick="setCardView()">
+                            <i class="bi bi-grid-3x3-gap"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="setTableView()">
+                            <i class="bi bi-table"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lånevisning -->
+            <div class="loans-container" id="loansContainer">
+                @if (loans.Any())
+                {
+                    <!-- Kortvy (Standard) -->
+                    <div class="loans-grid" id="loansGrid">
+                        @foreach (var loan in loans)
+                        {
+                            // Calculate overdue fee
+                            var now = DateTime.UtcNow;
+                            var bookCount = loan.BookCopyLoans?.Count ?? 0;
+                            var isOverdue = loan.ReturnDate == null && loan.DueDate < now;
+                            var isReturnedLate = loan.ReturnDate.HasValue && loan.ReturnDate > loan.DueDate && loan.DueDate < now;
+
+                            if (isOverdue || isReturnedLate)
+                            {
+                                var referenceDate = loan.ReturnDate ?? now;
+                                var daysOverdue = (referenceDate - loan.DueDate).Days;
+                                loan.Fee = daysOverdue * FeeSettings.FeePerDayPerBook * bookCount;
+                            }
+                            else
+                            {
+                                loan.Fee = 0;
+                            }
+
+                            <div class="loan-card" data-loan-id="@loan.Id">
+                                <div class="loan-card-inner">
+                                    <!-- Lånerubrik -->
+                                    <div class="loan-header">
+                                        <div class="loan-info">
+                                            <h5 class="loan-title">Lån #@loan.Id</h5>
+                                            <div class="loan-member">
+                                                <a asp-controller="Members" asp-action="Details" asp-route-id="@loan.MemberId"
+                                                   class="member-link">
+                                                    <i class="bi bi-person me-1"></i>
+                                                    @loan.Member?.Name
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="loan-status">
+                                            <span class="status-badge status-@GetStatusClass(loan.Status)">
+                                                <i class="bi bi-@GetStatusIcon(loan.Status) me-1"></i>
+                                                @GetSwedishLoanStatus(loan.Status)
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lånedetaljer -->
+                                    <div class="loan-details">
+                                        <div class="detail-grid">
+                                            <div class="detail-item">
+                                                <i class="bi bi-calendar-plus detail-icon"></i>
+                                                <div class="detail-content">
+                                                    <span class="detail-label">Startdatum</span>
+                                                    <span class="detail-value">@loan.StartDate.ToString("dd MMM yyyy", new System.Globalization.CultureInfo("sv-SE"))</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="detail-item">
+                                                <i class="bi bi-calendar-check detail-icon"></i>
+                                                <div class="detail-content">
+                                                    <span class="detail-label">Förfallodatum</span>
+                                                    <span class="detail-value @(loan.IsOverdue ? "text-danger fw-bold" : "")">
+                                                        @loan.DueDate.ToString("dd MMM yyyy", new System.Globalization.CultureInfo("sv-SE"))
+                                                        @if (loan.IsOverdue)
+                                                        {
+                                                            <span class="overdue-badge">@loan.DaysOverdue dagar försenat</span>
+                                                        }
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            @if (loan.ReturnDate.HasValue)
+                                            {
+                                                <div class="detail-item">
+                                                    <i class="bi bi-calendar-x detail-icon"></i>
+                                                    <div class="detail-content">
+                                                        <span class="detail-label">Återlämningsdatum</span>
+                                                        <span class="detail-value">@loan.ReturnDate.Value.ToString("dd MMM yyyy", new System.Globalization.CultureInfo("sv-SE"))</span>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            <div class="detail-item">
+                                                <i class="bi bi-currency-exchange detail-icon"></i>
+                                                <div class="detail-content">
+                                                    <span class="detail-label">Avgift</span>
+                                                    <span class="detail-value @(loan.Fee > 0 ? "text-danger fw-bold" : "text-success")">
+                                                        @FormatSwedishCurrency(loan.Fee)
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div class="detail-item">
+                                                <i class="bi bi-books detail-icon"></i>
+                                                <div class="detail-content">
+                                                    <span class="detail-label">Böcker</span>
+                                                    <span class="detail-value">@loan.TotalBooks @(loan.TotalBooks == 1 ? "bok" : "böcker")</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="detail-item">
+                                                <i class="bi bi-person-badge detail-icon"></i>
+                                                <div class="detail-content">
+                                                    <span class="detail-label">Medlems personnummer</span>
+                                                    <span class="detail-value">@loan.Member?.SSN</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bokförhandsgranskning -->
+                                    @if (loan.BookCopyLoans?.Any() == true)
+                                    {
+                                        <div class="books-preview">
+                                            <h6 class="books-title">
+                                                <i class="bi bi-book me-2"></i>
+                                                Lånade böcker
+                                            </h6>
+                                            <div class="books-list">
+                                                @foreach (var bookLoan in loan.BookCopyLoans.Take(3))
+                                                {
+                                                    <div class="book-preview-item">
+                                                        <img src="@(bookLoan.BookCopy?.Details?.ImageBinary ?? "/uploads/9780555816023.png")"
+                                                             alt="@bookLoan.BookCopy?.Details?.Title"
+                                                             class="book-thumb">
+                                                        <div class="book-info">
+                                                            <span class="book-title">@bookLoan.BookCopy?.Details?.Title</span>
+                                                            <span class="book-copy">Exemplar #@bookLoan.BookCopyId</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (loan.BookCopyLoans.Count() > 3)
+                                                {
+                                                    <div class="more-books">
+                                                        +@(loan.BookCopyLoans.Count() - 3) fler böcker
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+
+                                    <!-- Låneåtgärder -->
+                                    <div class="loan-actions">
+                                        <div class="action-buttons">
+                                            @if (loan.Status == LoanStatus.Active)
+                                            {
+                                                <button onclick="returnLoan(@loan.Id, '@Html.Raw(loan.Member?.Name?.Replace("'", "\\'"))')"
+                                                        class="btn btn-success btn-sm">
+                                                    <i class="bi bi-check-circle me-1"></i>
+                                                    Återlämna
+                                                </button>
+                                                <button onclick="extendLoan(@loan.Id)"
+                                                        class="btn btn-outline-primary btn-sm">
+                                                    <i class="bi bi-calendar-plus me-1"></i>
+                                                    Förläng
+                                                </button>
+                                            }
+
+                                            <a asp-action="Details" asp-route-id="@loan.Id"
+                                               class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-eye me-1"></i>
+                                                Detaljer
+                                            </a>
+
+                                            @if (loan.Status != LoanStatus.Returned)
+                                            {
+                                                <button onclick="deleteLoan(@loan.Id, '@Html.Raw(loan.Member?.Name?.Replace("'", "\\'"))')"
+                                                        class="btn btn-outline-danger btn-sm">
+                                                    <i class="bi bi-trash me-1"></i>
+                                                    Ta bort
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Tabellvy (Dold som standard) -->
+                    <div class="loans-table" id="loansTable" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Lån #</th>
+                                        <th>Medlem</th>
+                                        <th>Personnummer</th>
+                                        <th>Böcker</th>
+                                        <th>Startdatum</th>
+                                        <th>Förfallodatum</th>
+                                        <th>Återlämningsdatum</th>
+                                        <th>Avgift</th>
+                                        <th>Status</th>
+                                        <th>Åtgärder</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var loan in loans)
+                                    {
+                                        <tr class="@(loan.IsOverdue ? "table-warning" : "")">
+                                            <td><strong>#@loan.Id</strong></td>
+                                            <td>
+                                                <a asp-controller="Members" asp-action="Details" asp-route-id="@loan.MemberId">
+                                                    @loan.Member?.Name
+                                                </a>
+                                            </td>
+                                            <td>@loan.Member?.SSN</td>
+                                            <td>@loan.TotalBooks</td>
+                                            <td>@loan.StartDate.ToString("dd MMM yyyy", new System.Globalization.CultureInfo("sv-SE"))</td>
+                                            <td class="@(loan.IsOverdue ? "text-danger fw-bold" : "")">
+                                                @loan.DueDate.ToString("dd MMM yyyy", new System.Globalization.CultureInfo("sv-SE"))
+                                                @if (loan.IsOverdue)
+                                                {
+                                                    <br>
+                                                    <small class="text-danger">@loan.DaysOverdue dagar försenat</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (loan.ReturnDate.HasValue)
+                                                {
+                                                    @loan.ReturnDate.Value.ToString("dd MMM yyyy", new System.Globalization.CultureInfo("sv-SE"))
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Ej återlämnad</span>
+                                                }
+                                            </td>
+                                            <td class="@(loan.Fee > 0 ? "text-danger fw-bold" : "text-success")">
+                                                @FormatSwedishCurrency(loan.Fee)
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-@GetStatusBadgeClass(loan.Status) text-white">
+                                                    @GetSwedishLoanStatus(loan.Status)
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    @if (loan.Status == LoanStatus.Active)
+                                                    {
+                                                        <button onclick="returnLoan(@loan.Id, '@Html.Raw(loan.Member?.Name?.Replace("'", "\\'"))')"
+                                                                class="btn btn-success btn-sm m-1" title="Återlämna">
+                                                            <i class="bi bi-check-circle"></i>
+                                                        </button>
+                                                    }
+                                                    <a asp-action="Details" asp-route-id="@loan.Id"
+                                                       class="btn btn-outline-secondary btn-sm m-1" title="Detaljer">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    @if (loan.Status != LoanStatus.Returned)
+                                                    {
+                                                        <button onclick="deleteLoan(@loan.Id, '@Html.Raw(loan.Member?.Name?.Replace("'", "\\'"))')"
+                                                                class="btn btn-outline-danger btn-sm m-1" title="Ta bort">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- Tomt tillstånd -->
+                    <div class="empty-statetext-center py-5">
+                        <div class="empty-content d-flex align-items-center flex-column">
+                            <i class="bi bi-journal-x fs-1 text-muted"></i>
+                            <h3 class="mt-3">Inga lån hittades</h3>
+                            @if (!string.IsNullOrEmpty(search))
+                            {
+                                <p class="text-muted">Inga lån matchar din sökning "<em>@search</em>"</p>
+                                <button class="btn btn-outline-primary d-flex flex-column" style="width: fit-content;" onclick="clearSearch()">
+                                    <i class="bi bi-x-circle mr-2"></i>
+                                    Rensa sökning
+                                </button>
+                            }
+                            else
+                            {
+                                <p class="text-muted">Börja med att skapa ditt första lån</p>
+                                <a asp-action="Create" class="btn btn-success d-flex flex-column" style="width: fit-content;">
+                                    <i class="bi bi-plus-circle mr-2"></i>
+                                    Skapa första lånet
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
 </div>
 
-@section Scripts{
-<script src="~/js/loans.js"></script>
+@functions {
+    private string GetStatusClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "active",
+            LoanStatus.Returned => "returned",
+            LoanStatus.Overdue => "overdue",
+            LoanStatus.Lost => "lost",
+            LoanStatus.Cancelled => "cancelled",
+            _ => "unknown"
+        };
+    }
+
+    private string GetStatusIcon(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "play-circle",
+            LoanStatus.Returned => "check-circle",
+            LoanStatus.Overdue => "exclamation-circle",
+            LoanStatus.Lost => "x-circle",
+            LoanStatus.Cancelled => "slash-circle",
+            _ => "question-circle"
+        };
+    }
+
+    private string GetStatusBadgeClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "primary",
+            LoanStatus.Returned => "success",
+            LoanStatus.Overdue => "danger",
+            LoanStatus.Lost => "dark",
+            LoanStatus.Cancelled => "secondary",
+            _ => "light"
+        };
+    }
+
+    private string GetSwedishLoanStatus(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "Aktiv",
+            LoanStatus.Returned => "Återlämnad",
+            LoanStatus.Overdue => "Försenad",
+            LoanStatus.Lost => "Förlorad",
+            LoanStatus.Cancelled => "Avbruten",
+            _ => "Okänd"
+        };
+    }
+
+    private string FormatSwedishCurrency(decimal amount)
+    {
+        var swedishCulture = new System.Globalization.CultureInfo("sv-SE");
+        var numberFormat = (System.Globalization.NumberFormatInfo)swedishCulture.NumberFormat.Clone();
+        numberFormat.CurrencyPositivePattern = 3; // n $ (nummer mellanslag valuta)
+        numberFormat.CurrencyNegativePattern = 8; // -n $ (negativt nummer mellanslag valuta)
+        numberFormat.CurrencySymbol = "kr";
+        return amount.ToString("C", numberFormat);
+    }
 }
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // Konfigurera toastr
+        toastr.options = {
+            closeButton: true,
+            newestOnTop: true,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            timeOut: "3500",
+            showMethod: "fadeIn",
+            hideMethod: "fadeOut"
+        };
+        // ====================================================================
+        // HJÄLPFUNKTIONER
+        // ====================================================================
+ 
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value ||
+                   document.querySelector('meta[name="__RequestVerificationToken"]')?.content;
+        }
+
+        // ====================================================================
+        // INITIALISERING
+        // ====================================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animera lånekort vid laddning
+            const loanCards = document.querySelectorAll('.loan-card');
+            loanCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('loaded');
+                }, index * 50);
+            });
+
+            // Visa framgångs-/felmeddelanden från TempData
+            @if (TempData["Success"] != null)
+            {
+                  <text>toastr.success('@TempData["Success"]');</text>
+            }
+
+            @if (TempData["Error"] != null)
+            {
+                 <text>toastr.error('@TempData["Error"]');</text>
+            }
+
+            // Tangentbordsgenvägar
+            document.addEventListener('keydown', function(e) {
+                // Convert key to lowercase for case-insensitive comparison
+                const keyPressed = e.key.toLowerCase();
+
+                // Ctrl/Cmd + K to focus search (works with any Caps Lock state)
+                if ((e.ctrlKey || e.metaKey) && keyPressed === 'k') {
+                    e.preventDefault();
+                    document.getElementById('searchInput').focus();
+                }
+
+                // Escape to clear search (works with any Caps Lock state)
+                if (keyPressed === 'escape') {
+                    const searchInput = document.getElementById('searchInput');
+                    if (searchInput.value) {
+                        clearSearch();
+                    }
+                }
+            });
+        });
+
+        // ====================================================================
+        // SÖKFUNKTIONALITET
+        // ====================================================================
+
+        function clearSearch() {
+            const url = new URL(window.location);
+            url.searchParams.delete('search');
+            window.location.href = url.toString();
+        }
+
+        // Auto-skicka sökning med fördröjning
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const form = e.target.closest('form');
+                form.submit();
+            }, 500);
+        });
+
+        // ====================================================================
+        // VYVÄXLINGSFUNKTIONER
+        // ====================================================================
+
+        function setCardView() {
+            document.getElementById('loansGrid').style.display = 'grid';
+            document.getElementById('loansTable').style.display = 'none';
+
+            // Uppdatera knappstatus
+            document.querySelectorAll('.view-options .btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.btn').classList.add('active');
+        }
+
+        function setTableView() {
+            document.getElementById('loansGrid').style.display = 'none';
+            document.getElementById('loansTable').style.display = 'block';
+
+            // Uppdatera knappstatus
+            document.querySelectorAll('.view-options .btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.btn').classList.add('active');
+        }
+
+        // ====================================================================
+        // LÅNEÅTGÄRDER
+        // ====================================================================
+
+        async function returnLoan(Id, memberName) {
+            const result = await Swal.fire({
+                title: 'Återlämna böcker?',
+                html: `Återlämna alla böcker för <strong>${memberName}</strong>?<br><small class="text-muted">Denna åtgärd kommer markera alla böcker i detta lån som återlämnade.</small>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-check-circle"></i> Ja, återlämna böcker',
+                cancelButtonText: 'Avbryt',
+                reverseButtons: true
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/Loans/Return/${Id}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        toastr.success(data.message || 'Böcker återlämnade framgångsrikt');
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        toastr.error(data.message || 'Misslyckades med att återlämna böcker');
+                    }
+                } catch (error) {
+                    console.error('Fel vid återlämning av lån:', error);
+                    toastr.error('Ett fel inträffade vid återlämning av böcker');
+                }
+            }
+        }
+
+        async function deleteLoan(Id, memberName) {
+            const result = await Swal.fire({
+                title: 'Ta bort lån?',
+                html: `Är du säker på att du vill ta bort detta lån för <strong>${memberName}</strong>?<br><small class="text-danger">Denna åtgärd kan inte ångras!</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash"></i> Ja, ta bort',
+                cancelButtonText: 'Avbryt',
+                reverseButtons: true
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/Loans/Delete/${Id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        toastr.success(data.message || 'Lån borttaget framgångsrikt');
+
+                        // Ta bort kortet med animation
+                        const loanCard = document.querySelector(`[data-loan-id="${Id}"]`);
+                        if (loanCard) {
+                            loanCard.style.animation = 'fadeOut 0.5s ease';
+                            setTimeout(() => {
+                                loanCard.remove();
+                                checkEmptyState();
+                            }, 500);
+                        }
+                    } else {
+                        toastr.error(data.message || 'Misslyckades med att ta bort lån');
+                    }
+                } catch (error) {
+                    console.error('Fel vid borttagning av lån:', error);
+                    toastr.error('Ett fel inträffade vid borttagning av lån');
+                }
+            }
+        }
+
+        async function extendLoan(Id) {
+            const { value: days } = await Swal.fire({
+                title: 'Förläng lån',
+                input: 'number',
+                inputLabel: 'Antal dagar att förlänga',
+                inputPlaceholder: 'Ange antal dagar (1-30)',
+                inputAttributes: {
+                    min: 1,
+                    max: 30,
+                    step: 1
+                },
+                showCancelButton: true,
+                confirmButtonColor: '#007bff',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-calendar-plus"></i> Förläng lån',
+                cancelButtonText: 'Avbryt',
+                inputValidator: (value) => {
+                    if (!value || value < 1 || value > 30) {
+                        return 'Vänligen ange ett nummer mellan 1 och 30';
+                    }
+                }
+            });
+
+            if (days) {
+                try {
+                    const response = await fetch(`/Loans/Extend/${Id}?days=${days}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': getAntiForgeryToken()
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        toastr.success(`Lån förlängt med ${days} dagar`);
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        toastr.error(data.message || 'Misslyckades med att förlänga lån');
+                    }
+                } catch (error) {
+                    console.error('Fel vid förlängning av lån:', error);
+                    toastr.error('Ett fel inträffade vid förlängning av lån');
+                }
+            }
+        }
+
+        // Export-funktioner
+        function exportToCSV() {
+            const url = new URL('/Loans/ExportToCsv', window.location.origin);
+
+            // Lägg till aktuella filterparametrar
+            const params = new URLSearchParams(window.location.search);
+            for (const [key, value] of params) {
+                url.searchParams.append(key, value);
+            }
+
+            try {
+                window.location.href = url.toString();
+                toastr.success('CSV-export påbörjad...');
+            } catch (error) {
+                console.error('Export error:', error);
+                toastr.error('Misslyckades med CSV-export');
+            }
+        }
+
+        function generateReport() {
+            const url = new URL('/Loans/GenerateReport', window.location.origin);
+
+            // Lägg till aktuella filterparametrar
+            const params = new URLSearchParams(window.location.search);
+            for (const [key, value] of params) {
+                url.searchParams.append(key, value);
+            }
+
+            try {
+                window.location.href = url.toString();
+                toastr.success('Rapport genereras...');
+            } catch (error) {
+                console.error('Report error:', error);
+                toastr.error('Misslyckades med rapportgenerering');
+            }
+        }
+
+        function checkEmptyState() {
+            const remainingCards = document.querySelectorAll('.loan-card').length;
+            if (remainingCards === 0) {
+                setTimeout(() => window.location.reload(), 1000);
+            }
+        }
+    </script>
+}
+
+<style>
+    /* Rubrikstyling */
+    .loans-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+        border-radius: var(--radius-xl);
+        padding: 3rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .header-pattern {
+        background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+    }
+
+    .header-title {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Låneikon */
+    .loans-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    .icon-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+
+    .icon-pulse {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        border: 2px solid var(--primary-color);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+        opacity: 0.6;
+    }
+
+    /* Snabbstatistik */
+    .quick-stats {
+        margin-top: 1.5rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.05rem .5rem;
+        background: rgba(255, 255, 255, 0.8);
+        // border-radius: var(--radius-sm);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        font-size: 0.9rem;
+    }
+
+    .stat-value {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--primary-color);
+    }
+
+    .stat-label {
+        font-weight: 500;
+        color: var(--gray-600);
+    }
+
+    /* Sök- och filtersektion */
+    .search-filter-section {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-xl);
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .search-container {
+        position: relative;
+    }
+
+    .search-input {
+        padding-left: 3rem;
+        padding-right: 3rem;
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        transition: all var(--transition-normal);
+    }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-400);
+    }
+
+    .clear-search {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--gray-400);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        transition: all var(--transition-fast);
+    }
+
+        .clear-search:hover {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+    /* Lånerutnät */
+    .loans-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(25vw, 1fr));
+        gap: 2rem;
+    }
+
+    /* Lånekort */
+    .loan-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all var(--transition-normal);
+        opacity: 0;
+        transform: translateY(20px);
+        min-width: 100%;
+    }
+
+        .loan-card.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .loan-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+        }
+
+    .loan-card-inner {
+        padding: 1.5rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Lånehuvud */
+    .loan-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--gray-100);
+    }
+
+    .loan-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--gray-800);
+        margin-bottom: 0.5rem;
+    }
+
+    .loan-member {
+        margin-bottom: 0.5rem;
+    }
+
+    .member-link {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all var(--transition-fast);
+    }
+
+        .member-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+    /* Statusemblems */
+    .status-badge {
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--radius-md);
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+        .status-badge.status-active {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .status-badge.status-returned {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-badge.status-overdue {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .status-badge.status-lost {
+            background: rgba(107, 114, 128, 0.1);
+            color: var(--gray-600);
+            border: 1px solid rgba(107, 114, 128, 0.2);
+        }
+
+        .status-badge.status-cancelled {
+            background: rgba(156, 163, 175, 0.1);
+            color: var(--gray-500);
+            border: 1px solid rgba(156, 163, 175, 0.2);
+        }
+
+    /* Detaljrutnät */
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .detail-icon {
+        width: 20px;
+        height: 20px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+        margin-top: 0.1rem;
+    }
+
+    .detail-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 0;
+    }
+
+    .detail-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .detail-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        word-break: break-word;
+    }
+
+    .overdue-badge {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 500;
+        color: var(--danger-color);
+        margin-top: 0.25rem;
+    }
+
+    /* Bokförhandsgranskning */
+    .books-preview {
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .books-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .books-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .book-preview-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(229, 231, 235, 0.3);
+    }
+
+    .book-thumb {
+        width: 30px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
+    }
+
+    .book-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 0;
+    }
+
+    .book-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .book-copy {
+        font-size: 0.7rem;
+        color: var(--gray-500);
+    }
+
+    .more-books {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        font-style: italic;
+        text-align: center;
+        padding: 0.5rem;
+    }
+
+    /* Låneåtgärder */
+    .loan-actions {
+        margin-top: auto;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+        .action-buttons .btn {
+            flex: 1;
+            min-width: 80px;
+            font-size: 0.8rem;
+        }
+
+    /* Tabellvy */
+    .loans-table {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-xl);
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+        .table th {
+            background: var(--gray-50);
+            border-bottom: 2px solid var(--gray-200);
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+
+        .table td {
+            vertical-align: middle;
+        }
+
+    .table-hover tbody tr:hover {
+        background: rgba(59, 130, 246, 0.05);
+    }
+
+    /* Tomt tillstånd */
+    .empty-state {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-xl);
+        padding: 4rem 2rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .empty-content i {
+        font-size: 4rem;
+        color: var(--gray-300);
+        margin-bottom: 1rem;
+    }
+
+    /* Animationer */
+    @@keyframes fadeOut {
+        0% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        100% {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+    }
+
+    /* Responsiv design */
+    @@media (max-width: 768px) {
+        .loans-header {
+            padding: 2rem 1rem;
+        }
+
+        .search-filter-section {
+            padding: 1.5rem;
+        }
+
+            .search-filter-section .row > div {
+                margin-bottom: 1rem;
+            }
+
+        .loans-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .detail-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .loan-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+            .action-buttons .btn {
+                flex: none;
+            }
+
+        .quick-stats {
+            flex-direction: column;
+        }
+
+        .header-actions {
+            text-align: center;
+        }
+    }
+</style>
