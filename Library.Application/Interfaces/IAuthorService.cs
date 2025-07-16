@@ -1,4 +1,4 @@
-﻿using Library.Domain;
+﻿using Library.Domain.Entities;
 using System.Linq.Expressions;
 
 namespace Library.Application.Interfaces;

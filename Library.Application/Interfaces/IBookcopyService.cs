@@ -1,12 +1,11 @@
-﻿using Library.Domain;
+﻿using Library.Domain.Entities;
 using System.Linq.Expressions;
 
-namespace Library.Application.Interfaces
+namespace Library.Application.Interfaces;
+
+public interface IBookCopyService : IAsyncGenericRepository<BookCopy>
 {
-    public interface IBookCopyService : IAsyncGenericRepository<BookCopy>
-    {
-        Task<IReadOnlyList<BookCopy>> GetAllBookCopiesAsync(Expression<Func<BookCopy, bool>>? filter = null, Func<IQueryable<BookCopy>, IOrderedQueryable<BookCopy>>? orderBy = null, params Expression<Func<BookCopy, object>>[] includeProperties);
-        Task<BookCopy> GetBookCopyOrDefaultAsync(Expression<Func<BookCopy, bool>> filter, string? includeProperties = null, bool tracked = true);
-        void RemoveRange(IEnumerable<BookCopy> entities);
-    }
+    Task<IReadOnlyList<BookCopy>> GetAllBookCopiesAsync(Expression<Func<BookCopy, bool>>? filter = null, Func<IQueryable<BookCopy>, IOrderedQueryable<BookCopy>>? orderBy = null, params Expression<Func<BookCopy, object>>[] includeProperties);
+    Task<BookCopy> GetBookCopyOrDefaultAsync(Expression<Func<BookCopy, bool>> filter, string? includeProperties = null, bool tracked = true);
+    void RemoveRange(IEnumerable<BookCopy> entities);
 }
