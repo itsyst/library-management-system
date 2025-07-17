@@ -5,20 +5,20 @@
 @model Library.MVC.ViewModels.LoanViewModel
 
 @{
-    ViewData["Title"] = $"Loan History - #{Model.Loan.Id}";
+    ViewData["Title"] = $"Lånehistorik - #{Model?.Loan?.Id}";
     var memberHistory = ViewBag.MemberLoanHistory as IEnumerable<Loan>;
     var bookHistory = ViewBag.BookLoanHistory as IEnumerable<Loan>;
     var stats = ViewBag.HistoryStatistics as LoanHistoryStatistics;
     var bookCopyLoans = ViewBag.BookCopyLoans as IEnumerable<BookCopyLoan>;
 }
 
-<!-- Modern Loan History Container -->
+<!-- Modern lånehistorik-container -->
 <div class="container-fluid px-4 py-5">
     <div class="row justify-content-center">
         <div class="col-12 col-xl-11">
-            <!-- Creative Header Section -->
+            <!-- Kreativ rubriksektion -->
             <div class="history-header mb-5 position-relative overflow-hidden">
-                <!-- Background Pattern -->
+                <!-- Bakgrundsmönster -->
                 <div class="header-pattern position-absolute w-100 h-100"></div>
 
                 <div class="position-relative z-2">
@@ -31,24 +31,25 @@
                                 </div>
                             </div>
 
-                            <h1 class="display-6 fw-bold mb-2 header-title">Loan History</h1>
+                            <h1 class="display-6 fw-bold mb-2 header-title">Lånehistorik</h1>
                             <p class="text-muted mb-3 fs-5">
-                                Complete history for Loan #@Model.Loan.Id
+                                Fullständig historik för Lån #@Model.Loan.Id
                             </p>
 
-                            <!-- Quick Overview -->
+                            <!-- Snabböversikt -->
                             <div class="loan-overview">
-                                <div class="overview-item">
-                                    <i class="bi bi-person me-2"></i>
-                                    <span>@Model.Loan.Member?.Name</span>
+                                <div class="overview-item m-1">
+                                    <i class="bi bi-person mr-1"></i>
+                                    <span class="item-label">@Model.Loan.Member?.Name</span>
                                 </div>
-                                <div class="overview-item">
-                                    <i class="bi bi-calendar me-2"></i>
-                                    <span>@Model.Loan.StartDate.ToString("MMM dd, yyyy") - @(Model.Loan.ReturnDate?.ToString("MMM dd, yyyy") ?? "Ongoing")</span>
+                                <div class="overview-item m-1">
+                                    <i class="bi bi-calendar mr-1"></i>
+                                    <span class="item-label">@Model.Loan.StartDate.ToString("MMM dd, yyyy") - @(Model.Loan.ReturnDate?.ToString("MMM dd, yyyy") ?? "Pågående")</span>
                                 </div>
-                                <div class="overview-item">
-                                    <i class="bi bi-books me-2"></i>
-                                    <span>@Model.Loan.TotalBooks books borrowed</span>
+                                <div class="overview-item m-1">
+                                    <i class="bi bi-book mr-1"></i>
+                                    <span class="item-value">@Model.Loan.TotalBooks</span>
+                                    <span class="item-label">@(Model.Loan.TotalBooks > 1 ? "lånade böcker " : "lånad bok" )</span>
                                 </div>
                             </div>
                         </div>
@@ -57,15 +58,15 @@
                             <div class="header-actions d-flex flex-column gap-2">
                                 <a asp-action="Details" asp-route-id="@Model.Loan.Id" class="btn btn-primary">
                                     <i class="bi bi-eye me-2"></i>
-                                    View Loan Details
+                                    Visa lånedetaljer
                                 </a>
                                 <button onclick="printHistory()" class="btn btn-outline-secondary">
                                     <i class="bi bi-printer me-2"></i>
-                                    Print History
+                                    Skriv ut historik
                                 </button>
                                 <a asp-action="Index" class="btn btn-outline-secondary">
                                     <i class="bi bi-arrow-left me-2"></i>
-                                    Back to Loans
+                                    Tillbaka till lån
                                 </a>
                             </div>
                         </div>
@@ -73,7 +74,7 @@
                 </div>
             </div>
 
-            <!-- Statistics Overview -->
+            <!-- Statistiköversikt -->
             @if (stats != null)
             {
                 <div class="statistics-section mb-5">
@@ -81,7 +82,7 @@
                         <div class="col-12">
                             <h3 class="section-title">
                                 <i class="bi bi-graph-up me-2"></i>
-                                History Statistics
+                                Historikstatistik
                             </h3>
                         </div>
                         <div class="col-md-6 col-lg-3">
@@ -90,9 +91,9 @@
                                     <i class="bi bi-person-check"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <h4>@stats.TotalMemberLoans</h4>
-                                    <p>Total Member Loans</p>
-                                    <small class="text-muted">@stats.MemberActiveLoans currently active</small>
+                                    <h4 class="text-primary">@stats.TotalMemberLoans</h4>
+                                    <p>Totalt medlemslån</p>
+                                    <small class="text-muted">@stats.MemberActiveLoans för närvarande aktiva</small>
                                 </div>
                             </div>
                         </div>
@@ -102,21 +103,21 @@
                                     <i class="bi bi-currency-exchange"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <h4>@FormatSwedishCurrency(stats.MemberTotalFees)</h4>
-                                    <p>Total Member Fees</p>
-                                    <small class="text-muted">Across all loans</small>
+                                    <h4 class="text-danger">@FormatSwedishCurrency(stats.MemberTotalFees)</h4>
+                                    <p>Totala medlemsavgifter</p>
+                                    <small class="text-muted">Över alla lån</small>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6 col-lg-3">
                             <div class="stat-card books-stats">
                                 <div class="stat-icon">
-                                    <i class="bi bi-books"></i>
+                                    <i class="bi bi-book"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <h4>@stats.TotalBooksLoaned</h4>
-                                    <p>Books in This Loan</p>
-                                    <small class="text-muted">@stats.AverageBookPopularity avg. popularity</small>
+                                    <h4 class="text-primary">@stats.TotalBooksLoaned</h4>
+                                    <p>Böcker i detta lån</p>
+                                    <small class="text-muted">@stats.AverageBookPopularity genomsnittlig popularitet</small>
                                 </div>
                             </div>
                         </div>
@@ -126,9 +127,9 @@
                                     <i class="bi bi-calendar-heart"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <h4>@stats.DaysSinceMembership</h4>
-                                    <p>Days as Member</p>
-                                    <small class="text-muted">Since @stats.MemberSince.ToString("MMM yyyy")</small>
+                                    <h4 class="text-primary">@stats.DaysSinceMembership</h4>
+                                    <p>Dagar som medlem</p>
+                                    <small class="text-muted">Sedan @stats.MemberSince.ToString("MMM yyyy")</small>
                                 </div>
                             </div>
                         </div>
@@ -137,13 +138,13 @@
             }
 
             <div class="row g-4">
-                <!-- Current Loan Books -->
+                <!-- Nuvarande låneböcker -->
                 <div class="col-12 col-lg-6">
                     <div class="history-card current-loan-card">
                         <div class="card-header">
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-book-half me-2"></i>
-                                Books in This Loan
+                                Böcker i detta lån
                             </h5>
                         </div>
                         <div class="card-body">
@@ -160,9 +161,9 @@
                                             </div>
                                             <div class="book-info">
                                                 <h6 class="book-title">@bookLoan.BookCopy?.Details?.Title</h6>
-                                                <p class="book-author">by @(bookLoan.BookCopy?.Details?.Author?.Name ?? "Unknown")</p>
+                                                <p class="book-author">av @(bookLoan.BookCopy?.Details?.Author?.Name ?? "Okänd")</p>
                                                 <div class="book-meta">
-                                                    <span class="meta-tag">Copy #@bookLoan.BookCopyId</span>
+                                                    <span class="meta-tag">Exemplar #@bookLoan.BookCopyId</span>
                                                     <span class="meta-tag">@bookLoan.BookCopy?.Condition</span>
                                                 </div>
                                             </div>
@@ -170,12 +171,12 @@
                                                 <a asp-controller="Books" asp-action="Details" asp-route-id="@bookLoan.BookCopy?.Details?.Id"
                                                    class="btn btn-outline-primary btn-sm">
                                                     <i class="bi bi-eye me-1"></i>
-                                                    View
+                                                    Visa
                                                 </a>
-                                                <a asp-action="BookHistory" asp-route-bookId="@bookLoan.BookCopy?.Details?.Id"
+                                                <a asp-controller="Books" asp-action="History" asp-route-bookId="@bookLoan.BookCopy?.Details?.Id"
                                                    class="btn btn-outline-info btn-sm">
-                                                    <i class="bi bi-clock-history me-1"></i>
-                                                    History
+                                                    <i class="bi bi-clock-history mr-1"></i>
+                                                    Historik
                                                 </a>
                                             </div>
                                         </div>
@@ -186,26 +187,26 @@
                             {
                                 <div class="empty-message">
                                     <i class="bi bi-inbox"></i>
-                                    <p>No books in this loan</p>
+                                    <p>Inga böcker i detta lån</p>
                                 </div>
                             }
                         </div>
                     </div>
                 </div>
 
-                <!-- Member History -->
+                <!-- Medlemshistorik -->
                 <div class="col-12 col-lg-6">
                     <div class="history-card member-history-card">
                         <div class="card-header">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">
                                     <i class="bi bi-person-lines-fill me-2"></i>
-                                    @Model.Loan.Member?.Name's Loan History
+                                    @Model.Loan.Member?.Name's lånehistorik
                                 </h5>
-                                <a asp-action="MemberHistory" asp-route-memberId="@Model.Loan.MemberId"
+                                <a asp-controller="Members" asp-action="History" asp-route-memberId="@Model.Loan.MemberId"
                                    class="btn btn-outline-primary btn-sm">
                                     <i class="bi bi-list me-1"></i>
-                                    View All
+                                    Visa alla
                                 </a>
                             </div>
                         </div>
@@ -223,20 +224,21 @@
                                                 <div class="loan-summary">
                                                     <h6 class="loan-title">
                                                         <a asp-action="Details" asp-route-id="@loan.Id">
-                                                            Loan #@loan.Id
+                                                            Lån #@loan.Id
                                                         </a>
-                                                        <span class="status-badge status-@GetStatusClass(loan.Status)">
-                                                            @loan.Status
+                                                        <span class="status-badge badge-@GetStatusBadgeClass(loan.Status)">
+                                                            @GetSwedishLoanStatus(@loan.Status)
                                                         </span>
                                                     </h6>
                                                     <div class="loan-details">
                                                         <span class="detail-item">
-                                                            <i class="bi bi-calendar me-1"></i>
+                                                            <i class="bi bi-calendar mr-1"></i>
                                                             @loan.StartDate.ToString("MMM dd, yyyy")
                                                         </span>
                                                         <span class="detail-item">
-                                                            <i class="bi bi-books me-1"></i>
-                                                            @loan.TotalBooks books
+                                                            <i class="bi bi-book mr-1"></i>
+                                                            <span class="mr-1">@loan.TotalBooks</span>
+                                                            <span>@(@loan.TotalBooks > 1 ? "böcker" : "bok")</span>
                                                         </span>
                                                         @if (loan.Fee > 0)
                                                         {
@@ -256,22 +258,22 @@
                             {
                                 <div class="empty-message">
                                     <i class="bi bi-clock"></i>
-                                    <p>No previous loans for this member</p>
+                                    <p>Inga tidigare lån för denna medlem</p>
                                 </div>
                             }
                         </div>
                     </div>
                 </div>
 
-                <!-- Book History -->
+                <!-- Bokhistorik -->
                 <div class="col-12">
                     <div class="history-card book-history-card">
                         <div class="card-header">
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-book-half me-2"></i>
-                                Book Loan History
+                                Boklånehistorik
                             </h5>
-                            <p class="card-subtitle">Other loans involving books from this loan</p>
+                            <p class="card-subtitle">Andra lån som involverar böcker från detta lån</p>
                         </div>
                         <div class="card-body">
                             @if (bookHistory != null && bookHistory.Any())
@@ -299,19 +301,19 @@
                                                     <span class="date-value">@loan.StartDate.ToString("MMM dd")</span>
                                                 </div>
                                                 <div class="date-item">
-                                                    <span class="date-label">Due:</span>
+                                                    <span class="date-label">Förfall:</span>
                                                     <span class="date-value">@loan.DueDate.ToString("MMM dd")</span>
                                                 </div>
                                                 @if (loan.ReturnDate.HasValue)
                                                 {
                                                     <div class="date-item">
-                                                        <span class="date-label">Returned:</span>
+                                                        <span class="date-label">Återlämnad:</span>
                                                         <span class="date-value">@loan.ReturnDate.Value.ToString("MMM dd")</span>
                                                     </div>
                                                 }
                                             </div>
                                             <div class="loan-footer">
-                                                <span class="book-count">@loan.TotalBooks books</span>
+                                                <span class="book-count">@loan.TotalBooks böcker</span>
                                                 @if (loan.Fee > 0)
                                                 {
                                                     <span class="loan-fee text-danger">@FormatSwedishCurrency(loan.Fee)</span>
@@ -324,7 +326,7 @@
                                 @if (bookHistory.Count() > 8)
                                 {
                                     <div class="text-center mt-3">
-                                        <p class="text-muted">Showing 8 of @bookHistory.Count() related loans</p>
+                                        <p class="text-muted">Visar 8 av @bookHistory.Count() relaterade lån</p>
                                     </div>
                                 }
                             }
@@ -332,7 +334,7 @@
                             {
                                 <div class="empty-message">
                                     <i class="bi bi-search"></i>
-                                    <p>No other loans found for these books</p>
+                                    <p>Inga andra lån hittades för dessa böcker</p>
                                 </div>
                             }
                         </div>
@@ -357,6 +359,19 @@
         };
     }
 
+        private string GetStatusBadgeClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "primary",
+            LoanStatus.Returned => "success",
+            LoanStatus.Overdue => "danger",
+            LoanStatus.Lost => "dark",
+            LoanStatus.Cancelled => "secondary",
+            _ => "light"
+        };
+    }
+
     private string GetStatusIcon(LoanStatus status)
     {
         return status switch
@@ -367,6 +382,19 @@
             LoanStatus.Lost => "x-circle",
             LoanStatus.Cancelled => "slash-circle",
             _ => "question-circle"
+        };
+    }
+
+    private string GetSwedishLoanStatus(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "Aktiv",
+            LoanStatus.Returned => "Återlämnad",
+            LoanStatus.Overdue => "Försenad",
+            LoanStatus.Lost => "Förlorad",
+            LoanStatus.Cancelled => "Avbruten",
+            _ => "Okänd"
         };
     }
 
@@ -388,7 +416,7 @@
             window.print();
         }
 
-        // Animate timeline items on load
+        // Animera tidslinjeobjekt vid laddning
         document.addEventListener('DOMContentLoaded', function() {
             const timelineItems = document.querySelectorAll('.timeline-item');
             timelineItems.forEach((item, index) => {
@@ -408,7 +436,7 @@
 }
 
 <style>
-    /* History Header */
+    /* Historikrubrik */
     .history-header {
         background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
         border-radius: var(--radius-xl);
@@ -428,7 +456,7 @@
         background-clip: text;
     }
 
-    /* History Icon */
+    /* Historikikon */
     .history-icon {
         position: relative;
         display: inline-block;
@@ -460,7 +488,7 @@
         animation: pulse 2s infinite;
     }
 
-    /* Loan Overview */
+    /* Låneöversikt */
     .loan-overview {
         display: flex;
         flex-wrap: wrap;
@@ -472,15 +500,26 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.75rem 1rem;
+        padding: 0.05rem .5rem;
         background: rgba(255, 255, 255, 0.8);
-        border-radius: var(--radius-lg);
+        color: var(--primary-color);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
         font-size: 0.9rem;
-        font-weight: 500;
-        color: var(--gray-700);
     }
 
-    /* Statistics Section */
+    .item-value {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--primary-color);
+    }
+
+    .item-label {
+        font-weight: 500;
+        color: var(--gray-600);
+    }
+
+    /* Statistiksektion */
     .statistics-section {
         background: rgba(248, 250, 252, 0.8);
         border-radius: var(--radius-xl);
@@ -552,7 +591,7 @@
         color: var(--gray-600);
     }
 
-    /* History Cards */
+    /* Historikkort */
     .history-card {
         background: rgba(255, 255, 255, 0.95);
         border-radius: var(--radius-xl);
@@ -586,7 +625,7 @@
         margin: 0;
     }
 
-    /* Current Books List */
+    /* Nuvarande boklista */
     .current-books-list {
         display: flex;
         flex-direction: column;
@@ -664,7 +703,7 @@
         flex-direction: column;
     }
 
-    /* History Timeline */
+    /* Historiktidslinje */
     .history-timeline {
         position: relative;
         padding-left: 2rem;
@@ -747,7 +786,7 @@
         align-items: center;
     }
 
-    /* Book History Grid */
+    /* Bokhistorik-rutnät */
     .book-history-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -846,7 +885,7 @@
         border-top: 1px solid var(--gray-200);
     }
 
-    /* Status Badges */
+    /* Statusmärken */
     .status-badge {
         padding: 0.25rem 0.5rem;
         border-radius: var(--radius-sm);
@@ -854,7 +893,7 @@
         font-weight: 600;
     }
 
-    /* Empty Messages */
+    /* Tomma meddelanden */
     .empty-message {
         text-align: center;
         padding: 2rem;
@@ -866,7 +905,7 @@
             margin-bottom: 0.5rem;
         }
 
-    /* Print Styles */
+    /* Utskriftsstilar */
     @@media print {
         .header-actions, .btn
 
@@ -881,7 +920,7 @@
 
     }
 
-    /* Responsive Design */
+    /* Responsiv design */
     @@media (max-width: 768px) {
         .history-header
 

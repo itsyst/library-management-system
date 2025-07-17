@@ -747,7 +747,7 @@ public class LoansController(
             return RedirectToAction("Index", "Books");
         }
     }
-
+ 
     #endregion
 
     #region Loan Operations

@@ -6,67 +6,43 @@ using System.Linq.Expressions;
 
 namespace Library.Infrastructure.Services;
 
-public class BookCopyLoanService : BaseService<BookCopyLoan>, IBookCopyLoanService
+public class BookCopyLoanService(ApplicationDbContext context) : BaseService<BookCopyLoan>(context), IBookCopyLoanService
 {
-    public BookCopyLoanService(ApplicationDbContext context) : base(context)
-    {
-    }
-
+    #region Core Query Methods
     public async Task<IReadOnlyList<BookCopyLoan>> GetAllBookCopyLoansAsync(Expression<Func<BookCopyLoan, bool>>? filter = null, Func<IQueryable<BookCopyLoan>, IOrderedQueryable<BookCopyLoan>>? orderBy = null, params Expression<Func<BookCopyLoan, object>>[] includeProperties)
     {
         IQueryable<BookCopyLoan> query = _table;
-        if (filter != null)
-        {
-            query = query.Where(filter);
-        }
-        if (includeProperties != null)
-        {
+        
+        if (filter != null) query = query.Where(filter);
+        
+        if (includeProperties?.Length > 0)
             foreach (var includeProp in includeProperties)
-            {
                 query = query.Include(includeProp);
-            }
 
-        }
-        if (orderBy != null)
-        {
-            query = orderBy(query);
-        }
+        if (orderBy != null) query = orderBy(query);
 
         return await query.ToListAsync();
     }
 
     public async Task<BookCopyLoan> GetBookCopyLoanOrDefaultAsync(Expression<Func<BookCopyLoan, bool>> filter, string? includeProperties = null, bool tracked = true)
     {
-        if (tracked)
+        if (filter == null) throw new ArgumentNullException(nameof(filter));
+
+        IQueryable<BookCopyLoan> query = tracked ? _table : _table.AsNoTracking();
+
+        // Apply filter
+        query = query.Where(filter);
+
+        // Include related properties
+        if (includeProperties?.Length > 0)
         {
-            IQueryable<BookCopyLoan> query = _table;
-
-            query = query.Where(filter);
-            if (includeProperties != null)
+            foreach (var includeProp in includeProperties.Split([','] , StringSplitOptions.RemoveEmptyEntries))
             {
-                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                {
-                    query = query.Include(includeProp);
-                }
+                query = query.Include(includeProp);
             }
-
-            return query.FirstOrDefault();
         }
-        else
-        {
-            IQueryable<BookCopyLoan> query = _table.AsNoTracking();
 
-            query = query.Where(filter);
-            if (includeProperties != null)
-            {
-                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
-                {
-                    query = query.Include(includeProp);
-                }
-            }
-
-            return query.FirstOrDefault();
-        }
+        return await query.FirstOrDefaultAsync();
     }
 
     public void RemoveRange(IEnumerable<BookCopyLoan> entities)
@@ -74,4 +50,5 @@ public class BookCopyLoanService : BaseService<BookCopyLoan>, IBookCopyLoanServi
         _table.RemoveRange(entities);
     }
 
+    #endregion
 }
