@@ -12,11 +12,19 @@ builder.Services.AddControllersWithViews()
     // Fix the error "A possible object cycle was detected"
 );
 
-//DbContext configuration
-builder.Services.AddDbContext<ApplicationDbContext>(options => options
-    .UseSqlite(builder.Configuration.GetConnectionString("LibrarySystem"), b => b.MigrationsAssembly("Library.Infrastructure"))
+// DbContext configuration
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("LibrarySystem"),
+        sqlOptions =>
+        {
+            sqlOptions.MigrationsAssembly("Library.Infrastructure");
+            sqlOptions.CommandTimeout(30);  // Sets the command timeout to 30 seconds
+            sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);  // Key fix: Enables splitting globally
+        }
+    )
 );
- 
+
 // Services configuration
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IAuthorService, AuthorService>();
@@ -24,7 +32,7 @@ builder.Services.AddScoped<IBookCopyService, BookCopyService>();
 builder.Services.AddScoped<ILoanService, LoanService>();
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IBookCopyLoanService, BookCopyLoanService>();
-
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Logging
 builder.Services.AddLogging();
