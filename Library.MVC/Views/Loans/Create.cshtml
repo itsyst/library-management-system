@@ -240,17 +240,17 @@
 
                         <!-- Formuläråtgärder -->
                         <div class="form-actions d-flex gap-3 justify-content-end flex-wrap mt-5 pt-4 border-top">
-                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg px-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg m-1">
                                 <i class="bi bi-arrow-left mr-2"></i>
                                 Avbryt
                             </a>
 
-                            <button type="submit" class="btn btn-success btn-lg px-4 mx-2" id="submitBtn">
+                            <button type="submit" class="btn btn-success btn-lg px-4 m-1" id="submitBtn">
+                                <div class="btn-loading d-none">
+                                    <span class="spinner-border spinner-border-sm ml-2"></span>
+                                </div>
                                 <i class="bi bi-bookmark-plus mr-2"></i>
                                 Skapa lån
-                                <div class="btn-loading d-none">
-                                    <div class="spinner-border spinner-border-sm ml-2"></div>
-                                </div>
                             </button>
                         </div>
 
@@ -280,9 +280,7 @@
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <partial name="_ValidationScriptsPartial" />
 
     <script>
         // Konfigurera toastr
@@ -296,7 +294,24 @@
             hideMethod: "fadeOut"
         };
 
-        document.addEventListener('DOMContentLoaded', function() {
+        // ================================================
+        //  Global Variables and Initialization
+        // ================================================
+        // This section declares global variables used throughout the script,
+        // including DOM elements, state arrays, and data from the server.
+        let selectedBooks = [];
+        let availableBooks = @Html.Raw(Json.Serialize(Model.Copies?.ToDictionary(c => c.Value, c => c.Text) ?? new Dictionary<string, string>()));
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        // ================================================
+        //  Main Initialization Function
+        // ================================================
+        // This function runs on DOMContentLoaded and sets up all event listeners,
+        // initial states, and calls helper functions to bootstrap the application.
+        // Order: Declare elements, perform initial updates, attach listeners, load initial data.
+        function initializeApp() {
+            // Declare DOM elements (local scope to avoid global pollution)
             const memberSelect = document.getElementById('memberSelect');
             const memberSearch = document.getElementById('memberSearch');
             const memberDetails = document.getElementById('memberDetails');
@@ -309,61 +324,101 @@
             const form = document.getElementById('loanForm');
             const submitBtn = document.getElementById('submitBtn');
 
-            let selectedBooks = [];
-            let availableBooks = @Html.Raw(Json.Serialize(Model.Copies?.ToDictionary(c => c.Value, c => c.Text) ?? new Dictionary<string, string>()));
+            // Initial setups (order: due date first as it's independent, then book counts, then render selected)
+            updateDueDate(loanPeriod, dueDate);
+            updateBookCounts(availableBooksList);
+            renderSelectedBooks(selectedBooksList);
 
-            // Initialisera beräkning av återlämningsdatum
-            updateDueDate();
+            // Attach event listeners (order matches original: member search first, then clear, change, book search, etc.)
+            setupMemberSearch(memberSearch, memberSelect, memberDetails);
+            setupClearMemberSearch(memberSearch, memberSelect, memberDetails);
+            setupMemberSelectChange(memberSelect, memberDetails);
+            setupBookSearch(bookSearch, availableBooksList);
+            setupClearBookSearch(bookSearch, availableBooksList);
+            setupAddBookButtons(availableBooksList);
+            setupRemoveBookButtons(availableBooksList, selectedBooksList); // Pass both lists as needed for remove operations
+            setupLoanPeriodChange(loanPeriod, dueDate);
+            setupFormSubmit(form, memberSelect, submitBtn, selectedBookCopyIds);
+            setupKeyboardShortcuts(form, memberSelect);
 
-            // Funktionalitet för medlemssökning
+            // Pre-select member from URL query parameter if present
+            const urlParams = new URLSearchParams(window.location.search);
+            const memberIdFromUrl = urlParams.get('memberId');
+            if (memberIdFromUrl) {
+                memberSelect.value = memberIdFromUrl;
+                if (memberSelect.value === memberIdFromUrl) { // Verify if the option exists and was set
+                    loadMemberDetails(memberIdFromUrl, memberDetails);
+                    memberDetails.classList.remove('d-none');
+                } else {
+                    console.warn('Medlems-Id från URL hittades inte.');
+                }
+            } else {
+                // Load initial member details if a member is pre-selected (fallback, e.g., from model)
+                if (memberSelect.value) {
+                    loadMemberDetails(memberSelect.value, memberDetails);
+                }
+            }
+        }
+
+        // ================================================
+        //  Event Listener Setup Functions
+        // ================================================
+        // These functions attach specific event listeners to DOM elements
+        // for handling user interactions like searching, selecting, and submitting.
+
+        function setupMemberSearch(memberSearch, memberSelect, memberDetails) {
             memberSearch.addEventListener('input', function() {
-              const searchTerm = this.value.trim().toLowerCase();
-              const select = document.getElementById('memberSelect');
-              const options = Array.from(select.options);
+                const searchTerm = this.value.trim().toLowerCase();
+                const options = Array.from(memberSelect.options);
 
-              // Show or hide each option based on search
-              options.forEach(opt => {
-                if (opt.value === '') return; // keep placeholder always visible
-                opt.hidden = !opt.text.toLowerCase().includes(searchTerm);
-              });
+                options.forEach(opt => {
+                    if (opt.value === '') return; // Keep placeholder always visible
+                    opt.hidden = !opt.text.toLowerCase().includes(searchTerm);
+                });
 
-              // If the currently selected option is hidden, reset selection
-              if (select.selectedIndex > 0 && select.options[select.selectedIndex].hidden) {
-                select.value = '';
-                memberDetails.classList.add('d-none');
-                // document.getElementById('memberDetails').classList.add('d-none');
-              }
+                if (searchTerm === '') {
+                    // If search is cleared (e.g., via keyboard delete/backspace), reset the select and hide details
+                    memberSelect.value = '';
+                    memberDetails.classList.add('d-none');
+                } else {
+                    // If the currently selected option is hidden, reset selection
+                    if (memberSelect.selectedIndex > 0 && memberSelect.options[memberSelect.selectedIndex].hidden) {
+                        memberSelect.value = '';
+                        memberDetails.classList.add('d-none');
+                    }
 
-              // Optionally, you can show the first matching option
-              const firstVisible = options.find(opt => !opt.hidden && opt.value);
-              if (firstVisible) {
-                select.selectedIndex = options.indexOf(firstVisible);
-                select.dispatchEvent(new Event('change')); // trigger your existing handler
-              }
+                    // Optionally, auto-select the first matching option
+                    const firstVisible = options.find(opt => !opt.hidden && opt.value);
+                    if (firstVisible) {
+                        memberSelect.selectedIndex = options.indexOf(firstVisible);
+                        memberSelect.dispatchEvent(new Event('change')); // Trigger existing handler
+                    }
+                }
             });
+        }
 
-
-            // Rensa medlemssökning och visa alla alternativ vid klick på X
+        function setupClearMemberSearch(memberSearch, memberSelect, memberDetails) {
             document.getElementById('clearMemberSearch').addEventListener('click', function() {
-              memberSearch.value = '';
-              Array.from(memberSelect.options).forEach(opt => opt.hidden = false);
-              memberSelect.value = '';
-              memberDetails.classList.add('d-none');
-              memberSearch.focus();
+                memberSearch.value = '';
+                Array.from(memberSelect.options).forEach(opt => opt.hidden = false);
+                memberSelect.value = '';
+                memberDetails.classList.add('d-none');
+                memberSearch.focus();
             });
+        }
 
-
-            // Ändring av medlemsval
+        function setupMemberSelectChange(memberSelect, memberDetails) {
             memberSelect.addEventListener('change', async function() {
                 const memberId = this.value;
                 if (memberId) {
-                    await loadMemberDetails(memberId);
+                    await loadMemberDetails(memberId, memberDetails);
                 } else {
                     memberDetails.classList.add('d-none');
                 }
             });
+        }
 
-            // Funktionalitet för boksökning
+        function setupBookSearch(bookSearch, availableBooksList) {
             bookSearch.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase();
                 const bookItems = availableBooksList.querySelectorAll('.book-item');
@@ -373,20 +428,22 @@
                     item.style.display = title.includes(searchTerm) ? '' : 'none';
                 });
 
-                updateBookCounts();
+                updateBookCounts(availableBooksList);
             });
+        }
 
-            // Rensa boksökning
+        function setupClearBookSearch(bookSearch, availableBooksList) {
             document.getElementById('clearBookSearch').addEventListener('click', function() {
                 bookSearch.value = '';
                 availableBooksList.querySelectorAll('.book-item').forEach(item => {
                     item.style.display = '';
                 });
                 bookSearch.focus();
-                updateBookCounts();
+                updateBookCounts(availableBooksList);
             });
+        }
 
-            // Lägg till bok i urval
+        function setupAddBookButtons(availableBooksList) {
             document.addEventListener('click', function(e) {
                 if (e.target.closest('.add-book-btn')) {
                     const btn = e.target.closest('.add-book-btn');
@@ -394,29 +451,31 @@
                     const bookItem = btn.closest('.book-item');
                     const bookTitle = bookItem.dataset.bookTitle;
 
-                    addBookToSelection(bookId, bookTitle);
+                    addBookToSelection(bookId, bookTitle, availableBooksList);
                 }
             });
+        }
 
-            // Ta bort bok från urval
+        function setupRemoveBookButtons(availableBooksList, selectedBooksList) {
             document.addEventListener('click', function(e) {
                 if (e.target.closest('.remove-book-btn')) {
                     const btn = e.target.closest('.remove-book-btn');
                     const bookId = btn.dataset.bookId;
 
-                    removeBookFromSelection(bookId);
+                    removeBookFromSelection(bookId, availableBooksList, selectedBooksList);
                 }
             });
+        }
 
-            // Ändring av låneperiod
-            loanPeriod.addEventListener('change', updateDueDate);
+        function setupLoanPeriodChange(loanPeriod, dueDate) {
+            loanPeriod.addEventListener('change', () => updateDueDate(loanPeriod, dueDate));
+        }
 
-            // Formulärinlämning
+        function setupFormSubmit(form, memberSelect, submitBtn, selectedBookCopyIds) {
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 const memberId = memberSelect.value;
-                const bookIds = selectedBooks;
 
                 if (!memberId) {
                     toastr.error('Vänligen välj en medlem');
@@ -424,28 +483,26 @@
                     return;
                 }
 
-                if (bookIds.length === 0) {
+                if (selectedBooks.length === 0) {
                     toastr.error('Vänligen välj minst en bok');
                     return;
                 }
 
-                // Visa laddningstillstånd
-                submitBtn.disabled = true;
-                const loadingSpinner = submitBtn.querySelector('.btn-loading');
-                loadingSpinner.classList.remove('d-none');
-                submitBtn.querySelector('i').classList.add('d-none');
+                // Show loading state
+                toggleSubmitButtonState(submitBtn, true);
 
                 try {
                     const formData = new FormData();
                     formData.append('memberId', memberId);
                     formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
 
-                    bookIds.forEach(id => {
+                    selectedBooks.forEach(id => {
                         formData.append('bookCopyIds', id);
                     });
 
-                    if (document.getElementById('Notes').value) {
-                        formData.append('Notes', document.getElementById('Notes').value);
+                    const notes = document.getElementById('Notes').value;
+                    if (notes) {
+                        formData.append('Notes', notes);
                     }
 
                     const response = await fetch('/Loans/Create', {
@@ -463,154 +520,19 @@
                         }, 2000);
                     } else {
                         toastr.error(result.message);
-                        resetSubmitButton();
+                        toggleSubmitButtonState(submitBtn, false);
                     }
                 } catch (error) {
                     console.error('Fel vid skapande av lån:', error);
                     toastr.error('Ett oväntat fel inträffade');
-                    resetSubmitButton();
+                    toggleSubmitButtonState(submitBtn, false);
                 }
             });
+        }
 
-            // Hjälpfunktioner
-            async function loadMemberDetails(memberId) {
-                try {
-                    const response = await fetch(`/Loans/GetMemberDetails?memberId=${memberId}`);
-                    const result = await response.json();
-
-                    if (result.success) {
-                        const member = result.member;
-                        document.getElementById('memberName').textContent = member.name;
-                        document.getElementById('memberEmail').textContent = member.email;
-                        document.getElementById('activeLoans').textContent = member.activeLoans;
-                        document.getElementById('maxLoans').textContent = member.maxLoans;
-                        document.getElementById('memberStatus').textContent = member.status === 'Active' ? 'Aktiv' : member.status;
-                        document.getElementById('memberStatus').className = `badge ${member.status === 'Active' ? 'bg-success text-white' : 'bg-warning text-white'}`;
-
-                        memberDetails.classList.remove('d-none');
-
-                        if (!member.canBorrow) {
-                            toastr.warning(`Medlemmen har nått maxgränsen för lån (${member.activeLoans}/${member.maxLoans})`);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Fel vid laddning av medlemsdetaljer:', error);
-                }
-            }
-
-            function addBookToSelection(bookId, bookTitle) {
-                if (selectedBooks.includes(bookId)) {
-                    toastr.warning('Boken är redan vald');
-                    return;
-                }
-
-                selectedBooks.push(bookId);
-                updateSelectedBookCopyIds();
-                renderSelectedBooks();
-                hideAvailableBook(bookId);
-                updateBookCounts();
-
-                toastr.success(`Lade till "${bookTitle}" i urvalet`);
-            }
-
-            function removeBookFromSelection(bookId) {
-                const index = selectedBooks.indexOf(bookId);
-                if (index > -1) {
-                    selectedBooks.splice(index, 1);
-                    updateSelectedBookCopyIds();
-                    renderSelectedBooks();
-                    showAvailableBook(bookId);
-                    updateBookCounts();
-
-                    toastr.info('Bok borttagen från urval');
-                }
-            }
-
-            function renderSelectedBooks() {
-                if (selectedBooks.length === 0) {
-                    selectedBooksList.innerHTML = `
-                        <div class="empty-selection text-center py-4">
-                            <i class="bi bi-bookmark-plus fs-1 text-muted"></i>
-                            <p class="text-muted">Inga böcker valda ännu</p>
-                            <small class="text-muted">Klicka på +- knappen för att lägga till böcker</small>
-                        </div>
-                    `;
-                    return;
-                }
-
-                const selectedBooksHtml = selectedBooks.map(bookId => {
-                    const bookTitle = availableBooks[bookId] || `Bok ${bookId}`;
-                    return `
-                        <div class="selected-book-item" data-book-id="${bookId}">
-                            <div class="book-info">
-                                <div class="book-cover selected">
-                                    <i class="bi bi-bookmark-check"></i>
-                                </div>
-                                <div class="book-details">
-                                    <h6 class="book-title">${bookTitle}</h6>
-                                    <p class="book-meta text-muted">Exemplar Id: ${bookId}</p>
-                                </div>
-                            </div>
-                            <button type="button" class="btn btn-outline-danger btn-sm remove-book-btn" data-book-id="${bookId}">
-                                <i class="bi bi-x"></i>
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-
-                selectedBooksList.innerHTML = selectedBooksHtml;
-            }
-
-            function hideAvailableBook(bookId) {
-                const bookItem = availableBooksList.querySelector(`[data-book-id="${bookId}"]`);
-                if (bookItem) {
-                    bookItem.style.display = 'none';
-                }
-            }
-
-            function showAvailableBook(bookId) {
-                const bookItem = availableBooksList.querySelector(`[data-book-id="${bookId}"]`);
-                if (bookItem) {
-                    bookItem.style.display = '';
-                }
-            }
-
-            function updateSelectedBookCopyIds() {
-                selectedBookCopyIds.value = selectedBooks.join(',');
-            }
-
-            function updateBookCounts() {
-                const visibleBooks = availableBooksList.querySelectorAll('.book-item[style=""], .book-item:not([style])').length;
-                document.getElementById('availableBooksCount').textContent = `${visibleBooks} tillgängliga`;
-                document.getElementById('selectedBooksCount').textContent = `${selectedBooks.length} valda`;
-            }
-
-            function updateDueDate() {
-                const days = parseInt(loanPeriod.value) || 14;
-                const due = new Date();
-                due.setDate(due.getDate() + days);
-                dueDate.textContent = due.toLocaleDateString('sv-SE');
-            }
-
-            function resetSubmitButton() {
-                submitBtn.disabled = false;
-                const loadingSpinner = submitBtn.querySelector('.btn-loading');
-                loadingSpinner.classList.add('d-none');
-                submitBtn.querySelector('i').classList.remove('d-none');
-            }
-
-            function showSuccessAnimation() {
-                const animation = document.getElementById('successAnimation');
-                animation.classList.remove('d-none');
-
-                setTimeout(() => {
-                    animation.classList.add('d-none');
-                }, 3000);
-            }
-
-            // Tangentbordsgenvägar
+        function setupKeyboardShortcuts(form, memberSelect) {
             document.addEventListener('keydown', function(e) {
-                // Ctrl+Enter för att skicka
+                // Ctrl+Enter to submit
                 if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                     e.preventDefault();
                     if (memberSelect.value && selectedBooks.length > 0) {
@@ -618,17 +540,158 @@
                     }
                 }
 
-                // Escape för att avbryta
+                // Escape to cancel
                 if (e.key === 'Escape') {
                     if (confirm('Är du säker på att du vill avbryta? Alla osparade ändringar kommer att förloras.')) {
                         window.location.href = '/Loans';
                     }
                 }
             });
+        }
 
-            // Initialisera räknare
-            updateBookCounts();
-        });
+        // ================================================
+        //  Helper Functions
+        // ================================================
+        // These are utility functions for loading data, updating UI,
+        // managing selections, and handling animations/states.
+
+        async function loadMemberDetails(memberId, memberDetails) {
+            try {
+                const response = await fetch(`/Loans/GetMemberDetails?memberId=${memberId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const member = result.member;
+                    document.getElementById('memberName').textContent = member.name;
+                    document.getElementById('memberEmail').textContent = member.email;
+                    document.getElementById('activeLoans').textContent = member.activeLoans;
+                    document.getElementById('maxLoans').textContent = member.maxLoans;
+                    document.getElementById('memberStatus').textContent = member.status === 'Active' ? 'Aktiv' : member.status;
+                    document.getElementById('memberStatus').className = `badge ${member.status === 'Active' ? 'bg-success text-white' : 'bg-warning text-white'}`;
+
+                    memberDetails.classList.remove('d-none');
+                }
+            } catch (error) {
+                console.error('Fel vid laddning av medlemsdetaljer:', error);
+            }
+        }
+
+        function addBookToSelection(bookId, bookTitle, availableBooksList) {
+            if (selectedBooks.includes(bookId)) {
+                toastr.warning('Boken är redan vald');
+                return;
+            }
+
+            selectedBooks.push(bookId);
+            updateSelectedBookCopyIds();
+            renderSelectedBooks(document.getElementById('selectedBooksList'));
+            hideAvailableBook(bookId, availableBooksList);
+            updateBookCounts(availableBooksList);
+
+            toastr.success(`Lade till "${bookTitle}" i urvalet`);
+        }
+
+        function removeBookFromSelection(bookId, availableBooksList, selectedBooksList) {
+            const index = selectedBooks.indexOf(bookId);
+            if (index > -1) {
+                selectedBooks.splice(index, 1);
+                updateSelectedBookCopyIds();
+                renderSelectedBooks(selectedBooksList);
+                showAvailableBook(bookId, availableBooksList);
+                updateBookCounts(availableBooksList);
+
+                toastr.info('Bok borttagen från urval');
+            }
+        }
+
+        function renderSelectedBooks(selectedBooksList) {
+            if (selectedBooks.length === 0) {
+                selectedBooksList.innerHTML = `
+                    <div class="empty-selection text-center py-4">
+                        <i class="bi bi-bookmark-plus fs-1 text-muted"></i>
+                        <p class="text-muted">Inga böcker valda ännu</p>
+                        <small class="text-muted">Klicka på +- knappen för att lägga till böcker</small>
+                    </div>
+                `;
+                return;
+            }
+
+            const selectedBooksHtml = selectedBooks.map(bookId => {
+                const bookTitle = availableBooks[bookId] || `Bok ${bookId}`;
+                return `
+                    <div class="selected-book-item" data-book-id="${bookId}">
+                        <div class="book-info">
+                            <div class="book-cover selected">
+                                <i class="bi bi-bookmark-check"></i>
+                            </div>
+                            <div class="book-details">
+                                <h6 class="book-title">${bookTitle}</h6>
+                                <p class="book-meta text-muted">Exemplar Id: ${bookId}</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-book-btn" data-book-id="${bookId}">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            selectedBooksList.innerHTML = selectedBooksHtml;
+        }
+
+        function hideAvailableBook(bookId, availableBooksList) {
+            const bookItem = availableBooksList.querySelector(`[data-book-id="${bookId}"]`);
+            if (bookItem) {
+                bookItem.style.display = 'none';
+            }
+        }
+
+        function showAvailableBook(bookId, availableBooksList) {
+            const bookItem = availableBooksList.querySelector(`[data-book-id="${bookId}"]`);
+            if (bookItem) {
+                bookItem.style.display = '';
+            }
+        }
+
+        function updateSelectedBookCopyIds() {
+            document.getElementById('selectedBookCopyIds').value = selectedBooks.join(',');
+        }
+
+        function updateBookCounts(availableBooksList) {
+            const visibleBooks = availableBooksList.querySelectorAll('.book-item[style=""], .book-item:not([style])').length;
+            document.getElementById('availableBooksCount').textContent = `${visibleBooks} tillgängliga`;
+            document.getElementById('selectedBooksCount').textContent = `${selectedBooks.length} valda`;
+        }
+
+        function updateDueDate(loanPeriod, dueDate) {
+            const days = parseInt(loanPeriod.value) || 14;
+            const due = new Date();
+            due.setDate(due.getDate() + days);
+            dueDate.textContent = due.toLocaleDateString('sv-SE');
+        }
+
+        function toggleSubmitButtonState(submitBtn, isLoading) {
+            submitBtn.disabled = isLoading;
+            const loadingSpinner = submitBtn.querySelector('.btn-loading');
+            const icon = submitBtn.querySelector('i');
+
+            if (isLoading) {
+                loadingSpinner.classList.remove('d-none');
+                icon.classList.add('d-none');
+            } else {
+                loadingSpinner.classList.add('d-none');
+                icon.classList.remove('d-none');
+            }
+        }
+
+        function showSuccessAnimation() {
+            const animation = document.getElementById('successAnimation');
+            animation.classList.remove('d-none');
+
+            setTimeout(() => {
+                animation.classList.add('d-none');
+            }, 3000);
+        }
     </script>
 }
 
@@ -807,7 +870,7 @@
 
     .book-title {
         margin: 0;
-        padding:.2rem 0;
+        padding: .2rem 0;
         font-size: 0.9rem;
         font-weight: 600;
     }
