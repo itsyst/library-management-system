@@ -9,7 +9,7 @@
     --success-color: #10b981;
     --danger-color: #ef4444;
     --warning-color: #f59e0b;
-    --gray-50: #f9fafb;
+    --info-color: #06b6d4;
     --gray-100: #f3f4f6;
     --gray-200: #e5e7eb;
     --gray-300: #d1d5db;
@@ -22,10 +22,10 @@
     --white: #ffffff;
     --black: #000000;
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     /* Border radius */
     --radius-sm: 6px;
     --radius-md: 12px;
@@ -36,7 +36,7 @@
     --transition-normal: 0.3s ease;
     --transition-slow: 0.6s ease;
 }
-
+ 
 /* ============================================================================ */
 /* ========================== LAYOUT & STRUCTURE ============================ */
 /* ============================================================================ */
@@ -472,16 +472,17 @@
 
 /* Status Badges */
 .status-badge {
-    position: absolute;
+    /*position: absolute;*/
     top: 1rem;
     right: 1rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.2rem 0.5rem;
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 600;
     backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
+    width: fit-content;
     gap: 0.25rem;
 }
 
@@ -840,7 +841,7 @@
     position: relative;
     overflow: hidden;
 }
- 
+
 .home-gradient-overlay {
     position: absolute;
     inset: 0;
@@ -859,33 +860,33 @@
     transform: translateY(100%);
     transition: transform var(--transition-normal);
 }
- 
+
 .home-book-meta {
     display: flex;
     justify-content: space-between;
     align-items: end;
 }
- 
+
 .home-copies-count {
     font-weight: bold;
     text-align: center;
     color: var(--white);
 }
- 
+
 .home-count-number {
     display: block;
     font-size: 1.5rem;
     font-weight: 700;
     line-height: 1;
 }
- 
+
 .home-count-label {
     font-size: 0.75rem;
     opacity: 0.8;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
- 
+
 .home-book-content {
     padding: .5rem;
     flex-grow: 1;
@@ -912,7 +913,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
- 
+
 .home-book-author {
     font-size: 0.9rem;
     color: var(--gray-600);
@@ -920,7 +921,7 @@
     font-style: italic;
     font-weight: 500;
 }
- 
+
 .home-book-description {
     font-size: 0.8rem;
     color: var(--gray-400);
@@ -1062,26 +1063,61 @@
         transform: scale(1);
     }
 }
-    /* ============================================================================ */
-    /* ========================== SWEETALERT2 CUSTOMIZATION ==================== */
-    /* ============================================================================ */
 
-    .swal2-popup {
-        width: 600px !important;
-        border-radius: var(--radius-lg) !important;
+/* ============================================================================ */
+/* ========================== SWEETALERT2 CUSTOMIZATION ==================== */
+/* ============================================================================ */
+
+#swal2-html-container {
+    color: #545454 !important;
+    text-align: start !important;
+}
+
+.swal2-popup {
+    border-radius: var(--radius-lg) !important;
+}
+
+.swal2-actions {
+    display: flex !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 20px 0 auto !important;
+    position: relative !important;
+}
+
+    /* Position buttons at edges regardless of order */
+    .swal2-actions .swal2-cancel,
+    .swal2-actions .swal2-confirm {
+        margin: 0 28px !important;
+        flex: 0 0 auto !important;
     }
 
-    .swal2-actions {
-        display: flex !important;
-        justify-content: space-between !important;
-        padding: 0 22px !important;
-        width: 100% !important;
-    }
- 
+/* Hide unused elements */
+.swal2-deny:not([style*="display: inline-block"]),
+.swal2-loader {
+    display: none !important;
+}
+
+/* Ensure deny button doesn't interfere when hidden */
+.swal2-deny[style*="display: none"] {
+    display: none !important;
+    flex: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.swal2-input-label {
+    justify-content: start !important;
+    margin: 1em 31px auto !important;
+} 
+
 /* ============================================================================ */
 /* ========================== RESPONSIVE DESIGN ============================== */
 /* ============================================================================ */
-
 @media (max-width: 1200px) {
     .container-modern {
         padding: 0 1.5rem;
@@ -1250,3 +1286,4 @@
         background: rgba(30,30,30,.85);
     }
 }
+ 
