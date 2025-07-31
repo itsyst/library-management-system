@@ -1,0 +1,1006 @@
+﻿@using Library.Domain.Entities
+@using Library.Domain.Enums
+@using Library.MVC.Controllers
+@using Library.MVC.ViewModels
+@model Library.MVC.ViewModels.LoanViewModel
+
+@{
+    var member = ViewBag.Member as Member;
+    ViewData["Title"] = $"Lånehistorik - {member?.Name}";
+    var currentPage = ViewBag.CurrentPage as int? ?? 1;
+    var totalPages = ViewBag.TotalPages as int? ?? 1;
+    var totalItems = ViewBag.TotalItems as int? ?? 0;
+    var pageSize = ViewBag.PageSize as int? ?? 10;
+}
+
+<!-- Modern medlemshistorik-container -->
+<div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-11">
+            <!-- Kreativ medlemsrubriksektion -->
+            <div class="member-history-header mb-5 position-relative overflow-hidden">
+                <!-- Medlemsbakgrundsmönster -->
+                <div class="member-header-pattern position-absolute w-100 h-100"></div>
+
+                <div class="position-relative z-2">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="member-history-icon mb-3">
+                                <div class="member-icon-wrapper">
+                                    <i class="bi bi-person-lines-fill"></i>
+                                    <div class="member-pulse-indicator"></div>
+                                </div>
+                            </div>
+
+                            <h1 class="display-6 fw-bold mb-2 member-header-title">Medlemshistorik</h1>
+                            <p class="text-muted mb-3 fs-5">
+                                Fullständig lånehistorik för <strong class="text-dark">@member?.Name</strong>
+                            </p>
+
+                            <!-- Medlemssnabböversikt -->
+                            <div class="member-overview">
+                                <div class="member-overview-item m-1">
+                                    <i class="bi bi-person-badge mr-1"></i>
+                                    <span class="item-label">Medlem #@member?.Id</span>
+                                </div>
+                                <div class="member-overview-item m-1">
+                                    <i class="bi bi-envelope mr-1"></i>
+                                    <span class="item-label">@member?.Email</span>
+                                </div>
+                                <div class="member-overview-item m-1">
+                                    <i class="bi bi-calendar-heart mr-1"></i>
+                                    <span class="item-label">Medlem sedan @member?.MembershipStartDate.ToString("MMM yyyy")</span>
+                                </div>
+                                <div class="member-overview-item m-1">
+                                    <i class="bi bi-shield-check mr-1"></i>
+                                    <span class="item-label">@GetSwedishMemberStatus(member?.Status)</span>
+                                </div>
+                                <div class="member-overview-item m-1">
+                                    <i class="bi bi-collection mr-1"></i>
+                                    <span class="item-value">@totalItems</span>
+                                    <span class="item-label">totalt lån</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-column col-lg-4 text-lg-end py-2">
+                            <div class="member-avatar-display col-12 mb-3">
+                                <div class="member-avatar-large">
+                                    <i class="bi bi-person-circle"></i>
+                                </div>
+                                <div class="member-status-badge">
+                                    <i class="bi bi-@GetMemberStatusIcon(member?.Status)"></i>
+                                    @GetSwedishMemberStatus(member?.Status)
+                                </div>
+                            </div>
+                            <div class="member-header-actions d-flex flex-column gap-2 col-12">
+                                <div class="btn-group">
+                                    <a asp-controller="Members" asp-action="Details" asp-route-id="@member?.Id" class="btn btn-primary m-1">
+                                        <i class="bi bi-person mr-2"></i>
+                                        Visa medlemsdetaljer
+                                    </a>
+                                    <a asp-controller="Loans" asp-action="Create" asp-route-memberId="@member?.Id" class="btn btn-success m-1">
+                                        <i class="bi bi-plus mr-2"></i>
+                                        Skapa nytt lån
+                                    </a>
+                                </div>
+                                <button onclick="printMemberHistory()" class="btn btn-outline-secondary m-1">
+                                    <i class="bi bi-printer mr-2"></i>
+                                    Skriv ut historik
+                                </button>
+                                <a asp-controller="Members" asp-action="Index" class="btn btn-outline-secondary m-1">
+                                    <i class="bi bi-arrow-left mr-2"></i>
+                                    Tillbaka till medlemmar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medlemsstatistik -->
+            @if (Model.Statistics != null)
+            {
+                <div class="member-statistics-section mb-5">
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <h3 class="section-title">
+                                <i class="bi bi-graph-up-arrow mr-2"></i>
+                                Lånestatistik
+                            </h3>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card active-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-bookmark-check"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4 class="text-primary">@Model.Statistics.ActiveLoans</h4>
+                                    <p>Aktiva lån</p>
+                                    <small class="text-muted">Pågående låneaktivitet</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card overdue-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4 class="text-danger">@Model.Statistics.OverdueLoans</h4>
+                                    <p>Försenade lån</p>
+                                    <small class="text-muted">Kräver uppmärksamhet</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card returned-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-check-circle"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4 class="text-success">@Model.Statistics.ReturnedLoans</h4>
+                                    <p>Återlämnade idag</p>
+                                    <small class="text-muted">Dagens aktivitet</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card fees-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-currency-exchange"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4 class="text-warning">@FormatSwedishCurrency(Model.Statistics.TotalFees)</h4>
+                                    <p>Utestående avgifter</p>
+                                    <small class="text-muted">Totalt belopp</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Lånehistorik -->
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="member-history-card loans-card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="card-title mb-1">
+                                        <i class="bi bi-clock-history mr-2"></i>
+                                        Lånehistorik
+                                    </h5>
+                                    <p class="card-subtitle text-muted">Kronologisk översikt av alla lån</p>
+                                </div>
+                                <div class="pagination-info">
+                                    <span class="text-muted">
+                                        Visar @((currentPage - 1) * pageSize + 1) - @(Math.Min(currentPage * pageSize, totalItems)) av @totalItems lån
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.Loans != null && Model.Loans.Any())
+                            {
+                                <div class="member-loans-timeline">
+                                    @foreach (var loan in Model.Loans)
+                                    {
+                                        <div class="loan-timeline-item">
+                                            <div class="loan-timeline-marker @GetStatusClass(loan.Status)">
+                                                <i class="bi bi-@GetStatusIcon(loan.Status)"></i>
+                                            </div>
+                                            <div class="loan-timeline-content">
+                                                <div class="loan-card">
+                                                    <div class="loan-header">
+                                                        <div class="loan-info">
+                                                            <h6 class="loan-title">
+                                                                <a asp-controller="Loans" asp-action="Details" asp-route-id="@loan.Id">
+                                                                    Lån #@loan.Id
+                                                                </a>
+                                                            </h6>
+                                                            <div class="loan-dates">
+                                                                <span class="date-info">
+                                                                    <i class="bi bi-calendar-check mr-1"></i>
+                                                                    @loan.StartDate.ToString("MMM dd, yyyy")
+                                                                </span>
+                                                                <span class="date-info">
+                                                                    <i class="bi bi-calendar-x mr-1"></i>
+                                                                    Förfall: @loan.DueDate.ToString("MMM dd, yyyy")
+                                                                </span>
+                                                                @if (loan.ReturnDate.HasValue)
+                                                                {
+                                                                    <span class="date-info">
+                                                                        <i class="bi bi-calendar-check mr-1"></i>
+                                                                        Återlämnad: @loan.ReturnDate.Value.ToString("MMM dd, yyyy")
+                                                                    </span>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                        <div class="loan-actions">
+                                                            <a asp-controller="Loans" asp-action="Details" asp-route-id="@loan.Id"
+                                                               class="btn btn-outline-primary btn-sm">
+                                                                <i class="bi bi-eye mr-1"></i>
+                                                                Detaljer
+                                                            </a>
+                                                            <a asp-controller="Loans" asp-action="History" asp-route-id="@loan.Id"
+                                                               class="btn btn-outline-info btn-sm">
+                                                                <i class="bi bi-clock-history mr-1"></i>
+                                                                Historik
+                                                            </a>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Lånade böcker -->
+                                                    <div class="loan-books">
+                                                        <h6 class="books-title">
+                                                            <i class="bi bi-books mr-1"></i>
+                                                            Lånade böcker (@loan.TotalBooks)
+                                                        </h6>
+                                                        <span class="status-badge badge-@GetStatusBadgeClass(loan.Status) my-1">
+                                                            @GetSwedishLoanStatus(loan.Status)
+                                                        </span>
+                                                        <div class="books-grid">
+                                                            @foreach (var bookCopyLoan in loan.BookCopyLoans.Take(3))
+                                                            {
+                                                                <div class="book-item">
+                                                                    <div class="book-cover-mini">
+                                                                        <img src="@(bookCopyLoan.BookCopy?.Details?.ImageBinary ?? "/uploads/9780555816023.png")"
+                                                                             alt="@bookCopyLoan.BookCopy?.Details?.Title"
+                                                                             class="cover-image-mini" />
+                                                                    </div>
+                                                                    <div class="book-info-mini">
+                                                                        <h6 class="book-title-mini">@bookCopyLoan.BookCopy?.Details?.Title</h6>
+                                                                        <p class="book-author-mini">@bookCopyLoan.BookCopy?.Details?.Author?.Name</p>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                            @if (loan.TotalBooks > 3)
+                                                            {
+                                                                <div class="book-item more-books">
+                                                                    <div class="more-books-indicator">
+                                                                        <i class="bi bi-three-dots"></i>
+                                                                        <span>+@(loan.TotalBooks - 3) till</span>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Lånedetaljer -->
+                                                    <div class="loan-details">
+                                                        @if (loan.Fee > 0)
+                                                        {
+                                                            <div class="detail-item fee-item">
+                                                                <i class="bi bi-currency-dollar mr-1"></i>
+                                                                <span>Avgift: @FormatSwedishCurrency(loan.Fee)</span>
+                                                            </div>
+                                                        }
+                                                        @if (loan.IsOverdue)
+                                                        {
+                                                            <div class="detail-item overdue-item">
+                                                                <i class="bi bi-exclamation-triangle mr-1"></i>
+                                                                <span>@loan.DaysOverdue dagar försenat</span>
+                                                            </div>
+                                                        }
+                                                        @if (!string.IsNullOrEmpty(loan.Notes))
+                                                        {
+                                                            <div class="detail-item notes-item">
+                                                                <i class="bi bi-note-sticky mr-1"></i>
+                                                                <span>Anteckningar: @loan.Notes</span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Pagination -->
+                                @if (totalPages > 1)
+                                {
+                                    <div class="pagination-section mt-4">
+                                        <nav aria-label="Lånehistorik pagination">
+                                            <ul class="pagination justify-content-center">
+                                                @if (currentPage > 1)
+                                                {
+                                                    <li class="page-item">
+                                                        <a class="page-link" asp-action="MemberHistory" asp-route-memberId="@member?.Id" asp-route-page="@(currentPage - 1)">
+                                                            <i class="bi bi-chevron-left"></i>
+                                                        </a>
+                                                    </li>
+                                                }
+
+                                                @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                                                {
+                                                    <li class="page-item @(i == currentPage ? "active" : "")">
+                                                        <a class="page-link" asp-action="MemberHistory" asp-route-memberId="@member?.Id" asp-route-page="@i">@i</a>
+                                                    </li>
+                                                }
+
+                                                @if (currentPage < totalPages)
+                                                {
+                                                    <li class="page-item">
+                                                        <a class="page-link" asp-action="MemberHistory" asp-route-memberId="@member?.Id" asp-route-page="@(currentPage + 1)">
+                                                            <i class="bi bi-chevron-right"></i>
+                                                        </a>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="empty-message">
+                                    <i class="bi bi-inbox"></i>
+                                    <h4>Inga lån registrerade</h4>
+                                    <p>Denna medlem har inga lån i systemet</p>
+                                    <a asp-controller="Loans" asp-action="Create" asp-route-memberId="@member?.Id"
+                                       class="btn btn-primary mt-3">
+                                        <i class="bi bi-plus mr-1"></i>
+                                        Skapa första lånet
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetStatusClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "status-active",
+            LoanStatus.Returned => "status-returned",
+            LoanStatus.Overdue => "status-overdue",
+            LoanStatus.Lost => "status-lost",
+            LoanStatus.Cancelled => "status-cancelled",
+            _ => "status-unknown"
+        };
+    }
+
+    private string GetStatusBadgeClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "primary",
+            LoanStatus.Returned => "success",
+            LoanStatus.Overdue => "danger",
+            LoanStatus.Lost => "dark",
+            LoanStatus.Cancelled => "secondary",
+            _ => "light"
+        };
+    }
+
+    private string GetStatusIcon(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "play-circle",
+            LoanStatus.Returned => "check-circle",
+            LoanStatus.Overdue => "exclamation-circle",
+            LoanStatus.Lost => "x-circle",
+            LoanStatus.Cancelled => "slash-circle",
+            _ => "question-circle"
+        };
+    }
+
+    private string GetSwedishLoanStatus(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "Aktiv",
+            LoanStatus.Returned => "Återlämnad",
+            LoanStatus.Overdue => "Försenad",
+            LoanStatus.Lost => "Förlorad",
+            LoanStatus.Cancelled => "Avbruten",
+            _ => "Okänd"
+        };
+    }
+
+    private string GetSwedishMemberStatus(MembershipStatus? status)
+    {
+        return status switch
+        {
+            MembershipStatus.Active => "Aktiv",
+            MembershipStatus.Suspended => "Avstängd",
+            MembershipStatus.Cancelled => "Inaktiv",
+            MembershipStatus.Expired => "Utgången",
+            _ => "Okänd"
+        };
+    }
+
+    private string GetMemberStatusClass(MembershipStatus? status)
+    {
+        return status switch
+        {
+            MembershipStatus.Active => "status-active",
+            MembershipStatus.Suspended => "status-suspended",
+            MembershipStatus.Cancelled => "status-inactive",
+            MembershipStatus.Expired => "status-expired",
+            _ => "status-unknown"
+        };
+    }
+
+    private string GetMemberStatusIcon(MembershipStatus? status)
+    {
+        return status switch
+        {
+            MembershipStatus.Active => "shield-check",
+            MembershipStatus.Suspended => "shield-exclamation",
+            MembershipStatus.Cancelled => "shield-slash",
+            MembershipStatus.Expired => "shield-x",
+            _ => "shield"
+        };
+    }
+
+    private string FormatSwedishCurrency(decimal amount)
+    {
+        var swedishCulture = new System.Globalization.CultureInfo("sv-SE");
+        var numberFormat = (System.Globalization.NumberFormatInfo)swedishCulture.NumberFormat.Clone();
+        numberFormat.CurrencyPositivePattern = 3;
+        numberFormat.CurrencyNegativePattern = 8;
+        numberFormat.CurrencySymbol = "kr";
+
+        return amount.ToString("C", numberFormat);
+    }
+}
+
+@section Scripts {
+    <script>
+        function printMemberHistory() {
+            window.print();
+        }
+
+        // Animera element vid laddning
+        document.addEventListener('DOMContentLoaded', function() {
+            const timelineItems = document.querySelectorAll('.loan-timeline-item');
+            timelineItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.classList.add('loaded');
+                }, index * 100);
+            });
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        /* Medlemshistorik-specifik styling */
+        .member-history-header {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border-radius: var(--radius-xl);
+            padding: 3rem 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .member-header-pattern {
+            background: radial-gradient(circle at 25% 45%, rgba(139, 92, 246, 0.15) 0%, transparent 50%), radial-gradient(circle at 75% 25%, rgba(59, 130, 246, 0.15) 0%, transparent 50%), radial-gradient(circle at 45% 75%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+        }
+
+        .member-header-title {
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Medlemsikon */
+        .member-history-icon {
+            position: relative;
+            display: inline-block;
+        }
+
+        .member-icon-wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+        }
+
+        .member-pulse-indicator {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 3px solid #8b5cf6;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+            opacity: 0.6;
+        }
+
+        /* Medlemsöversikt */
+        .member-overview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .member-overview-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.2rem .5rem;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 0.9rem;
+            color: #8b5cf6 !important;
+        }
+
+        .item-label {
+            color: var(--gray-600)
+        }
+
+        .status-active {
+            color: #22c55e;
+            font-weight: 600;
+        }
+
+        .status-suspended {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        .status-expired {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+
+        .section-title, .card-title {
+            color: var(--primary-color);
+        }
+
+        /* Medlemsavatar */
+        .member-avatar-display {
+            position: relative;
+            display: flex;
+            flex-direction: row;
+            justify-content: end;
+        }
+
+        .member-avatar-large {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: white;
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+            transition: transform var(--transition-normal);
+        }
+
+            .member-avatar-large:hover {
+                transform: scale(1.05);
+            }
+
+        .member-status-badge {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            padding: 0.2rem .5rem;
+            border-radius: var(--radius-md);
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: white;
+            border: 1px solid white;
+        }
+
+        /* Medlemsstatistik */
+        .member-statistics-section {
+            background: rgba(248, 250, 252, 0.8);
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            border: 1px solid rgba(229, 231, 235, 0.5);
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all var(--transition-normal);
+            height: 100%;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+            .stat-card:hover {
+                transform: translateY(-5px);
+                box-shadow: var(--shadow-xl);
+            }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            flex-shrink: 0;
+            animation: iconPulse 2s ease-in-out infinite;
+        }
+
+        .status-active{
+            background: var(--primary-color)
+        }
+
+        .status-returned {
+            background: var(--success-color)
+        }
+
+        .status-overdue {
+            background: var(--danger-color)
+        }
+
+        .status-lost {
+            background: var(--info-color)
+        }
+
+        .status-cancelled {
+            background: var(--waring-color)
+        }
+
+        .status-unknown {
+            background: var(--gray-600)
+        }
+
+        .active-stats .stat-icon {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        }
+
+        .overdue-stats .stat-icon {
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+        }
+
+        .returned-stats .stat-icon {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+        }
+
+        .fees-stats .stat-icon {
+            background: linear-gradient(135deg, var(--warning-color), #d97706);
+        }
+
+
+        /* Medlemshistorikkort */
+        .member-history-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: var(--radius-xl);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all var(--transition-normal);
+        }
+
+            .member-history-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            }
+
+            .member-history-card .card-header {
+                background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+                border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+                border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+                padding: 1.5rem;
+            }
+
+        /* Lånetidslinje */
+        .member-loans-timeline {
+            position: relative;
+            padding-left: 3rem;
+        }
+
+            .member-loans-timeline::before {
+                content: '';
+                position: absolute;
+                left: 1.5rem;
+                top: 0;
+                bottom: 0;
+                width: 3px;
+                background: linear-gradient(to bottom, #8b5cf6, #3b82f6);
+            }
+
+        .loan-timeline-item {
+            position: relative;
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all var(--transition-normal);
+        }
+
+            .loan-timeline-item.loaded {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+        .loan-timeline-marker {
+            position: absolute;
+            left: -2.4rem;
+            top: 1rem;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: white;
+            border: 3px solid white;
+            z-index: 1;
+        }
+
+        .loan-timeline-content {
+            margin-left: 1rem;
+        }
+
+        .loan-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            border: 1px solid rgba(229, 231, 235, 0.5);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .loan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .loan-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .loan-dates {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--gray-600);
+        }
+
+        .date-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .loan-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Lånade böcker */
+        .loan-books {
+            margin: 1rem 0;
+        }
+
+        .books-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .books-grid {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .book-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(248, 250, 252, 0.8);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(229, 231, 235, 0.5);
+            min-width: 150px;
+        }
+
+        .book-cover-mini {
+            width: 30px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .cover-image-mini {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .book-info-mini {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .book-title-mini {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin: 0;
+            line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: wrap;
+        }
+
+        .book-author-mini {
+            font-size: 0.7rem;
+            color: var(--gray-600);
+            margin: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .more-books {
+            justify-content: center;
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.2);
+            color: #8b5cf6;
+        }
+
+        .more-books-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Lånedetaljer */
+        .loan-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(229, 231, 235, 0.5);
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .fee-item {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        .overdue-item {
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+        }
+
+        .notes-item {
+            background: rgba(107, 114, 128, 0.1);
+            color: #6b7280;
+        }
+
+        /* Pagination */
+        .pagination-section {
+            border-top: 1px solid rgba(229, 231, 235, 0.5);
+            padding-top: 1.5rem;
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+
+        /* Tomt meddelande */
+        .empty-message {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--gray-500);
+        }
+
+            .empty-message i {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+                color: var(--gray-400);
+            }
+
+            .empty-message h4 {
+                color: var(--gray-600);
+                margin-bottom: 0.5rem;
+            }
+
+        /* Responsiv design */
+        @@media (max-width: 768px) {
+            .member-history-header {
+                padding: 2rem 1rem;
+            }
+
+            .member-overview {
+                flex-direction: column;
+            }
+
+            .member-avatar-large {
+                width: 120px;
+                height: 120px;
+                font-size: 3rem;
+            }
+
+            .member-loans-timeline {
+                padding-left: 2rem;
+            }
+
+                .member-loans-timeline::before {
+                    left: 0.75rem;
+                }
+
+            .loan-timeline-marker {
+                left: -2rem;
+            }
+
+            .loan-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .books-grid {
+                flex-direction: column;
+            }
+
+            .book-item {
+                min-width: auto;
+            }
+        }
+
+        /* Utskriftsstilar */
+        @@media print {
+            .member-header-actions, .btn, .pagination-section {
+                display: none !important;
+            }
+
+            .member-history-header {
+                background: none !important;
+                box-shadow: none !important;
+            }
+        }
+    </style>
+}

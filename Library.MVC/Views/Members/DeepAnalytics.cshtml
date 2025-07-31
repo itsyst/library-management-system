@@ -1,0 +1,2097 @@
+﻿@using Library.MVC.ViewModels
+@model MemberViewModel
+@{
+    ViewData["Title"] = "Fördjupad analys";
+}
+@Html.AntiForgeryToken()
+
+<div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-11">
+            <div class="deep-analytics" id="deepAnalytics">
+
+                <!-- HUVUDRUBRIK OCH STATISTIKSAMMANFATTNING -->
+                <header class="analytics-header mb-5 position-relative overflow-hidden">
+                    <div class="header-pattern position-absolute w-100 h-100"></div>
+                    <div class="header-particles" id="headerParticles"></div>
+
+                    <div class="position-relative z-2">
+                        <div class="row align-items-center mt-2">
+                            <!-- Vänster kolumn -->
+                            <div class="col-lg-8">
+                                <div class="header-content">
+                                    <div class="analytics-icon mb-3">
+                                        <div class="icon-wrapper">
+                                            <i class="bi bi-bar-chart-line"></i>
+                                            <div class="icon-pulse"></div>
+                                            <div class="icon-glow"></div>
+                                        </div>
+                                    </div>
+                                    <h1 class="display-5 fw-bold pb-2 header-title">
+                                        <span class="typing-animation">Fördjupad analys</span>
+                                    </h1>
+                                    <p class="page-subtitle fs-5 mb-0 text-muted">
+                                        <span class="subtitle-animation">Detaljerad insikt i medlems- och låneaktivitet</span>
+                                    </p>
+                                    <!-- Snabbstatistik kort -->
+                                    <div class="statistics-summary mt-4">
+                                        <div class="row g-2 g-md-3">
+                                            <div class="col-6 col-sm-6 col-md-3 col-lg-3 mb-2 mb-md-1">
+                                                <div class="stat-card stat-card-primary">
+                                                    <div class="stat-icon">
+                                                        <i class="fas fa-book-reader text-white"></i>
+                                                    </div>
+                                                    <div class="stat-content">
+                                                        <div class="stat-number" id="activeLoans">0</div>
+                                                        <div class="stat-label">Aktiva lån</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-sm-6 col-md-3 col-lg-3 mb-2 mb-md-1">
+                                                <div class="stat-card stat-card-danger">
+                                                    <div class="stat-icon">
+                                                        <i class="fas fa-clock text-white"></i>
+                                                    </div>
+                                                    <div class="stat-content">
+                                                        <div class="stat-number" id="overdueLoans">0</div>
+                                                        <div class="stat-label">Förfallna lån</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-sm-6 col-md-3 col-lg-3 mb-2 mb-md-1">
+                                                <div class="stat-card stat-card-success">
+                                                    <div class="stat-icon">
+                                                        <i class="fas fa-undo text-white"></i>
+                                                    </div>
+                                                    <div class="stat-content">
+                                                        <div class="stat-number" id="returnedLoans">0</div>
+                                                        <div class="stat-label">Återlämnade lån</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-sm-6 col-md-3 col-lg-3 mb-2 mb-md-1">
+                                                <div class="stat-card stat-card-warning">
+                                                    <div class="stat-icon">
+                                                        <i class="fas fa-coins text-white"></i>
+                                                    </div>
+                                                    <div class="stat-content">
+                                                        <div class="stat-number text-nowrap" id="totalFees">0</div>
+                                                        <div class="stat-label">Totala <span class="text-nowrap">avgifter (kr)</span></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 text-lg-end align-content-center mt-2">
+                                <div class="header-actions d-flex flex-column gap-2">
+                                    <a asp-controller="Members" asp-action="Index" class="btn btn-outline-secondary">
+                                        <i class="bi bi-arrow-left mr-2"></i>
+                                        Tillbaka till medlemshantering
+                                    </a>
+                                    <button class="btn btn-outline-secondary col-12 col-md-4 text-nowrap" style="width: fit-content" id="printLoanBtn">
+                                        <i class="bi bi-printer mr-2"></i>
+                                        Skriv ut
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- GRAFISK ANALYSGRID SEKTION -->
+                <section class="analytics-card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0 d-flex align-items-center text-primary">
+                            <i class="fas fa-chart-bar mr-2 text-primary"></i>
+                            Grafisk översikt
+                        </h5>
+                        <p class="card-subtitle text-muted mt-1">Visuell representation av biblioteksdata och trender</p>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="analytics-grid" id="chartsContainer">
+                            <!-- Diagram containers fylls av JavaScript -->
+                            <div class="chart-container" id="memberRegistrationContainer">
+                                <canvas id="memberRegistrationChart"></canvas>
+                            </div>
+                            <div class="chart-container" id="loanActivityContainer">
+                                <canvas id="loanActivityChart"></canvas>
+                            </div>
+                            <div class="chart-container" id="topBorrowersContainer">
+                                <canvas id="topBorrowersChart"></canvas>
+                            </div>
+                            <div class="chart-container" id="feeTrendsContainer">
+                                <canvas id="feeTrendsChart"></canvas>
+                            </div>
+                            <div class="chart-container" id="statusDistributionContainer">
+                                <canvas id="statusDistributionChart"></canvas>
+                            </div>
+                            <div class="chart-container" id="loanDurationContainer">
+                                <canvas id="loanDurationChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- DETALJERAD LÅNEHISTORIK TABELL -->
+                <section class="analytics-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0 d-flex align-items-center text-primary">
+                            <i class="fas fa-history mr-2 text-primary"></i>
+                            Lånehistorik - Topp medlemmar
+                        </h5>
+                        <p class="card-subtitle text-muted mt-1">Detaljerad översikt av de mest aktiva biblioteksanvändarna</p>
+
+                        <!-- Mobile filter controls -->
+                        <div class="mobile-table-controls d-md-none mt-3">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <select class="form-select form-select-sm" id="mobileColumnFilter">
+                                        <option value="all">Visa alla kolumner</option>
+                                        <option value="essential">Endast viktiga</option>
+                                        <option value="basic">Grundläggande</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <button class="btn btn-outline-primary btn-sm w-100" id="toggleTableView">
+                                        <i class="fas fa-th-list mr-1"></i>
+                                        <span id="viewToggleText">Kortvy</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-0">
+                        <!-- Desktop/Tablet Table View -->
+                        <div class="table-responsive-wrapper" id="tableView">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover responsive-table" id="loanHistoryTable">
+                                    <thead class="table-light sticky-header">
+                                        <tr>
+                                            <!-- Priority 1: Most important columns - always visible -->
+                                            <th scope="col" class="col-priority-1 sticky-col sortable" data-sort="memberName">
+                                                <div class="th-content">
+                                                    <span>Medlemsnamn</span>
+                                                    <i class="fas fa-sort sort-icon"></i>
+                                                </div>
+                                            </th>
+                                            <th scope="col" class="col-priority-1 sortable" data-sort="totalMemberLoans">
+                                                <div class="th-content">
+                                                    <span>Totala lån</span>
+                                                    <i class="fas fa-sort sort-icon"></i>
+                                                </div>
+                                            </th>
+                                            <th scope="col" class="col-priority-1 sortable" data-sort="memberTotalFees">
+                                                <div class="th-content">
+                                                    <span>Totala avgifter (kr)</span>
+                                                    <i class="fas fa-sort sort-icon"></i>
+                                                </div>
+                                            </th>
+
+                                            <!-- Priority 2: Important columns - hidden in 'essential' filter -->
+                                            <th scope="col" class="col-priority-2 sortable" data-sort="memberActiveLoans">
+                                                <div class="th-content">
+                                                    <span>Aktiva lån</span>
+                                                    <i class="fas fa-sort sort-icon"></i>
+                                                </div>
+                                            </th>
+
+                                            <!-- Priority 3: Less important - hidden in 'basic' and 'essential' filters -->
+                                            <th scope="col" class="col-priority-3 sortable" data-sort="totalBooksLoaned">
+                                                <div class="th-content">
+                                                    <span>Totalt utlånade böcker</span>
+                                                    <i class="fas fa-sort sort-icon"></i>
+                                                </div>
+                                            </th>
+                                            <th scope="col" class="col-priority-3 sortable" data-sort="memberSince">
+                                                <div class="th-content">
+                                                    <span>Medlem sedan</span>
+                                                    <i class="fas fa-sort sort-icon"></i>
+                                                </div>
+                                            </th>
+
+                                            <!-- Priority 4: Least important - hidden in all filtered views -->
+                                            <th scope="col" class="col-priority-3 sortable" data-sort="averageBookPopularity">
+                                                <div class="th-content">
+                                                    <span>Genomsnittlig bokpopularitet</span>
+                                                    <i class="fas fa-sort sort-icon"></i>
+                                                </div>
+                                            </th>
+                                            <th scope="col" class="col-priority-3 sortable" data-sort="daysSinceMembership">
+                                                <div class="th-content">
+                                                    <span>Dagar som medlem</span>
+                                                    <i class="fas fa-sort sort-icon"></i>
+                                                </div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="loanHistoryTableBody">
+                                        <!-- Table data will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Mobile Card View -->
+                        <div class="mobile-cards-view d-none" id="cardsView">
+                            <div id="loanHistoryCards" class="loan-history-cards">
+                                <!-- Cards will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ================================================================
+        // GLOBALA VARIABLER OCH KONFIGURATION
+        // ================================================================
+        const ANALYTICS_CONFIG = {
+            apiEndpoint: '/Members/GetAnalyticsData?deep=true',
+            chartDefaults: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                // Add mobile-specific responsive options
+                onResize: function(chart, size) {
+                    // Custom resize handler for mobile
+                    if (size.width < 768) {
+                        chart.options.plugins.legend.position = 'bottom';
+                        chart.options.plugins.legend.labels.boxWidth = 10;
+                    } else {
+                        chart.options.plugins.legend.position = 'top';
+                        chart.options.plugins.legend.labels.boxWidth = 40;
+                    }
+                }
+            },
+            colors: {
+                primary: 'rgba(59, 130, 246, 0.7)',
+                success: 'rgba(16, 185, 129, 0.7)',
+                danger: 'rgba(239, 68, 68, 0.7)',
+                warning: 'rgba(245, 158, 11, 0.7)',
+                info: 'rgba(59, 130, 246, 0.7)',
+                grey: 'rgba(156, 163, 175, 0.7)',
+            }
+        };
+
+        // Global variables for table functionality
+        let currentTableData = [];
+        let currentSortField = null;
+        let currentSortDirection = 'asc';
+
+        // ================================================================
+        // HUVUDINITIALISERINGSFUNKTIONER
+        // ================================================================
+
+        /**
+         * Huvudfunktion för att ladda och visa analysdata
+         * Hämtar data från API:et och initierar alla diagram
+         */
+        async function initializeDeepAnalytics() {
+            showLoadingState();
+
+            fetchAnalyticsData()
+                .then(data => {
+                    console.log(data);
+                    validateAnalyticsData(data);
+                    updateStatisticsSummary(data.loanStatistics);
+                    renderAllCharts(data);
+                    populateLoanHistoryTable(data.loanHistoryStatistics);
+                    hideLoadingState();
+                })
+                .catch(error => {
+                    handleAnalyticsError(error);
+                    hideLoadingState();
+                });
+        }
+
+        /**
+         * Hämtar analysdata från servern via API
+         * @@returns {Promise} Promise som resolvar med analysdata
+         */
+        async function fetchAnalyticsData() {
+            try {
+                const response = await fetch(ANALYTICS_CONFIG.apiEndpoint);
+                if (!response.ok) {
+                    throw new Error(`HTTP fel: ${response.status} - ${response.statusText}`);
+                }
+                return await response.json();
+            } catch (error) {
+                throw new Error(`Nätverksfel vid hämtning av analysdata: ${error.message}`);
+            }
+        }
+
+        /**
+         * Validerar den hämtade analysdatan
+         * @@param {Object} data - Analysdata från API:et
+         */
+        function validateAnalyticsData(data) {
+            const requiredFields = [
+                'statistics', 'loanStatistics', 'monthlyRegistrations',
+                'loanActivity', 'statusDistribution', 'topBorrowers',
+                'feeTrends', 'loanDuration', 'loanHistoryStatistics'
+            ];
+
+            const missingFields = requiredFields.filter(field => !data[field]);
+
+            if (missingFields.length > 0) {
+                throw new Error(`Saknade datafält: ${missingFields.join(', ')}`);
+            }
+        }
+
+        // ================================================================
+        // STATISTIKUPPDATERINGSFUNKTIONER
+        // ================================================================
+
+        /**
+         * Uppdaterar snabbstatistik i sidhuvudet
+         * @@param {Object} loanStats - Lånestatistik från API:et
+         */
+        function updateStatisticsSummary(loanStats) {
+            const elements = {
+                activeLoans: document.getElementById('activeLoans'),
+                overdueLoans: document.getElementById('overdueLoans'),
+                returnedLoans: document.getElementById('returnedLoans'),
+                totalFees: document.getElementById('totalFees')
+            };
+
+            // Uppdatera värden med animationer
+            animateStatisticUpdate(elements.activeLoans, loanStats.activeLoans);
+            animateStatisticUpdate(elements.overdueLoans, loanStats.overdueLoans);
+            animateStatisticUpdate(elements.returnedLoans, loanStats.returnedLoans);
+            animateStatisticUpdate(elements.totalFees, loanStats.totalFees.toFixed(2));
+        }
+
+        /**
+         * Animerar uppdatering av statistikvärden
+         * @@param {HTMLElement} element - DOM-element att uppdatera
+         * @@param {number|string} newValue - Nytt värde att visa
+         */
+        function animateStatisticUpdate(element, newValue) {
+            if (!element) return;
+
+            element.style.transform = 'scale(1.1)';
+            element.style.transition = 'transform 0.3s ease';
+
+            setTimeout(() => {
+                element.textContent = newValue;
+                element.style.transform = 'scale(1)';
+            }, 150);
+        }
+
+        // ================================================================
+        // DIAGRAMRENDERINGSFUNKTIONER
+        // ================================================================
+
+        /**
+         * Renderar alla analysdiagram
+         * @@param {Object} data - Komplett analysdata
+         */
+        function renderAllCharts(data) {
+            renderMemberRegistrationChart(data.monthlyRegistrations);
+            renderLoanActivityChart(data.loanActivity);
+            renderTopBorrowersChart(data.topBorrowers);
+            renderFeeTrendsChart(data.feeTrends);
+            renderStatusDistributionChart(data.statusDistribution);
+            renderLoanDurationChart(data.loanDuration);
+        }
+
+        /**
+         * Skapar medlemsregistreringsdiagram (linjediagram)
+         * @@param {Object} registrationData - Registreringsdata per månad
+         */
+        function renderMemberRegistrationChart(registrationData) {
+            const ctx = document.getElementById('memberRegistrationChart');
+            if (!ctx) return;
+
+            // Check if mobile device
+            const isMobile = window.innerWidth < 768;
+
+            new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: registrationData.labels,
+                    datasets: [{
+                        label: 'Nya medlemmar',
+                        data: registrationData.data,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: isMobile ? 4 : 6,
+                        pointHoverRadius: isMobile ? 6 : 8,
+                        pointBackgroundColor: 'rgb(59, 130, 246)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    ...ANALYTICS_CONFIG.chartDefaults,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Medlemsregistreringstrend',
+                            font: { size: isMobile ? 14 : 16, weight: '600' }
+                        },
+                        legend: { display: false },
+                        tooltip: {
+                            titleFont: { size: isMobile ? 12 : 14 },
+                            bodyFont: { size: isMobile ? 11 : 13 },
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: ${context.raw} medlemmar`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: !isMobile,
+                                text: 'Antal medlemmar',
+                                font: { size: isMobile ? 10 : 12 }
+                            },
+                            grid: { color: 'rgba(0,0,0,0.1)' },
+                            ticks: {
+                                font: { size: isMobile ? 9 : 11 }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: !isMobile,
+                                text: 'Månad',
+                                font: { size: isMobile ? 10 : 12 }
+                            },
+                            grid: { display: false },
+                            ticks: {
+                                maxRotation: isMobile ? 45 : 0,
+                                font: { size: isMobile ? 9 : 11 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Skapar låneaktivitetsdiagram (stapeldiagram)
+         * @@param {Object} activityData - Låneaktivitetsdata per månad
+         */
+        function renderLoanActivityChart(activityData) {
+            const ctx = document.getElementById('loanActivityChart');
+            if (!ctx) return;
+
+            const isMobile = window.innerWidth < 768;
+
+            new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: activityData.labels,
+                    datasets: [{
+                        label: 'Aktiva lån',
+                        data: activityData.active,
+                        backgroundColor: ANALYTICS_CONFIG.colors.primary,
+                        borderRadius: 4
+                    }, {
+                        label: 'Försenade lån',
+                        data: activityData.overdue,
+                        backgroundColor: ANALYTICS_CONFIG.colors.danger,
+                        borderRadius: 4
+                    }, {
+                        label: 'Återlämnade lån',
+                        data: activityData.returned,
+                        backgroundColor: ANALYTICS_CONFIG.colors.success,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    ...ANALYTICS_CONFIG.chartDefaults,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Låneaktivitet per månad',
+                            font: { size: isMobile ? 14 : 16, weight: '600' }
+                        },
+                        legend: {
+                            position: isMobile ? 'bottom' : 'top',
+                            labels: {
+                                boxWidth: isMobile ? 12 : 40
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            title: {
+                                display: !isMobile,
+                                text: 'Månad'
+                            },
+                            ticks: {
+                                maxRotation: isMobile ? 45 : 0,
+                                font: { size: isMobile ? 9 : 11 }
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            title: {
+                                display: !isMobile,
+                                text: 'Antal lån'
+                            },
+                            ticks: {
+                                font: { size: isMobile ? 9 : 11 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Skapar topp låntagardiagram (horisontellt stapeldiagram)
+         * @@param {Object} borrowersData - Data för topp låntagare
+         */
+        function renderTopBorrowersChart(borrowersData) {
+            const ctx = document.getElementById('topBorrowersChart');
+            if (!ctx) return;
+
+            const isMobile = window.innerWidth < 768;
+
+            new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: borrowersData.labels,
+                    datasets: [{
+                        label: 'Totala lån',
+                        data: borrowersData.data,
+                        backgroundColor: ANALYTICS_CONFIG.colors.primary,
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    ...ANALYTICS_CONFIG.chartDefaults,
+                    indexAxis: 'y',
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Topp 10 låntagare',
+                            font: { size: isMobile ? 14 : 16, weight: '600' }
+                        },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: !isMobile,
+                                text: 'Antal lån'
+                            },
+                            ticks: {
+                                font: { size: isMobile ? 9 : 11 }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: !isMobile,
+                                text: 'Medlem'
+                            },
+                            ticks: {
+                                font: { size: isMobile ? 8 : 10 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Skapar avgiftstrenddiagram (linjediagram)
+         * @@param {Object} feeData - Avgiftsdata per månad
+         */
+        function renderFeeTrendsChart(feeData) {
+            const ctx = document.getElementById('feeTrendsChart');
+            if (!ctx) return;
+
+            const isMobile = window.innerWidth < 768;
+
+            new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: feeData.labels,
+                    datasets: [{
+                        label: 'Förseningsavgifter',
+                        data: feeData.data,
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: isMobile ? 4 : 5,
+                        pointHoverRadius: isMobile ? 6 : 7
+                    }]
+                },
+                options: {
+                    ...ANALYTICS_CONFIG.chartDefaults,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Trend för förseningsavgifter',
+                            font: { size: isMobile ? 14 : 16, weight: '600' }
+                        },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: !isMobile,
+                                text: 'Avgift (kr)'
+                            },
+                            ticks: {
+                                font: { size: isMobile ? 9 : 11 }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: !isMobile,
+                                text: 'Månad'
+                            },
+                            ticks: {
+                                maxRotation: isMobile ? 45 : 0,
+                                font: { size: isMobile ? 9 : 11 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Skapar statusfördelningsdiagram (cirkeldiagram)
+         * @@param {Object} statusData - Medlemsstatusdata
+         */
+        function renderStatusDistributionChart(statusData) {
+            const ctx = document.getElementById('statusDistributionChart');
+            if (!ctx) return;
+
+            const isMobile = window.innerWidth < 768;
+
+            new Chart(ctx.getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: ['Aktiva', 'Avstängda', 'Inaktiva'],
+                    datasets: [{
+                        data: [
+                            statusData.active,
+                            statusData.suspended,
+                            statusData.inactive
+                        ],
+                        backgroundColor: [
+                            ANALYTICS_CONFIG.colors.success,
+                            ANALYTICS_CONFIG.colors.danger,
+                            ANALYTICS_CONFIG.colors.grey,
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    ...ANALYTICS_CONFIG.chartDefaults,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Medlemsstatusfördelning',
+                            font: { size: isMobile ? 14 : 16, weight: '600' }
+                        },
+                        legend: {
+                            position: isMobile ? 'bottom' : 'right',
+                            labels: {
+                                usePointStyle: true,
+                                padding: isMobile ? 15 : 20,
+                                font: { size: isMobile ? 10 : 12 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const percentage = ((context.raw / statusData.total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.raw} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Skapar lånevaraktighetsdiagram (stapeldiagram)
+         * @@param {Object} durationData - Lånevaraktighetsdata
+         */
+        function renderLoanDurationChart(durationData) {
+            const ctx = document.getElementById('loanDurationChart');
+            if (!ctx) return;
+
+            const isMobile = window.innerWidth < 768;
+
+            new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: durationData.labels,
+                    datasets: [{
+                        label: 'Antal lån',
+                        data: durationData.data,
+                        backgroundColor: ANALYTICS_CONFIG.colors.success,
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    ...ANALYTICS_CONFIG.chartDefaults,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Lånens varaktighet',
+                            font: { size: isMobile ? 14 : 16, weight: '600' }
+                        },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: !isMobile,
+                                text: 'Antal lån'
+                            },
+                            ticks: {
+                                font: { size: isMobile ? 9 : 11 }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: !isMobile,
+                                text: 'Varaktighet (dagar)'
+                            },
+                            ticks: {
+                                maxRotation: isMobile ? 45 : 0,
+                                font: { size: isMobile ? 9 : 11 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ================================================================
+        // TABELLHANTERINGSFUNKTIONER
+        // ================================================================
+
+        /**
+         * Enhanced function to populate loan history table with responsive features
+         * @@param {Object} historyData - Loan history data
+         */
+        function populateLoanHistoryTable(historyData) {
+            const tableBody = document.getElementById('loanHistoryTableBody');
+            const cardsContainer = document.getElementById('loanHistoryCards');
+
+            if (!tableBody || !historyData.data) return;
+
+            // Store data globally for sorting
+            currentTableData = historyData.data;
+
+            // Clear existing content
+            tableBody.innerHTML = '';
+            if (cardsContainer) {
+                cardsContainer.innerHTML = '';
+            }
+
+            renderTableRows(currentTableData);
+
+            // Initialize responsive table controls after populating data
+            initializeTableControls();
+            initializeTableSorting();
+        }
+
+        /**
+         * Render table rows with current data
+         * @@param {Array} data - Array of row data
+         */
+        function renderTableRows(data) {
+            const tableBody = document.getElementById('loanHistoryTableBody');
+            const cardsContainer = document.getElementById('loanHistoryCards');
+
+            if (!tableBody) return;
+
+            tableBody.innerHTML = '';
+            if (cardsContainer) cardsContainer.innerHTML = '';
+
+            data.forEach((row, index) => {
+                // Create table row
+                const tr = document.createElement('tr');
+                tr.style.animationDelay = `${index * 50}ms`;
+                tr.className = 'table-row-animate';
+
+                tr.innerHTML = `
+                    <td class="fw-semibold sticky-col col-priority-1">
+                        <a href="/Members/Details/${row.memberId}" class="text-decoration-none">
+                            ${row.memberName}
+                        </a>
+                    </td>
+                    <td class="fw-semibold col-priority-1">${row.totalMemberLoans}</td>
+                    <td class="text-danger fw-bold col-priority-1">${row.memberTotalFees.toFixed(2)} kr</td>
+                    <td class="col-priority-2">
+                        <span class="badge bg-primary text-white rounded-pill">${row.memberActiveLoans}</span>
+                    </td>
+                    <td class="col-priority-3">${row.totalBooksLoaned}</td>
+                    <td class="col-priority-3">${new Date(row.memberSince).toLocaleDateString('sv-SE')}</td>
+                    <td class="col-priority-4">${row.averageBookPopularity.toFixed(2)}</td>
+                    <td class="col-priority-4">
+                        <span class="badge bg-info text-white">${row.daysSinceMembership} dagar</span>
+                    </td>
+                `;
+
+                tableBody.appendChild(tr);
+
+                // Create mobile card if container exists
+                if (cardsContainer) {
+                    const card = document.createElement('div');
+                    card.className = 'member-card';
+                    card.style.animationDelay = `${index * 100}ms`;
+
+                    card.innerHTML = `
+                        <div class="member-card-header">
+                            <div class="member-name">
+                                <a href="/Members/Details/${row.memberId}" class="text-decoration-none">
+                                    ${row.memberName}
+                                </a>
+                            </div>
+                            <div class="member-badge">${row.totalMemberLoans} lån</div>
+                        </div>
+                        <div class="member-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Aktiva lån</div>
+                                <div class="stat-value primary">${row.memberActiveLoans}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Totala avgifter</div>
+                                <div class="stat-value highlight">${row.memberTotalFees.toFixed(2)} kr</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Utlånade böcker</div>
+                                <div class="stat-value">${row.totalBooksLoaned}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Medlem sedan</div>
+                                <div class="stat-value">${new Date(row.memberSince).toLocaleDateString('sv-SE')}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Bokpopularitet</div>
+                                <div class="stat-value">${row.averageBookPopularity.toFixed(2)}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Dagar som medlem</div>
+                                <div class="stat-value success">${row.daysSinceMembership} dagar</div>
+                            </div>
+                        </div>
+                    `;
+
+                    cardsContainer.appendChild(card);
+                }
+            });
+        }
+
+        /**
+         * Initialize table sorting functionality
+         */
+        function initializeTableSorting() {
+            const sortableHeaders = document.querySelectorAll('.sortable');
+
+            sortableHeaders.forEach(header => {
+                header.addEventListener('click', function() {
+                    const sortField = this.getAttribute('data-sort');
+
+                    // Update sort direction
+                    if (currentSortField === sortField) {
+                        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSortDirection = 'asc';
+                        currentSortField = sortField;
+                    }
+
+                    // Update sort icons
+                    updateSortIcons(this, currentSortDirection);
+
+                    // Sort data and re-render
+                    const sortedData = sortTableData(currentTableData, sortField, currentSortDirection);
+                    renderTableRows(sortedData);
+
+                    // Show visual feedback
+                    showControlFeedback(this, `Sorterat efter ${sortField} (${currentSortDirection})`);
+                });
+            });
+        }
+
+        /**
+         * Sort table data
+         * @@param {Array} data - Data to sort
+         * @@param {string} field - Field to sort by
+         * @@param {string} direction - Sort direction ('asc' or 'desc')
+         */
+        function sortTableData(data, field, direction) {
+            return [...data].sort((a, b) => {
+                let aVal = a[field];
+                let bVal = b[field];
+
+                // Handle different data types
+                if (field === 'memberSince') {
+                    aVal = new Date(aVal);
+                    bVal = new Date(bVal);
+                } else if (typeof aVal === 'string' && typeof bVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+
+                if (direction === 'asc') {
+                    return aVal > bVal ? 1 : -1;
+                } else {
+                    return aVal < bVal ? 1 : -1;
+                }
+            });
+        }
+
+        /**
+         * Update sort icons
+         * @@param {HTMLElement} activeHeader - Currently active header
+         * @@param {string} direction - Sort direction
+         */
+        function updateSortIcons(activeHeader, direction) {
+            // Reset all icons
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                icon.className = 'fas fa-sort sort-icon';
+            });
+
+            // Set active icon
+            const activeIcon = activeHeader.querySelector('.sort-icon');
+            if (activeIcon) {
+                activeIcon.className = `fas fa-sort-${direction === 'asc' ? 'up' : 'down'} sort-icon active`;
+            }
+        }
+
+        /**
+         * Initialize responsive table controls and event handlers
+         */
+        function initializeTableControls() {
+            const columnFilter = document.getElementById('mobileColumnFilter');
+            const viewToggle = document.getElementById('toggleTableView');
+            const tableView = document.getElementById('tableView');
+            const cardsView = document.getElementById('cardsView');
+            const tableWrapper = document.querySelector('.table-responsive-wrapper');
+
+            // Handle column filtering
+            if (columnFilter && tableWrapper) {
+                columnFilter.addEventListener('change', function() {
+                    const filterValue = this.value;
+
+                    // Add filtering state
+                    tableWrapper.classList.add('filtering');
+
+                    // Remove existing filter classes
+                    tableWrapper.classList.remove('filter-essential', 'filter-basic');
+
+                    // Apply new filter class
+                    if (filterValue === 'essential') {
+                        tableWrapper.classList.add('filter-essential');
+                    } else if (filterValue === 'basic') {
+                        tableWrapper.classList.add('filter-basic');
+                    } else {
+                         tableWrapper.classList.remove('filter-essential', 'filter-basic');
+                    }
+
+                    // Remove filtering state after short delay
+                    setTimeout(() => {
+                        tableWrapper.classList.remove('filtering');
+                    }, 300);
+
+                    // Show visual feedback
+                    showControlFeedback(columnFilter, `Filter "${filterValue}" tillämpad!`);
+                });
+            }
+
+            // Handle view toggle (table vs cards)
+            if (viewToggle && tableView && cardsView) {
+                viewToggle.addEventListener('click', function() {
+                    const isTableVisible = !tableView.classList.contains('d-none');
+
+                    if (isTableVisible) {
+                        // Switch to cards view
+                        tableView.classList.add('d-none');
+                        cardsView.classList.remove('d-none');
+                        this.innerHTML = '<i class="fas fa-table mr-1"></i><span>Tabellvy</span>';
+                        showControlFeedback(this, 'Växlade till kortvy');
+                    } else {
+                        // Switch to table view
+                        cardsView.classList.add('d-none');
+                        tableView.classList.remove('d-none');
+                        this.innerHTML = '<i class="fas fa-th-list mr-1"></i><span>Kortvy</span>';
+                        showControlFeedback(this, 'Växlade till tabellvy');
+                    }
+                });
+            }
+        }
+
+        /**
+         * Show visual feedback for control interactions
+         */
+        function showControlFeedback(element, message) {
+            // Create temporary tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'control-feedback';
+            tooltip.textContent = message;
+            tooltip.style.cssText = `
+                position: absolute;
+                top: -2.5rem;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #10b981;
+                color: white;
+                padding: 0.25rem 0.75rem;
+                border-radius: 0.375rem;
+                font-size: 0.75rem;
+                white-space: nowrap;
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            `;
+
+            element.style.position = 'relative';
+            element.appendChild(tooltip);
+
+            // Animate in
+            setTimeout(() => tooltip.style.opacity = '1', 10);
+
+            // Remove after delay
+            setTimeout(() => {
+                tooltip.style.opacity = '0';
+                setTimeout(() => {
+                    if (tooltip.parentNode) {
+                        tooltip.parentNode.removeChild(tooltip);
+                    }
+                }, 300);
+            }, 2000);
+        }
+
+        /**
+         * Enhanced table resize handler with mobile controls
+         */
+        function handleTableResize() {
+            const isMobile = window.innerWidth < 768;
+            const isSmallMobile = window.innerWidth < 576;
+            const tableView = document.getElementById('tableView');
+            const cardsView = document.getElementById('cardsView');
+            const mobileControls = document.querySelector('.mobile-table-controls');
+
+            if (mobileControls) {
+                if (isMobile) {
+                    mobileControls.style.display = 'block';
+                } else {
+                    mobileControls.style.display = 'none';
+                    // Reset to table view on desktop
+                    if (tableView && cardsView) {
+                        cardsView.classList.add('d-none');
+                        tableView.classList.remove('d-none');
+                    }
+                }
+            }
+
+            // Auto-switch to cards view on very small screens
+            if (isSmallMobile && tableView && cardsView) {
+                const viewToggle = document.getElementById('toggleTableView');
+                if (viewToggle && !tableView.classList.contains('d-none')) {
+                    tableView.classList.add('d-none');
+                    cardsView.classList.remove('d-none');
+                    viewToggle.innerHTML = '<i class="fas fa-table mr-1"></i><span>Tabellvy</span>';
+                }
+            }
+        }
+
+        // ================================================================
+        // HJÄLPFUNKTIONER OCH FELHANTERING
+        // ================================================================
+
+        /**
+         * Visar laddningsindikator
+         */
+        function showLoadingState() {
+            const containers = document.querySelectorAll('.chart-container');
+            containers.forEach(container => {
+                // Create overlay instead of replacing innerHTML
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.className = 'loading-overlay';
+                loadingOverlay.innerHTML = `
+                    <div class="d-flex justify-content-center align-items-center h-100">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Laddar...</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(loadingOverlay);
+            });
+        }
+
+        /**
+         * Döljer laddningsindikator
+         */
+        function hideLoadingState() {
+            const overlays = document.querySelectorAll('.loading-overlay');
+            overlays.forEach(overlay => {
+                overlay.remove();
+            });
+        }
+
+        /**
+         * Hanterar fel vid dataladdning
+         * @@param {Error} error - Felmeddelande
+         */
+        function handleAnalyticsError(error) {
+            Swal.fire({
+                title: 'Fel vid dataladdning',
+                text: error.message || 'Kunde inte ladda analysdata. Försök igen senare.',
+                icon: 'error',
+                confirmButtonText: 'Försök igen',
+                showCancelButton: true,
+                cancelButtonText: 'Avbryt'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    initializeDeepAnalytics();
+                }
+            });
+        }
+
+        // Print Functionality
+        function initializePrintButton() {
+            const printButton = document.getElementById('printLoanBtn');
+            if (printButton) {
+                printButton.addEventListener('click', function() {
+                    // Optional: Show loading state
+                    printButton.disabled = true;
+                    printButton.innerHTML = '<i class="bi bi-printer mr-2"></i> Skriver ut...';
+
+                    // Small delay to ensure styles are applied
+                    setTimeout(() => {
+                        window.print();
+
+                        // Reset button state after print dialog
+                        setTimeout(() => {
+                            printButton.disabled = false;
+                            printButton.innerHTML = '<i class="bi bi-printer mr-2"></i> Skriv ut';
+                        }, 1000);
+                    }, 100);
+                });
+            }
+        }
+
+        // ================================================================
+        // INITIALISERING OCH EVENTHANTERARE
+        // ================================================================
+
+        /**
+         * Initierar analysmodulen när sidan laddas
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDeepAnalytics();
+
+            // Lägg till responsiv hantering för diagram
+            window.addEventListener('resize', debounce(() => {
+                const isMobile = window.innerWidth < 768;
+
+                Chart.helpers.each(Chart.instances, (instance) => {
+                    // Update chart options based on screen size
+                    if (isMobile) {
+                        instance.options.plugins.legend.position = 'bottom';
+                        instance.options.plugins.legend.labels.boxWidth = 10;
+                    } else {
+                        instance.options.plugins.legend.position = 'top';
+                        instance.options.plugins.legend.labels.boxWidth = 40;
+                    }
+
+                    instance.resize();
+                    instance.update('none'); // Update without animation for better performance
+                });
+            }, 300));
+
+            // Handle orientation change specifically for mobile devices
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    Chart.helpers.each(Chart.instances, (instance) => {
+                        instance.resize();
+                    });
+                }, 500); // Delay to ensure orientation change is complete
+            });
+
+            // Add table resize handler
+            window.addEventListener('resize', debounce(handleTableResize, 300));
+
+            // Initialize table controls after a small delay to ensure DOM is ready
+            setTimeout(() => {
+                initializeTableSorting();
+                handleTableResize();
+            }, 100);
+
+            // Initialize print functionality
+            initializePrintButton();
+        });
+
+        /**
+         * Debounce-funktion för att begränsa antal resize-events
+         * @@param {Function} func - Funktion att köra
+         * @@param {number} wait - Väntetid i ms
+         */
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+}
+ 
+<style>
+    /* Header Section */
+    .analytics-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(34, 197, 94, 0.08) 100%);
+        border-radius: 1rem;
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .header-pattern {
+        background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.08) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        animation: patternMove 25s ease-in-out infinite;
+    }
+
+    @@keyframes patternMove {
+        0%, 100%
+
+    {
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(1%, -1%);
+    }
+
+    50% {
+        transform: translate(-1%, 1%);
+    }
+
+    75% {
+        transform: translate(1%, 1%);
+    }
+
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+        .header-actions .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+
+            .header-actions .btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            }
+
+    /* Icon Wrapper */
+    .icon-wrapper {
+        position: relative;
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        box-shadow: 0 6px 15px rgba(59, 130, 246, 0.25);
+    }
+
+    .icon-glow {
+        position: absolute;
+        inset: -8px;
+        border: 2px solid rgba(59, 130, 246, 0.5);
+        border-radius: 50%;
+        animation: pulse 2.5s infinite;
+        opacity: 0.5;
+    }
+
+    @@keyframes pulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
+
+    }
+
+    /* Statistics Summary */
+    .statistics-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding: 0.5rem;
+    }
+
+    .stat-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-left: 4px solid transparent;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        min-height: 80px;
+        width: 100%;
+        max-width: 380px;
+    }
+
+    .stat-card-primary {
+        border-left-color: #3b82f6;
+    }
+
+    .stat-card-success {
+        border-left-color: #10b981;
+    }
+
+    .stat-card-danger {
+        border-left-color: #ef4444;
+    }
+
+    .stat-card-warning {
+        border-left-color: #f59e0b;
+    }
+
+    .stat-card-primary .stat-icon {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    }
+
+    .stat-card-success .stat-icon {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .stat-card-danger .stat-icon {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .stat-card-warning .stat-icon {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .stat-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        line-height: 1.1;
+    }
+
+    .stat-label {
+        color: #4b5563;
+        font-weight: 500;
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+
+    /* Analytics Card */
+    .analytics-card {
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        overflow: hidden;
+    }
+
+        .analytics-card .card-header {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.03) 0%, rgba(34, 197, 94, 0.03) 100%);
+            padding: 1.25rem;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.08);
+        }
+
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #3b82f6;
+    }
+
+    .card-subtitle {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+
+    /* Analytics Grid */
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(25rem, 1fr));
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .chart-container {
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 1.25rem;
+        position: relative;
+        height: 360px;
+        min-height: 280px;
+        transition: all 0.2s ease;
+    }
+
+        .chart-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .chart-container canvas {
+            max-width: 100%;
+            height: auto !important;
+        }
+
+    /* Table Styles */
+    .responsive-table {
+        font-size: 0.875rem;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-responsive-wrapper {
+        position: relative;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 0.75rem;
+    }
+ 
+    .sticky-col {
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 11;
+        box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+        min-width: 140px;
+    }
+
+    .th-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 600;
+        color: #374151;
+        cursor: pointer;
+        padding: 0.5rem 0;
+        transition: color 0.2s ease;
+    }
+
+        .th-content:hover {
+            color: #3b82f6;
+        }
+
+    .sort-icon {
+        opacity: 0.5;
+        margin-left: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .th-content:hover .sort-icon {
+        opacity: 1;
+    }
+
+    .sort-icon.active {
+        opacity: 1;
+        color: #3b82f6;
+    }
+
+    Filter States 
+    .table-responsive-wrapper.filter-essential td.col-priority-2,
+    .table-responsive-wrapper.filter-essential th.col-priority-3,
+    .table-responsive-wrapper.filter-essential td.col-priority-3,
+    .table-responsive-wrapper.filter-essential th.col-priority-4,
+    .table-responsive-wrapper.filter-essential td.col-priority-4 {
+        display: none; 
+    }
+
+    .table-responsive-wrapper.filter-basic th.col-priority-3,
+    .table-responsive-wrapper.filter-basic td.col-priority-3,
+    .table-responsive-wrapper.filter-basic th.col-priority-4,
+    .table-responsive-wrapper.filter-basic td.col-priority-4 {
+        display: none;  
+    }
+
+    .table-responsive-wrapper.filtering {
+        opacity: 0.7;
+        transition: opacity 0.3s ease;
+    }
+
+        .table-responsive-wrapper.filtering::after {
+            content: 'Tillämpar filter...';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            z-index: 1000;
+        }
+
+    /* Mobile Table Controls */
+    .mobile-table-controls {
+        background: rgba(59, 130, 246, 0.03);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        border: 1px solid rgba(59, 130, 246, 0.08);
+        margin-bottom: 1rem;
+    }
+
+        .mobile-table-controls .form-select {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            padding: 0.375rem 0.75rem;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+            .mobile-table-controls .form-select:focus {
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+                outline: none;
+            }
+
+        .mobile-table-controls .btn {
+            font-size: 0.875rem;
+            padding: 0.375rem 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+            .mobile-table-controls .btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+            }
+
+    /* Mobile Card View */
+    .mobile-cards-view {
+        padding: 1rem;
+    }
+
+    .loan-history-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .member-card {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-left: 4px solid #3b82f6;
+        transition: all 0.2s ease;
+    }
+
+        .member-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+        }
+
+    .member-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .member-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #1f2937;
+    }
+
+    .member-badge {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .member-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: #6b7280;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+
+    .stat-value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+        .stat-value.highlight {
+            color: #ef4444;
+        }
+
+        .stat-value.success {
+            color: #10b981;
+        }
+
+        .stat-value.primary {
+            color: #3b82f6;
+        }
+
+    /* Animations */
+    .subtitle-animation {
+        opacity: 0;
+        animation: slideInUp 0.8s ease-out 0.4s forwards;
+    }
+
+    .typing-animation {
+        opacity: 0;
+        animation: fadeIn 0.8s ease-out forwards;
+    }
+
+    @@keyframes slideInUp {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    @@keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
+    }
+
+    /* Responsive Breakpoints */
+    /* Extra Small Devices*/ 
+    @@media (max-width: 575.98px) {
+        .analytics-header
+
+    {
+        padding: 1.5rem;
+    }
+
+    .icon-wrapper {
+        width: 60px;
+        height: 60px;
+        font-size: 1.75rem;
+    }
+
+    .statistics-summary {
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+        gap: 0.75rem;
+        padding: 0.25rem;
+    }
+
+    .stat-card {
+        padding: 0.75rem;
+        flex-direction: column;
+        text-align: center;
+        min-height: 70px;
+        max-width: 100%;
+    }
+
+    .stat-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+    }
+
+    .stat-number {
+        font-size: 1.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+    }
+
+    .analytics-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 0.5rem;
+    }
+
+    .chart-container {
+        height: 320px;
+        min-height: 260px;
+        padding: 0.75rem;
+    }
+
+    .responsive-table {
+        font-size: 0.8rem;
+    }
+
+    .sticky-col {
+        min-width: 120px;
+    }
+
+    .mobile-table-controls {
+        padding: 0.5rem;
+    }
+
+        .mobile-table-controls .form-select,
+        .mobile-table-controls .btn {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+    .member-card {
+        padding: 0.75rem;
+    }
+
+    .member-stats {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .stat-item {
+        padding: 0.5rem;
+        background: #f9fafb;
+        border-radius: 0.5rem;
+    }
+
+    }
+
+    /* Small Devices (Tablets, 576px - 767.98px) */
+    @@media (min-width: 576px) and (max-width: 767.98px) {
+        .statistics-summary
+
+    {
+        grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+        gap: 1rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+        min-height: 75px;
+    }
+
+    .stat-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 0.95rem;
+    }
+
+    .stat-number {
+        font-size: 1.375rem;
+    }
+
+    .stat-label {
+        font-size: 0.775rem;
+    }
+
+    .analytics-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .chart-container {
+        height: 340px;
+        padding: 1rem;
+    }
+
+    }
+
+    /* Medium Devices (Desktops, 768px - 991.98px) */
+    @@media (min-width: 768px) and (max-width: 991.98px) {
+        .statistics-summary
+
+    {
+        grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+        gap: 1.25rem;
+    }
+
+    .stat-card {
+        padding: 1.25rem;
+        min-height: 80px;
+    }
+
+    .stat-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 1.05rem;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+    }
+
+    }
+
+    /* Large Devices (Desktops, 992px - 1199.98px) */
+    @@media (min-width: 992px) and (max-width: 1199.98px) {
+        .statistics-summary
+
+    {
+        grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+        gap: 1.5rem;
+    }
+
+    .stat-card {
+        padding: 1.5rem;
+        min-height: 85px;
+    }
+
+    .stat-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+    }
+
+    .stat-number {
+        font-size: 1.75rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+    }
+
+    }
+
+    /* Extra Large Devices (1200px and up) */
+    @@media (min-width: 1200px) {
+        .statistics-summary
+
+    {
+        grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .stat-card {
+        padding: 1.75rem;
+        min-height: 90px;
+    }
+
+    .stat-number {
+        font-size: 1.875rem;
+    }
+
+    }
+
+    /* Landscape Orientation for Mobile */
+    @@media (max-height: 500px) and (orientation: landscape) {
+        .statistics-summary
+
+    {
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+        gap: 0.5rem;
+    }
+
+    .stat-card {
+        min-height: 60px;
+        padding: 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .stat-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+
+    .stat-number {
+        font-size: 1.1rem;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+    }
+
+    .analytics-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .chart-container {
+        height: 300px;
+        padding: 0.75rem;
+    }
+
+    }
+
+    /* Touch-Friendly Improvements */
+    @@media (hover: none) and (pointer: coarse) {
+        .stat-card:hover, .chart-container:hover, .member-card:hover
+
+    {
+        transform: none;
+    }
+
+    .stat-card:active,
+    .chart-container:active,
+    .member-card:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+
+    }
+
+    /* Print Styles */
+    @@media print {
+        .analytics-header, .analytics-card, .stat-card, .chart-container
+
+    {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        background: white;
+    }
+
+    .mobile-table-controls,
+    .mobile-cards-view,
+    .header-actions,
+    .btn,
+    .header-pattern,
+    .icon-glow {
+        display: none !important;
+    }
+
+    .statistics-summary {
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+        gap: 0.5rem;
+    }
+
+    .stat-card {
+        padding: 0.75rem;
+        min-height: auto;
+        break-inside: avoid;
+    }
+
+    .stat-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+    }
+
+    .stat-number {
+        font-size: 1.2rem;
+        color: #000;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+        color: #000;
+    }
+
+    .table-responsive-wrapper {
+        overflow: visible !important;
+    }
+
+    .responsive-table {
+        font-size: 0.8rem;
+    }
+
+    .col-priority-3,
+    .col-priority-4 {
+        display: none;
+    }
+
+    }
+</style>
