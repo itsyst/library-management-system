@@ -1,68 +1,3562 @@
-﻿@model IEnumerable<Library.Domain.Member>
-
+﻿@using Library.MVC.ViewModels
+@model MemberViewModel
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Medlemshantering";
 }
+@Html.AntiForgeryToken()
 
-<div class="p-3">
-    <div class="row pt-4">
-        <div class="col-6">
-            <h2 class="text-primary">Members</h2>
-        </div>
+<div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-11">
+            <div class="members-index" id="members">
 
-        <div class="col-6 text-right">
-            <a class="btn btn-primary" asp-controller="Members" asp-action="Create">
-                <i class="bi bi-plus-circle"></i> &nbsp; New
-            </a>
+                <!-- RUBRIKSEKTION -->
+                <header class="members-header mb-5 position-relative overflow-hidden">
+                    <div class="header-pattern position-absolute w-100 h-100"></div>
+                    <div class="header-particles" id="headerParticles"></div>
+                    <div class="position-relative z-2">
+                        <div class="row align-items-center">
+                            <div class="col-lg-8">
+                                <div class="header-content">
+                                    <div class="members-icon">
+                                        <div class="icon-wrapper">
+                                            <i class="bi bi-people-fill"></i>
+                                            <div class="icon-pulse"></div>
+                                            <div class="icon-glow"></div>
+                                        </div>
+                                    </div>
+                                    <h1 class="display-6 fw-bold pb-2 header-title">
+                                        <span class="typing-animation">Medlemshantering</span>
+                                    </h1>
+                                    <p class="page-subtitle fs-5 mb-0 text-muted">
+                                        Hantera och övervaka alla registrerade biblioteksmedlemmar
+                                    </p>
+                                </div>
+                                <!-- STATISTIKKORT -->
+                                <div class="stats-grid mt-4">
+                                    <div class="stat-card stat-card-primary" data-aos="fade-up" data-aos-delay="100">
+                                        <div class="stat-icon">
+                                            <i class="bi bi-people-fill"></i>
+                                        </div>
+                                        <div class="stat-content">
+                                            <div class="stat-number" data-count="@Model.Statistics?.TotalMembers">0</div>
+                                            <div class="stat-label">Totalt medlemmar</div>
+                                        </div>
+                                    </div>
+                                    <div class="stat-card stat-card-success" data-aos="fade-up" data-aos-delay="200">
+                                        <div class="stat-icon">
+                                            <i class="bi bi-book-half"></i>
+                                        </div>
+                                        <div class="stat-content">
+                                            <div class="stat-number" data-count="@Model.Members?.Sum(m => m.Loans?.Count(l => l.ReturnDate == null) ?? 0)">0</div>
+                                            <div class="stat-label">Aktiva lån</div>
+                                        </div>
+                                    </div>
+                                    <div class="stat-card stat-card-info" data-aos="fade-up" data-aos-delay="300">
+                                        <div class="stat-icon">
+                                            <i class="bi bi-person-check"></i>
+                                        </div>
+                                        <div class="stat-content">
+                                            <div class="stat-number" data-count="@Model.Statistics?.ActiveMembers">0</div>
+                                            <div class="stat-label">Aktiva medlemmar</div>
+                                        </div>
+                                    </div>
+                                    <div class="stat-card stat-card-warning" data-aos="fade-up" data-aos-delay="400">
+                                        <div class="stat-icon">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                        </div>
+                                        <div class="stat-content">
+                                            <div class="stat-number" data-count="@Model.Statistics?.MembersWithOverdueBooks">0</div>
+                                            <div class="stat-label">Försenade medlemmar</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 text-lg-end py-2">
+                                <div class="header-actions d-flex flex-column gap-3">
+                                    <a asp-controller="Members" asp-action="Create" class="btn btn-primary btn-lg m-1">
+                                        <i class="bi bi-person-plus-fill mr-2"></i>
+                                        <span>Lägg till ny medlem</span>
+                                        <div class="btn-glow"></div>
+                                    </a>
+                                    <div class="export-actions d-flex gap-2">
+                                        <a asp-action="ExportToCsv" class="btn btn-success m-1">
+                                            <i class="bi bi-file-earmark-spreadsheet mr-1"></i>
+                                            Exportera CSV
+                                        </a>
+                                        <button class="btn btn-outline-info m-1" id="analyticsBtn">
+                                            <i class="bi bi-graph-up mr-1"></i>
+                                            Analys
+                                        </button>
+                                        <a asp-action="DeepAnalytics" class="btn btn-outline-primary m-1">
+                                            <i class="bi bi-bar-chart-line mr-1"></i>
+                                            Fördjupad analys
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- SÖK & FILTER -->
+                <section class="search-filter-section section-spacing">
+                    <div class="row shadow p-3 mb-5 bg-body rounded  m-0 p-2">
+                        <div class="col-md-8">
+                            <div class="advanced-search-container">
+                                <div class="search-input-wrapper position-relative">
+                                    <input type="text" class="search-input" id="globalSearch" placeholder="Sök medlemmar efter namn, personnummer, e-post eller telefon...">
+                                    <i class="bi bi-search search-icon"></i>
+                                    <button class="voice-search-btn disabled" id="voiceSearch" title="Röstsökning stöds endast i Chrome och Edge.">
+                                        <i class="bi bi-mic"></i>
+                                    </button>
+                                    <button class="clear-search d-none" id="clearSearch" aria-label="Clear search">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                                <div class="search-suggestions" id="searchSuggestions"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="filter-controls d-flex justify-content-end gap-2">
+                                <div class="filter-dropdown">
+                                    <button class="filter-btn dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="bi bi-funnel"></i>
+                                        <span>Avancerade filter</span>
+                                    </button>
+                                    <div class="dropdown-menu filter-dropdown-menu">
+                                        <div class="filter-option">
+                                            <label>Medlemsstatus</label>
+                                            <select class="form-control w-50" id="statusFilter">
+                                                <option value="">Alla statusar</option>
+                                                <option value="active">Aktiv</option>
+                                                <option value="inactive">Inaktiv</option>
+                                                <option value="suspended">Avstängd</option>
+                                            </select>
+                                        </div>
+                                        <div class="filter-option">
+                                            <label>Registreringsdatum</label>
+                                            <input type="date" class="form-control" id="dateFilter">
+                                        </div>
+                                        <div class="filter-option">
+                                            <label>Låneaktivitet</label>
+                                            <select class="form-control w-50" id="loanFilter">
+                                                <option value="">Alla medlemmar</option>
+                                                <option value="active">Med aktiva lån</option>
+                                                <option value="inactive">Inga aktiva lån</option>
+                                                <option value="overdue">Med försenade lån</option>
+                                            </select>
+                                        </div>
+                                        <div class="filter-actions">
+                                            <button class="btn btn-primary btn-sm" id="applyFilters">Tillämpa</button>
+                                            <button class="btn btn-outline-secondary btn-sm" id="clearFilters">Rensa</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VISNINGSKONTROLLER -->
+                <section class="section-card view-controls section-spacing">
+                    <div class="section-header d-flex justify-content-between align-items-center flex-column flex-sm-row">
+                        <div class="d-flex flex-row flex-sm-column view-info">
+                            <h5 class="section-title mb-0">
+                                <i class="bi bi-grid-3x3-gap mr-2"></i>
+                                Medlemskatalog
+                            </h5>
+                            <small class="text-muted p-2 p-sm-0" id="memberCount">Visar @Model.Members?.Count medlemmar</small>
+                        </div>
+                        <div class="view-controls-right d-flex gap-3">
+                            <div class="sort-controls mr-1">
+                                <select class="form-control" id="sortBy">
+                                    <option value="name">Sortera efter namn</option>
+                                    <option value="date">Sortera efter registreringsdatum</option>
+                                    <option value="loans">Sortera efter aktiva lån</option>
+                                    <option value="status">Sortera efter status</option>
+                                </select>
+                            </div>
+                            <div class="view-toggle">
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-outline-secondary active" id="tableViewBtn" title="Tabellvy">
+                                        <i class="bi bi-table"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" id="cardViewBtn" title="Kortvy">
+                                        <i class="bi bi-grid-3x3-gap"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" id="listViewBtn" title="Listvy">
+                                        <i class="bi bi-list"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TABELLVY -->
+                    <main class="members-table px-3" id="tableViewContainer">
+                        <div class="table-controls mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="bulk-actions" id="bulkActions" style="display: none;">
+                                    <span class="selected-count" id="selectedCount">0 valda</span>
+                                    <div class="btn-group ml-3">
+                                        <button class="btn btn-outline-primary btn-sm" id="bulkEmail">
+                                            <i class="bi bi-envelope"></i> Skicka e-post
+                                        </button>
+                                        <button class="btn btn-outline-warning btn-sm" id="bulkExport">
+                                            <i class="bi bi-download"></i> Exportera valda
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" id="bulkDelete">
+                                            <i class="bi bi-trash"></i> Ta bort valda
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="membersTable" class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="fw-semibold sortable" data-sort="name">
+                                            Medlem
+                                        </th>
+                                        <th scope="col" class="fw-semibold sortable" data-sort="name">
+                                            Kontaktinfo
+                                        </th>
+                                        <th scope="col" class="text-center fw-semibold sortable" data-sort="loans">
+                                            Totala lån
+                                        </th>
+                                        <th scope="col" class="text-center fw-semibold sortable" data-sort="date">
+                                            Medlem sedan
+                                        </th>
+                                        <th scope="col" class="text-center fw-semibold sortable">Lånestatus</th>
+                                        <th scope="col" class="text-center fw-semibold">Åtgärder</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var member in Model.Members!)
+                                    {
+                                        var activeLoans = member?.Loans?.Count(l => l.ReturnDate == null) ?? 0;
+                                        var totalLoans = member?.Loans?.Count() ?? 0;
+                                        var overdueLoans = member?.Loans?.Count(l => l.DueDate < DateTime.Now && l.ReturnDate == null) ?? 0;
+                                        var memberSince = member?.MembershipStartDate.ToString("MMM yyyy", new System.Globalization.CultureInfo("sv-SE")) ?? "N/A";
+                                        <tr data-member-id="@member?.Id" class="member-row" data-aos="fade-up">
+                                            <td class="justify-content-center">
+                                                <div class="row justify-content-around">
+                                                    <div class="member-avatar mr-3">
+                                                        <div class="avatar-circle">
+                                                            <span class="avatar-initials">
+                                                                @(member?.Name?.Split(' ').Take(2).Select(n => n.FirstOrDefault()).Aggregate("", (acc, c) => acc + c))
+                                                            </span>
+                                                            <div class="avatar-status @(activeLoans > 0 ? "status-active" : "status-inactive")"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="member-info">
+                                                        <h6 class="mb-1 fw-semibold">
+                                                            <a asp-controller="Members" asp-action="Details" asp-route-id="@member?.Id" class="member-link">@member?.Name</a>
+                                                        </h6>
+                                                        <div class="member-meta">
+                                                            <small class="text-muted">ID: @member?.Id</small>
+                                                            @if (overdueLoans > 0)
+                                                            {
+                                                                <span class="badge bg-danger ml-2"><span class="text-white">@overdueLoans @(overdueLoans > 1 ? "Försenade" : "Försenad")</span></span>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="contact-info">
+                                                    @if (!string.IsNullOrEmpty(member?.SSN))
+                                                    {
+                                                        <div class="detail-item mt-2">
+                                                            <i class="bi bi-shield-lock detail-icon"></i>
+                                                            <div class="detail-content">
+                                                                <span class="detail-label">SSN</span>
+                                                                <span class="detail-value member-link">@member.SSN</span>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(member?.Email))
+                                                    {
+                                                        <div class="detail-item mt-2">
+                                                            <i class="bi bi-envelope detail-icon"></i>
+                                                            <div class="detail-content">
+                                                                <span class="detail-label">E-post</span>
+                                                                <a href="mailto:@member.Email" class="detail-value member-link">@member.Email</a>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(member?.PhoneNumber))
+                                                    {
+                                                        <div class="detail-item mt-2">
+                                                            <i class="bi bi-telephone detail-icon"></i>
+                                                            <div class="detail-content">
+                                                                <span class="detail-label">Telefon</span>
+                                                                <a href="tel:@member.PhoneNumber" class="detail-value member-link">@member.PhoneNumber</a>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="loan-status-container">
+                                                    @if (totalLoans > 0)
+                                                    {
+                                                        <div class="loan-history">
+                                                            <small class="text-muted">@totalLoans totalt lån</small>
+                                                            <div class="loan-activity-chart" data-loans="@totalLoans" data-active="@activeLoans"></div>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="loan-history">
+                                                            <small class="text-muted">Ingen bok har lånats ännu.</small>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="member-since">
+                                                    <span class="text-muted fw-medium">@memberSince</span>
+                                                    <small class="d-block text-muted">
+                                                        @((DateTime.Now - member?.MembershipStartDate)?.Days) dagar sedan
+                                                    </small>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="loan-status-container">
+                                                    @if (activeLoans > 0)
+                                                    {
+                                                        <div class="status-badge status-active">
+                                                            <i class="bi bi-book"></i>
+                                                            <span>@activeLoans @(activeLoans > 1 ? "Aktiva lån" : "Aktiv lån")</span>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="status-badge status-inactive">
+                                                            <i class="bi bi-check-circle"></i>
+                                                            <span>Inga aktiva lån</span>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td class="d-flex justify-content-center">
+                                                <div>
+                                                    <div class="btn-group flex-column">
+                                                        <div class="btn-group">
+                                                            <button class="action-btn more-btn dropdown-toggle" data-bs-toggle="dropdown" title="Fler åtgärder">
+                                                                <i class="bi bi-three-dots"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu">
+                                                                @if (member?.Loans?.Count > 0)
+                                                                {
+                                                                    <li><a class="dropdown-item" href="/Loans?memberId=@member?.Id" data-action="view-loans" data-member-id="@member?.Id"><i class="bi bi-book mr-2"></i>Visa lån</a></li>
+                                                                    <li><a class="dropdown-item" href="/Members/History?memberId=@member?.Id" data-action="loan-history" data-member-id="@member?.Id"><i class="bi bi-clock-history mr-2"></i>Lånehistorik</a></li>
+                                                                }
+                                                                <li><a class="dropdown-item" href="mailto:@member?.Email" data-action="send-email" data-member-id="@member?.Id"><i class="bi bi-envelope mr-2"></i>Skicka e-post</a></li>
+                                                                <li><hr class="dropdown-divider"></li>
+                                                                <li><a class="dropdown-item text-danger js-delete" data-member-id="@member?.Id" data-member-name="@member?.Name" href="#"><i class="bi bi-trash mr-2"></i>Ta bort</a></li>
+                                                            </ul>
+                                                        </div>
+                                                        <button class="action-btn message-btn m-1" data-member-id="@member?.Id" data-member-email="@member?.Email" data-member-name="@member?.Name" title="Skicka meddelande">
+                                                            <i class="bi bi-chat-dots"></i>
+                                                        </button>
+                                                        <a asp-controller="Members" asp-action="Details" asp-route-id="@member?.Id" class="action-btn view-btn m-1" title="Visa detaljer">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                        <a asp-controller="Members" asp-action="Edit" asp-route-id="@member?.Id" class="action-btn edit-btn m-1" title="Redigera medlem">
+                                                            <i class="bi bi-pencil-square"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                
+                                </tbody>
+                            </table>
+                        </div>
+                    </main>
+
+                    <!-- KORTVY -->
+                    <main class="d-none p-3" id="cardViewContainer">
+                        <div class="members-grid" id="memberCards">
+                            <!-- Kort kommer att genereras av JavaScript -->
+                        </div>
+                    </main>
+
+                    <!-- NY LISTVY -->
+                    <main class="d-none p-3" id="listViewContainer">
+                        <div class="members-list" id="memberList">
+                            <!-- Listobjekt kommer att genereras av JavaScript -->
+                        </div>
+                    </main>
+
+                    <!-- FÖRBÄTTRAT TOMT TILLSTÅND -->
+                    <div class="empty-state d-none" id="emptyState">
+                        <div class="empty-content">
+                            <div class="empty-animation">
+                                <i class="bi bi-people"></i>
+                                <div class="empty-particles"></div>
+                            </div>
+                            <h3>Inga medlemmar hittades</h3>
+                            <p>Inga medlemmar matchar dina nuvarande sökkriterier.</p>
+                            <div class="d-flex flex-column flex-sm-row empty-actions">
+                                <button class="d-flex justfy-content-center align-items-center btn btn-primary m-1" id="clearFiltersBtn">
+                                    <i class="bi bi-arrow-clockwise mr-2"></i>
+                                    Rensa filter
+                                </button>
+                                <a asp-controller="Members" asp-action="Create" class="d-flex justfy-content-center align-items-center btn btn-outline-primary m-1">
+                                    <i class="bi bi-person-plus mr-2"></i>
+                                    Lägg till ny medlem
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- MEDDELANDEMODAL -->
+                <div class="modal fade" id="messageModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Skicka meddelande</h5>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fa-solid fa-x"></i></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="messageForm" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <div class="mb-3">
+                                        <label for="recipientName" class="form-label">Till:</label>
+                                        <input type="text" class="form-control" id="recipientName" readonly>
+                                        <input type="hidden" name="RecipientEmail" id="recipientEmail" value="">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="messageSubject" class="form-label">Ämne:</label>
+                                        <input type="text" class="form-control" name="Subject" id="messageSubject" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="messageContent" class="form-label">Meddelande:</label>
+                                        <textarea class="form-control" name="Body" id="messageContent" rows="5" required></textarea>
+                                    </div>
+                                    <input type="hidden" name="RecipientId" id="recipientId" value=""> 
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Avbryt</button>
+                                <button type="button" class="btn btn-primary" id="sendMessageBtn">Skicka meddelande</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANALYSMODAL -->
+                <div class="modal fade" id="analyticsModal" tabindex="-1">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content modern-modal">
+                            <div class="modal-header modern-header">
+                                <div class="header-content">
+                                    <div class="modal-icon">
+                                        <i class="bi bi-graph-up-arrow"></i>
+                                    </div>
+                                    <div class="header-text">
+                                        <h5 class="modal-title">Medlemsanalys</h5>
+                                        <p class="modal-subtitle">Detaljerad översikt av medlemsstatistik och aktivitet</p>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-close-modern" data-bs-dismiss="modal">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                            <div class="modal-body modern-body">
+
+                                <!-- Statistics Summary -->
+                                <div class="statistics-summary mb-5">
+                                    <div class="section-title-modern mb-4">
+                                        <i class="bi bi-pie-chart-fill mr-2"></i>
+                                        <span>Statistiköversikt</span>
+                                        <div class="title-accent"></div>
+                                    </div>
+                                    <div class="stats-grid-modern">
+                                        <div class="stat-card-modern primary" data-aos="fade-up" data-aos-delay="100">
+                                            <div class="card-background"></div>
+                                            <div class="stat-icon-modern">
+                                                <i class="bi bi-people-fill"></i>
+                                            </div>
+                                            <div class="stat-content-modern">
+                                                <div class="stat-number-modern" id="totalMembers">0</div>
+                                                <div class="stat-label-modern">Totalt medlemmar</div>
+                                            </div>
+                                            <div class="stat-trend positive">
+                                                <i class="bi bi-arrow-up"></i>
+                                                <span>+12%</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card-modern success" data-aos="fade-up" data-aos-delay="150">
+                                            <div class="card-background"></div>
+                                            <div class="stat-icon-modern">
+                                                <i class="bi bi-person-check-fill"></i>
+                                            </div>
+                                            <div class="stat-content-modern">
+                                                <div class="stat-number-modern" id="activeMembers">0</div>
+                                                <div class="stat-label-modern">Aktiva medlemmar</div>
+                                            </div>
+                                            <div class="stat-trend positive">
+                                                <i class="bi bi-arrow-up"></i>
+                                                <span>+8%</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card-modern warning" data-aos="fade-up" data-aos-delay="200">
+                                            <div class="card-background"></div>
+                                            <div class="stat-icon-modern">
+                                                <i class="bi bi-person-x-fill"></i>
+                                            </div>
+                                            <div class="stat-content-modern">
+                                                <div class="stat-number-modern" id="suspendedMembers">0</div>
+                                                <div class="stat-label-modern">Avstängda medlemmar</div>
+                                            </div>
+                                            <div class="stat-trend negative">
+                                                <i class="bi bi-arrow-down"></i>
+                                                <span>-3%</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card-modern info" data-aos="fade-up" data-aos-delay="250">
+                                            <div class="card-background"></div>
+                                            <div class="stat-icon-modern">
+                                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                            </div>
+                                            <div class="stat-content-modern">
+                                                <div class="stat-number-modern" id="membersWithOverdueBooks">0</div>
+                                                <div class="stat-label-modern">Medlemmar med försenade böcker</div>
+                                            </div>
+                                            <div class="stat-trend neutral">
+                                                <i class="bi bi-dash"></i>
+                                                <span>0%</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card-modern accent" data-aos="fade-up" data-aos-delay="300">
+                                            <div class="card-background"></div>
+                                            <div class="stat-icon-modern">
+                                                <i class="bi bi-currency-exchange"></i>
+                                            </div>
+                                            <div class="stat-content-modern">
+                                                <div class="stat-number-modern" id="totalOutstandingFees">0</div>
+                                                <div class="stat-label-modern">Totala obetalda avgifter (kr)</div>
+                                            </div>
+                                            <div class="stat-trend negative">
+                                                <i class="bi bi-arrow-down"></i>
+                                                <span>-5%</span>
+                                            </div>
+                                        </div>
+                                        <div class="stat-card-modern gradient-1" data-aos="fade-up" data-aos-delay="350">
+                                            <div class="card-background"></div>
+                                            <div class="stat-icon-modern">
+                                                <i class="bi bi-person-plus-fill"></i>
+                                            </div>
+                                            <div class="stat-content-modern">
+                                                <div class="stat-number-modern" id="newMembersThisMonth">0</div>
+                                                <div class="stat-label-modern">Nya medlemmar denna månad</div>
+                                            </div>
+                                            <div class="stat-trend positive">
+                                                <i class="bi bi-arrow-up"></i>
+                                                <span>+25%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Charts Section -->
+                                <div class="charts-section">
+                                    <div class="section-title-modern mb-4">
+                                        <i class="bi bi-graph-up mr-2"></i>
+                                        <span>Detaljerade diagram</span>
+                                        <div class="title-accent"></div>
+                                    </div>
+                                    <div class="analytics-grid-modern">
+                                        <div class="chart-container-modern" data-aos="fade-up" data-aos-delay="100">
+                                            <div class="chart-header">
+                                                <h6>Medlemsregistreringstrend</h6>
+                                                <div class="chart-actions">
+                                                    <button class="chart-btn" title="Fullskärm">
+                                                        <i class="bi bi-arrows-fullscreen"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <canvas id="memberRegistrationChart"></canvas>
+                                        </div>
+                                        <div class="chart-container-modern" data-aos="fade-up" data-aos-delay="150">
+                                            <div class="chart-header">
+                                                <h6>Låneaktivitet per månad</h6>
+                                                <div class="chart-actions">
+                                                    <button class="chart-btn" title="Fullskärm">
+                                                        <i class="bi bi-arrows-fullscreen"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <canvas id="loanActivityChart"></canvas>
+                                        </div>
+                                        <div class="chart-container-modern" data-aos="fade-up" data-aos-delay="200">
+                                            <div class="chart-header">
+                                                <h6>Medlemsstatusfördelning</h6>
+                                                <div class="chart-actions">
+                                                    <button class="chart-btn" title="Fullskärm">
+                                                        <i class="bi bi-arrows-fullscreen"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <canvas id="statusDistributionChart"></canvas>
+                                        </div>
+                                        <div class="chart-container-modern" data-aos="fade-up" data-aos-delay="250">
+                                            <div class="chart-header">
+                                                <h6>Förseningsavgifter per medlem</h6>
+                                                <div class="chart-actions">
+                                                    <button class="chart-btn" title="Fullskärm">
+                                                        <i class="bi bi-arrows-fullscreen"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <canvas id="feeDistributionChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </div>
-    <br />
-    <table id="members" class="table table-hover">
-        <thead>
-            <tr class="bg-light">
-                <th>
-                    @Html.DisplayNameFor(model => model.Name)
-                </th>
-                <th>
-                    @Html.DisplayNameFor(model => model.SSN)
-                </th>
-                <th>
-                    @Html.DisplayName("Lons")
-                </th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var member in Model)
-            {
-                <tr>
-                    <td>
-                        @Html.ActionLink(member.Name, "Details", "Members", new { id = member.Id }, null)
-                    </td>
-                    <td>
-                        @Html.DisplayFor(modelItem => member.SSN)
-                    </td>
-                    @if (member.Loans!.Count() != 0)
-                    {
-                        <td style='color: #198754;'>
-                            <p class="font-weight-bold">@Html.DisplayName("✓")</p>
-                        </td>
-                    }
-                    else
-                    {
-                        <td>
-                            <p class="font-weight-bold">@Html.DisplayName("-")</p>
-                        </td>
-                    }
-                    <td colspan="2" class="text-right">
-                        <a class="btn-link mx-2 js-delete" data-member-id=@member.Id><i class='bi bi-trash-fill' style='color: #ff4136; cursor:pointer;'></i></a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
 </div>
 
-@section Scripts{
-<script src="~/js/members.js"></script>
- }
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // ================================================
+        // MAIN APPLICATION OBJECT
+        // ================================================
+        const MembersApp = {
+            // Configuration
+            config: {
+                chartColors: {
+                    primary: '#3b82f6',
+                    success: '#10b981',
+                    warning: '#f59e0b',
+                    danger: '#ef4444',
+                    info: '#06b6d4',
+                    purple: '#8b5cf6'
+                },
+                animationDuration: 800,
+                apiEndpoints: {
+                    analyticsData: '/Members/GetAnalyticsData'
+                }
+            },
+
+            // State management
+            state: {
+                currentView: 'table',
+                analyticsModal: null,
+                messageModal: null,
+                dataTable: null,
+                charts: {},
+                isInitialized: false
+            },
+
+            // Initialize the application
+            init() {
+                if (this.state.isInitialized) return;
+
+                try {
+                    this.initializeAOS();
+                    this.initializeModals();
+                    this.initializeAnimations();
+                    this.initializeTable();
+                    this.updateMemberCount()
+                    this.initializeGlobalSearch();  
+                    this.initializeFilters();
+                    this.initializeViewControls();
+                    this.initializeMessaging();
+                    this.bindEvents();
+  
+                    this.state.isInitialized = true;
+                    console.log('MembersApp initialized successfully');
+                } catch (error) {
+                    console.error('Error initializing MembersApp:', error);
+                }
+            },
+
+            // ================================================
+            // INITIALIZATION METHODS
+            // ================================================
+            initializeAOS() {
+                if (typeof AOS !== 'undefined') {
+                    AOS.init({
+                        duration: this.config.animationDuration,
+                        once: true,
+                        offset: 50
+                    });
+                }
+            },
+
+            initializeModals() {
+                // Initialize Analytics Modal
+                const analyticsModalEl = document.getElementById('analyticsModal');
+                if (analyticsModalEl && typeof bootstrap !== 'undefined') {
+                    this.state.analyticsModal = new bootstrap.Modal(analyticsModalEl);
+                }
+
+                // Initialize Message Modal
+                const messageModalEl = document.getElementById('messageModal');
+                if (messageModalEl && typeof bootstrap !== 'undefined') {
+                    this.state.messageModal = new bootstrap.Modal(messageModalEl);
+                }
+            },
+
+            initializeAnimations() {
+                this.initializeCounterAnimations();
+                this.initializeParticles();
+                this.initializeTypingAnimation();
+            },
+
+            initializeCounterAnimations() {
+                const counters = document.querySelectorAll('.stat-number[data-count]');
+                counters.forEach(counter => {
+                    const target = parseInt(counter.getAttribute('data-count')) || 0;
+                    this.animateCounter(counter, target);
+                });
+            },
+
+            animateCounter(element, target, duration = 2000) {
+                let current = 0;
+                const increment = target / (duration / 50);
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        element.textContent = target;
+                        clearInterval(timer);
+                    } else {
+                        element.textContent = Math.ceil(current);
+                    }
+                }, 50);
+            },
+
+            initializeParticles() {
+                const particlesContainer = document.getElementById('headerParticles');
+                if (!particlesContainer) return;
+
+                for (let i = 0; i < 50; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 2 + 's';
+                    particle.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                    particlesContainer.appendChild(particle);
+                }
+            },
+
+            initializeTypingAnimation() {
+                const element = document.querySelector('.typing-animation');
+                if (!element) return;
+
+                const text = element.textContent;
+                element.textContent = '';
+                let i = 0;
+                const timer = setInterval(() => {
+                    if (i < text.length) {
+                        element.textContent += text.charAt(i);
+                        i++;
+                    } else {
+                        clearInterval(timer);
+                    }
+                }, 100);
+            },
+ 
+            // ================================================
+            // TABLE INITIALIZATION
+            // ================================================
+            initializeTable() {
+                const tableElement = document.getElementById('membersTable');
+                if (!tableElement || typeof $ === 'undefined') {
+                    console.warn('DataTable not initialized: missing table element or jQuery');
+                    return;
+                }
+
+                try {
+                    this.state.dataTable = $('#membersTable').DataTable({
+                        responsive: true,
+                        pageLength: 25,
+                        order: [[0, 'asc']],
+                        language: {
+                            search: '',
+                            searchPlaceholder: 'Sök medlemmar...',
+                            info: 'Visar _START_ till _END_ av _TOTAL_ medlemmar',
+                            infoEmpty: 'Inga medlemmar hittades',
+                            infoFiltered: '(filtrerade från _MAX_ totalt medlemmar)',
+                            lengthMenu: 'Visa _MENU_ medlemmar per sida',
+                            paginate: {
+                                first: 'Första',
+                                previous: 'Föregående',
+                                next: 'Nästa',
+                                last: 'Sista'
+                            }
+                        },
+                        columnDefs: [
+                            { orderable: false, targets: [5] },
+                            { className: 'text-center', targets: [2, 3, 4] }
+                        ],
+                        drawCallback: () => {
+                            this.initializeTooltips();
+                            this.animateTableRows();
+                            this.updateMemberCount();
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error initializing DataTable:', error);
+                }
+            },
+
+            animateTableRows() {
+                const rows = document.querySelectorAll('.member-row');
+                rows.forEach((row, index) => {
+                    setTimeout(() => {
+                        row.style.opacity = '1';
+                        row.style.transform = 'translateY(0)';
+                    }, index * 50);
+                });
+            },
+
+            initializeTooltips() {
+                if (typeof bootstrap === 'undefined') return;
+
+                const tooltipTriggerList = document.querySelectorAll('[title]');
+                [...tooltipTriggerList].forEach(tooltipTriggerEl => {
+                    try {
+                        // Dispose existing tooltip if any
+                        const existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+                        if (existingTooltip) {
+                            existingTooltip.dispose();
+                        }
+                        new bootstrap.Tooltip(tooltipTriggerEl);
+                    } catch (error) {
+                        console.warn('Error initializing tooltip:', error);
+                    }
+                });
+            },
+
+            // ================================================
+            // SEARCH AND FILTERING
+            // ================================================
+            initializeGlobalSearch() {
+                const searchInput = document.getElementById('globalSearch');
+                const clearBtn = document.getElementById('clearSearch');
+
+                if (!searchInput) return;
+
+                const debouncedSearch = this.debounce((value) => {
+                    if (this.state.dataTable) {
+                        this.state.dataTable.search(value).draw();
+                    }
+
+                    // Update other views
+                    if (this.state.currentView === 'card') {
+                        this.generateCardView();
+                    } else if (this.state.currentView === 'list') {
+                        this.generateListView();
+                    }
+
+                    this.updateMemberCount();
+                    this.checkEmptyState();
+                    this.showFilterAppliedIndicator(this.hasActiveFilters());
+                }, 300);
+
+                searchInput.addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    if (clearBtn) {
+                        clearBtn.classList.toggle('d-none', !value);
+                    }
+                    debouncedSearch(value);
+                });
+
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', () => {
+                        searchInput.value = '';
+                        clearBtn.classList.add('d-none');
+                        debouncedSearch('');
+                    });
+                }
+            },
+
+            initializeFilters() {
+                const applyBtn = document.getElementById('applyFilters');
+                const clearBtn = document.getElementById('clearFilters');
+                const sortBy = document.getElementById('sortBy');
+
+                if (applyBtn) {
+                    applyBtn.addEventListener('click', () => this.applyFilters());
+                }
+
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', () => this.clearFilters());
+                }
+
+                if (sortBy) {
+                    sortBy.addEventListener('change', (e) => this.applySorting(e.target.value));
+                }
+
+                // Add custom search function to DataTable
+                if (this.state.dataTable && $.fn.dataTable) {
+                    $.fn.dataTable.ext.search.push((settings, data, dataIndex) => {
+                        return this.customFilter(settings, data, dataIndex);
+                    });
+                }
+
+                // Add real-time filtering
+                const statusFilter = document.getElementById('statusFilter');
+                const dateFilter = document.getElementById('dateFilter');
+                const loanFilter = document.getElementById('loanFilter');
+
+                if (statusFilter) {
+                    statusFilter.addEventListener('change', () => this.applyFilters());
+                }
+                if (dateFilter) {
+                    dateFilter.addEventListener('change', () => this.applyFilters());
+                }
+                if (loanFilter) {
+                    loanFilter.addEventListener('change', () => this.applyFilters());
+                }
+            },
+
+            customFilter(settings, data, dataIndex) {
+                if (settings.nTable.id !== 'membersTable') {
+                    return true;
+                }
+
+                const statusFilter = document.getElementById('statusFilter')?.value || '';
+                const dateFilter = document.getElementById('dateFilter')?.value || '';
+                const loanFilter = document.getElementById('loanFilter')?.value || '';
+
+                const row = $(settings.nTable).DataTable().row(dataIndex).node();
+                if (!row) return true;
+
+                return this.filterRowData(row, statusFilter, dateFilter, loanFilter);
+            },
+
+            filterRowData(row, statusFilter, dateFilter, loanFilter) {
+                // Status filter
+                if (statusFilter) {
+                    const statusBadge = row.querySelector('.status-badge');
+                    const overdueBadge = row.querySelector('.badge.bg-danger');
+
+                    if (statusFilter === 'active') {
+                        if (!statusBadge || !statusBadge.classList.contains('status-active')) return false;
+                    } else if (statusFilter === 'inactive') {
+                        if (!statusBadge || !statusBadge.classList.contains('status-inactive')) return false;
+                    } else if (statusFilter === 'suspended') {
+                        if (!overdueBadge) return false;
+                    }
+                }
+
+                // Date filter
+                if (dateFilter) {
+                    const memberSinceText = row.querySelector('.member-since .fw-medium')?.textContent;
+                    if (memberSinceText) {
+                        const filterDate = new Date(dateFilter);
+                        const memberYear = memberSinceText.includes(' ') ?
+                            parseInt(memberSinceText.split(' ')[1]) :
+                            new Date().getFullYear();
+
+                        if (memberYear < filterDate.getFullYear()) return false;
+                    }
+                }
+
+                // Loan filter
+                if (loanFilter) {
+                    const statusBadge = row.querySelector('.status-badge');
+                    const overdueBadge = row.querySelector('.badge.bg-danger');
+
+                    if (loanFilter === 'active') {
+                        if (!statusBadge || !statusBadge.classList.contains('status-active')) return false;
+                    } else if (loanFilter === 'inactive') {
+                        if (!statusBadge || !statusBadge.classList.contains('status-inactive')) return false;
+                    } else if (loanFilter === 'overdue') {
+                        if (!overdueBadge) return false;
+                    }
+                }
+
+                return true;
+            },
+
+            getFilteredAndSortedData() {
+                if (!this.state.dataTable) return [];
+
+                const allRows = this.state.dataTable.rows().nodes();
+                const statusFilter = document.getElementById('statusFilter')?.value || '';
+                const dateFilter = document.getElementById('dateFilter')?.value || '';
+                const loanFilter = document.getElementById('loanFilter')?.value || '';
+                const globalSearch = document.getElementById('globalSearch')?.value || '';
+                const sortBy = document.getElementById('sortBy')?.value || 'name';
+
+                // Filter rows
+                let filteredRows = Array.from(allRows).filter(row => {
+                    // Apply custom filters
+                    if (!this.filterRowData(row, statusFilter, dateFilter, loanFilter)) {
+                        return false;
+                    }
+
+                    // Apply global search
+                    if (globalSearch) {
+                        const searchText = row.textContent.toLowerCase();
+                        if (!searchText.includes(globalSearch.toLowerCase())) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                });
+
+                // Sort rows
+                filteredRows.sort((a, b) => {
+                    return this.compareRows(a, b, sortBy);
+                });
+
+                return filteredRows;
+            },
+
+            compareRows(rowA, rowB, sortBy) {
+                let valueA, valueB;
+
+                switch (sortBy) {
+                    case 'name':
+                        valueA = rowA.querySelector('h6 a')?.textContent || '';
+                        valueB = rowB.querySelector('h6 a')?.textContent || '';
+                        return valueA.localeCompare(valueB);
+
+                    case 'date':
+                        valueA = rowA.querySelector('.member-since .fw-medium')?.textContent || '';
+                        valueB = rowB.querySelector('.member-since .fw-medium')?.textContent || '';
+                        // Convert dates for comparison
+                        const dateA = new Date(valueA.includes(' ') ? valueA.split(' ')[1] + '-01-01' : '1900-01-01');
+                        const dateB = new Date(valueB.includes(' ') ? valueB.split(' ')[1] + '-01-01' : '1900-01-01');
+                        return dateB - dateA; // Newest first
+
+                    case 'loans':
+                        // Extract loan count from status badge or loan history
+                        valueA = this.extractLoanCount(rowA);
+                        valueB = this.extractLoanCount(rowB);
+                        return valueB - valueA; // Most loans first
+
+                    case 'status':
+                        valueA = this.getStatusPriority(rowA);
+                        valueB = this.getStatusPriority(rowB);
+                        return valueA - valueB;
+
+                    default:
+                        return 0;
+                }
+            },
+
+            extractLoanCount(row) {
+                const statusBadge = row.querySelector('.status-badge');
+                if (statusBadge && statusBadge.classList.contains('status-active')) {
+                    const text = statusBadge.textContent;
+                    const match = text.match(/(\d+)/);
+                    return match ? parseInt(match[1]) : 0;
+                }
+                return 0;
+            },
+
+            getStatusPriority(row) {
+                const statusBadge = row.querySelector('.status-badge');
+                const overdueBadge = row.querySelector('.badge.bg-danger');
+
+                if (overdueBadge) return 1; // Overdue/suspended first
+                if (statusBadge && statusBadge.classList.contains('status-active')) return 2; // Active second
+                return 3; // Inactive last
+            },
+
+            applyFilters() {
+                if (this.state.dataTable) {
+                    this.state.dataTable.draw();
+                }
+
+                // Update current view
+                if (this.state.currentView === 'card') {
+                    this.generateCardView();
+                } else if (this.state.currentView === 'list') {
+                    this.generateListView();
+                }
+
+                this.updateMemberCount();
+                this.checkEmptyState();
+                this.showFilterAppliedIndicator(this.hasActiveFilters());
+            },
+
+            applySorting(sortValue) {
+                if (this.state.dataTable) {
+                    let columnIndex = 0;
+                    let direction = 'asc';
+
+                    switch (sortValue) {
+                        case 'name':
+                            columnIndex = 0;
+                            direction = 'asc';
+                            break;
+                        case 'date':
+                            columnIndex = 3;
+                            direction = 'desc';
+                            break;
+                        case 'loans':
+                            columnIndex = 2;
+                            direction = 'desc';
+                            break;
+                        case 'status':
+                            columnIndex = 4;
+                            direction = 'asc';
+                            break;
+                    }
+
+                    this.state.dataTable.order([columnIndex, direction]).draw();
+                }
+
+                // Update current view
+                if (this.state.currentView === 'card') {
+                    this.generateCardView();
+                } else if (this.state.currentView === 'list') {
+                    this.generateListView();
+                }
+            },
+
+            clearFilters() {
+                const statusFilter = document.getElementById('statusFilter');
+                const dateFilter = document.getElementById('dateFilter');
+                const loanFilter = document.getElementById('loanFilter');
+                const sortBy = document.getElementById('sortBy');
+                const globalSearch = document.getElementById('globalSearch');
+                const clearBtn = document.getElementById('clearSearch');
+
+                if (statusFilter) statusFilter.value = '';
+                if (dateFilter) dateFilter.value = '';
+                if (loanFilter) loanFilter.value = '';
+                if (sortBy) sortBy.value = 'name';
+                if (globalSearch) globalSearch.value = '';
+                if (clearBtn) clearBtn.classList.add('d-none');
+
+                if (this.state.dataTable) {
+                    this.state.dataTable.search('').order([0, 'asc']).draw();
+                }
+
+                // Update current view
+                if (this.state.currentView === 'card') {
+                    this.generateCardView();
+                } else if (this.state.currentView === 'list') {
+                    this.generateListView();
+                }
+
+                this.updateMemberCount();
+                this.checkEmptyState();
+                this.showFilterAppliedIndicator(false);
+            },
+
+            hasActiveFilters() {
+                const statusFilter = document.getElementById('statusFilter')?.value;
+                const dateFilter = document.getElementById('dateFilter')?.value;
+                const loanFilter = document.getElementById('loanFilter')?.value;
+                const globalSearch = document.getElementById('globalSearch')?.value;
+
+                return !!(statusFilter || dateFilter || loanFilter || globalSearch);
+            },
+
+            showFilterAppliedIndicator(hasFilters) {
+                const filterBtn = document.querySelector('.filter-btn');
+                if (filterBtn) {
+                    if (hasFilters) {
+                        filterBtn.classList.add('btn-primary');
+                        filterBtn.classList.remove('btn-outline-secondary');
+
+                        let badge = filterBtn.querySelector('.filter-count-badge');
+                        if (!badge) {
+                            badge = document.createElement('span');
+                            badge.className = 'filter-count-badge badge bg-white text-primary ms-1';
+                            badge.style.fontSize = '0.7rem';
+                            filterBtn.appendChild(badge);
+                        }
+
+                        const activeFilters = [
+                            document.getElementById('statusFilter')?.value,
+                            document.getElementById('dateFilter')?.value,
+                            document.getElementById('loanFilter')?.value,
+                            document.getElementById('globalSearch')?.value
+                        ].filter(value => value && value.trim() !== '').length;
+
+                        badge.textContent = activeFilters;
+                    } else {
+                        filterBtn.classList.remove('btn-primary');
+                        filterBtn.classList.add('btn-outline-secondary');
+
+                        const badge = filterBtn.querySelector('.filter-count-badge');
+                        if (badge) {
+                            badge.remove();
+                        }
+                    }
+                }
+            },
+
+            // ================================================
+            // VIEW CONTROLS
+            // ================================================
+            initializeViewControls() {
+                const tableViewBtn = document.getElementById('tableViewBtn');
+                const cardViewBtn = document.getElementById('cardViewBtn');
+                const listViewBtn = document.getElementById('listViewBtn');
+
+                if (tableViewBtn) {
+                    tableViewBtn.addEventListener('click', () => this.switchView('table'));
+                }
+                if (cardViewBtn) {
+                    cardViewBtn.addEventListener('click', () => this.switchView('card'));
+                }
+                if (listViewBtn) {
+                    listViewBtn.addEventListener('click', () => this.switchView('list'));
+                }
+            },
+
+            switchView(viewType) {
+                const views = {
+                    table: { btn: 'tableViewBtn', container: 'tableViewContainer' },
+                    card: { btn: 'cardViewBtn', container: 'cardViewContainer' },
+                    list: { btn: 'listViewBtn', container: 'listViewContainer' }
+                };
+
+                // Update button states
+                Object.values(views).forEach(view => {
+                    const btn = document.getElementById(view.btn);
+                    if (btn) btn.classList.remove('active');
+                });
+
+                const activeBtn = document.getElementById(views[viewType].btn);
+                if (activeBtn) activeBtn.classList.add('active');
+
+                // Update container visibility
+                Object.values(views).forEach(view => {
+                    const container = document.getElementById(view.container);
+                    if (container) {
+                        if (view.container === views[viewType].container) {
+                            container.classList.remove('d-none');
+                            container.style.display = 'block';
+                        } else {
+                            container.classList.add('d-none');
+                            container.style.display = 'none';
+                        }
+                    }
+                });
+
+                // Update state and generate content
+                this.state.currentView = viewType;
+
+                if (viewType === 'card') {
+                    this.generateCardView();
+                } else if (viewType === 'list') {
+                    this.generateListView();
+                }
+
+                // Update member count and empty state for new view
+                this.updateMemberCount();
+                this.checkEmptyState();
+            },
+
+            generateCardView() {
+                const cardContainer = document.getElementById('memberCards');
+                if (!cardContainer) return;
+
+                cardContainer.innerHTML = '';
+                const filteredRows = this.getFilteredAndSortedData();
+
+                if (filteredRows.length === 0) {
+                    this.checkEmptyState();
+                    return;
+                }
+
+                filteredRows.forEach((row, index) => {
+                    const memberId = row.getAttribute('data-member-id');
+                    const memberNameEl = row.querySelector('h6 a');
+                    const memberSinceEl = row.querySelector('.member-since .fw-medium');
+                    const statusBadgeEl = row.querySelector('.status-badge');
+                    const contactInfo = this.extractContactInfo(row);
+
+                    if (!memberNameEl || !memberSinceEl || !statusBadgeEl) return;
+
+                    const memberName = memberNameEl.textContent;
+                    const memberSince = memberSinceEl.textContent;
+                    const statusBadge = statusBadgeEl.outerHTML;
+
+                    const cardHtml = this.createMemberCard(memberId, memberName, memberSince, statusBadge, contactInfo, index);
+                    cardContainer.insertAdjacentHTML('beforeend', cardHtml);
+                });
+
+                // Reinitialize AOS for new cards
+                if (typeof AOS !== 'undefined') {
+                    AOS.refresh();
+                }
+            },
+
+            generateListView() {
+                const listContainer = document.getElementById('memberList');
+                if (!listContainer) return;
+
+                listContainer.innerHTML = '';
+                const filteredRows = this.getFilteredAndSortedData();
+
+                if (filteredRows.length === 0) {
+                    this.checkEmptyState();
+                    return;
+                }
+
+                filteredRows.forEach((row, index) => {
+                    const memberId = row.getAttribute('data-member-id');
+                    const memberNameEl = row.querySelector('h6 a');
+                    const memberSinceEl = row.querySelector('.member-since .fw-medium');
+                    const statusBadgeEl = row.querySelector('.status-badge');
+                    const contactInfo = this.extractContactInfo(row);
+
+                    if (!memberNameEl || !memberSinceEl || !statusBadgeEl) return;
+
+                    const memberName = memberNameEl.textContent;
+                    const memberSince = memberSinceEl.textContent;
+                    const statusBadge = statusBadgeEl.outerHTML;
+
+                    const listItemHtml = this.createMemberListItem(memberId, memberName, memberSince, statusBadge, contactInfo, index);
+                    listContainer.insertAdjacentHTML('beforeend', listItemHtml);
+                });
+
+                // Reinitialize AOS for new list items
+                if (typeof AOS !== 'undefined') {
+                    AOS.refresh();
+                }
+            },
+
+            extractContactInfo(row) {
+                const contactInfo = {};
+                const emailEl = row.querySelector('a[href^="mailto:"]');
+                const phoneEl = row.querySelector('a[href^="tel:"]');
+                const ssnEl = row.querySelector('.detail-content .detail-value');
+
+                if (emailEl) contactInfo.email = emailEl.textContent.trim();
+                if (phoneEl) contactInfo.phone = phoneEl.textContent.trim();
+                if (ssnEl) contactInfo.ssn = ssnEl.textContent.trim();
+
+                return contactInfo;
+            },
+
+            createMemberCard(memberId, memberName, memberSince, statusBadge, contactInfo, index) {
+                const initials = memberName.split(' ').map(n => n[0]).join('');
+                const email = contactInfo.email || '';
+                const phone = contactInfo.phone || '';
+
+                return `
+                    <div class="member-card" data-aos="fade-up" data-aos-delay="${index * 50}">
+                        <div class="member-card-header">
+                            <div class="member-avatar">
+                                <div class="avatar-circle">
+                                    <span class="avatar-initials">${initials}</span>
+                                </div>
+                            </div>
+                            <div class="member-info">
+                                <h6 class="member-name">
+                                    <a href="/Members/Details/${memberId}" class="member-link">${memberName}</a>
+                                </h6>
+                                <small class="member-since">Medlem sedan ${memberSince}</small>
+                                ${email ? `<small class="text-muted"><i class="bi bi-envelope mr-1"></i>${email}</small>` : ''}
+                                ${phone ? `<small class="text-muted"><i class="bi bi-telephone mr-1"></i>${phone}</small>` : ''}
+                            </div>
+                        </div>
+                        <div class="member-card-body">
+                            <div class="member-status">
+                                ${statusBadge}
+                            </div>
+                            <div class="member-actions">
+                                <a href="/Members/Details/${memberId}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Visa
+                                </a>
+                                <a href="/Members/Edit/${memberId}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i> Redigera
+                                </a>
+                                <button class="btn btn-sm btn-outline-info message-btn"
+                                        data-member-id="${memberId}"
+                                        data-member-name="${memberName}"
+                                        data-member-email="${email}">
+                                    <i class="bi bi-chat"></i> Meddelande
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            createMemberListItem(memberId, memberName, memberSince, statusBadge, contactInfo, index) {
+                const initials = memberName.split(' ').map(n => n[0]).join('');
+                const email = contactInfo.email || '';
+                const phone = contactInfo.phone || '';
+
+                return `
+                    <div class="member-list-item" data-aos="fade-up" data-aos-delay="${index * 30}">
+                        <div class="member-list-avatar">
+                            <div class="avatar-circle">
+                                <span class="avatar-initials">${initials}</span>
+                            </div>
+                        </div>
+                        <div class="member-list-info">
+                            <h6 class="member-name">
+                                <a href="/Members/Details/${memberId}" class="member-link">${memberName}</a>
+                            </h6>
+                            <div class="member-details">
+                                <small class="member-since d-block">Medlem sedan ${memberSince}</small>
+                                ${email ? `<small class="text-muted d-block"><i class="bi bi-envelope mr-1"></i>${email}</small>` : ''}
+                                ${phone ? `<small class="text-muted d-block"><i class="bi bi-telephone mr-1"></i>${phone}</small>` : ''}
+                            </div>
+                            <div class="member-list-status mt-2">
+                                ${statusBadge}
+                            </div>
+                        </div>
+                        <div class="member-list-actions">
+                            <a href="/Members/Details/${memberId}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Visa
+                            </a>
+                            <a href="/Members/Edit/${memberId}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i> Redigera
+                            </a>
+                            <button class="btn btn-sm btn-outline-info message-btn"
+                                    data-member-id="${memberId}"
+                                    data-member-name="${memberName}"
+                                    data-member-email="${email}">
+                                <i class="bi bi-chat"></i> Meddelande
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            updateMemberCount() {
+                const memberCountEl = document.getElementById('memberCount');
+                if (!memberCountEl) return;
+
+                let displayedCount = 0, totalCount = 0;
+
+                if (this.state.currentView === 'table' && this.state.dataTable) {
+                    const info = this.state.dataTable.page.info();
+                    displayedCount = info.recordsDisplay;
+                    totalCount = info.recordsTotal;
+                } else {
+                    const filteredRows = this.getFilteredAndSortedData();
+                    displayedCount = filteredRows.length;
+                    totalCount = this.state.dataTable ? this.state.dataTable.rows().count() : 0;
+                }
+
+                if (displayedCount === totalCount) {
+                    memberCountEl.textContent = `Visar ${totalCount} medlemmar`;
+                } else {
+                    memberCountEl.textContent = `Visar ${displayedCount} av ${totalCount} medlemmar`;
+                }
+            },
+
+            checkEmptyState() {
+                const emptyState = document.getElementById('emptyState');
+                const tableContainer = document.getElementById('tableViewContainer');
+                const cardContainer = document.getElementById('cardViewContainer');
+                const listContainer = document.getElementById('listViewContainer');
+
+                let hasData = false;
+
+                if (this.state.currentView === 'table' && this.state.dataTable) {
+                    const info = this.state.dataTable.page.info();
+                    hasData = info.recordsDisplay > 0;
+                } else {
+                    const filteredRows = this.getFilteredAndSortedData();
+                    hasData = filteredRows.length > 0;
+                }
+
+                if (emptyState) {
+                    emptyState.classList.toggle('d-none', hasData);
+                }
+
+                // Show/hide containers based on current view and data availability
+                if (tableContainer) {
+                    if (this.state.currentView === 'table') {
+                        tableContainer.style.display = hasData ? 'block' : 'none';
+                        tableContainer.classList.toggle('d-none', !hasData);
+                    } else {
+                        tableContainer.style.display = 'none';
+                        tableContainer.classList.add('d-none');
+                    }
+                }
+
+                if (cardContainer) {
+                    if (this.state.currentView === 'card') {
+                        cardContainer.classList.toggle('d-none', !hasData);
+                    } else {
+                        cardContainer.classList.add('d-none');
+                    }
+                }
+
+                if (listContainer) {
+                    if (this.state.currentView === 'list') {
+                        listContainer.classList.toggle('d-none', !hasData);
+                    } else {
+                        listContainer.classList.add('d-none');
+                    }
+                }
+            },
+
+            // ================================================
+            // MESSAGING FUNCTIONALITY
+            // ================================================
+            initializeMessaging() {
+                const sendBtn = document.getElementById('sendMessageBtn');
+                if (sendBtn) {
+                    sendBtn.addEventListener('click', () => this.sendMessage());
+                }
+            },
+
+            openMessageModal(memberId, memberName, memberEmail) {
+                if (!this.state.messageModal) return;
+
+                // Populate form fields
+                const recipientId = document.getElementById('recipientId');
+                const recipientName = document.getElementById('recipientName');
+                const recipientEmail = document.getElementById('recipientEmail');
+                const messageSubject = document.getElementById('messageSubject');
+                const messageContent = document.getElementById('messageContent');
+
+                if (recipientId) recipientId.value = memberId || '';
+                if (recipientName) recipientName.value = memberName || '';
+                if (recipientEmail) recipientEmail.value = memberEmail || '';
+                if (messageSubject) messageSubject.value = '';
+                if (messageContent) messageContent.value = '';
+
+                this.state.messageModal.show();
+            },
+
+            sendMessage() {
+                const sendBtn = document.getElementById('sendMessageBtn');
+                sendBtn.disabled = true; // Prevent double-click while loading
+                sendBtn.innerHTML = `<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span> Skickar...`;
+
+                const subject = document.getElementById('messageSubject')?.value || '';
+                const content = document.getElementById('messageContent')?.value || '';
+                const recipientId = document.getElementById('recipientId')?.value || '';
+                const recipientName = document.getElementById('recipientName')?.value || '';
+                const recipientEmail = document.getElementById('recipientEmail')?.value || '';
+                const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                if (!subject.trim() || !content.trim() || !recipientEmail.trim()) {
+                    this.showAlert('Fel!', 'Vänligen fyll i alla fält.', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('__RequestVerificationToken', csrfToken);
+                formData.append('RecipientId', recipientId);
+                formData.append('RecipientName', recipientName);
+                formData.append('RecipientEmail', recipientEmail);
+                formData.append('Subject', subject);
+                formData.append('Body', content);
+
+                fetch('/Email/SendToMember', {
+                    method: 'POST',
+                    // headers: {
+                    //     'Accept': 'application/json'
+                    // },
+                    // body: new URLSearchParams({
+                    //     __RequestVerificationToken: csrfToken,
+                    //     RecipientId : recipientId,
+                    //     RecipientName : recipientName,
+                    //     RecipientEmail: recipientEmail,
+                    //     Subject: subject,
+                    //     Body: content
+                    // })
+                    body: formData
+                })
+                .then(async response => {
+                        sendBtn.disabled = false;
+                        sendBtn.innerHTML = 'Skicka meddelande';
+
+                       if (!response.ok) {
+                           // Extract server error if possible
+                           let errText = `Fel vid utskick. Status: ${response.status}`;
+                           try {
+                               const errJson = await response.json();
+                               if (errJson.error) errText = errJson.error;
+                           } catch {}
+                           throw new Error(errText);
+                       }
+                       return response.json();
+                   })
+                   .then(data => {
+                    if (data.success) {
+                        this.showAlert('Meddelande skickat!', 'Ditt meddelande har skickats framgångsrikt.', 'success', 3000);
+                        this.state.messageModal?.hide();
+                    } else if (data.error) {
+                        // Special case for fake/disposable email rejection
+                        this.showAlert('Fel!', 'Ogiltig eller reserverad e-postadress.', 'error');
+                    } else {
+                        // General failure
+                        this.showAlert('Fel!', 'Kunde inte skicka meddelandet.', 'error');
+                    }
+                })
+                .catch(() => {
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = 'Skicka meddelande';
+                    this.showAlert('Fel!', 'Ett oväntat fel uppstod vid skicka av meddelandet.', 'error');
+                });
+            },
+ 
+            // ================================================
+            // ANALYTICS FUNCTIONALITY
+            // ================================================
+            openAnalyticsModal() {
+                if (!this.state.analyticsModal) return;
+
+                this.state.analyticsModal.show();
+                this.loadAnalyticsData();
+            },
+
+            async loadAnalyticsData() {
+                try {
+                    this.showAnalyticsLoading(true);
+
+                    const response = await fetch(this.config.apiEndpoints.analyticsData);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    this.validateAnalyticsData(data);
+                    this.updateAnalyticsUI(data);
+                    this.renderAnalyticsCharts(data);
+
+                } catch (error) {
+                    console.error('Error loading analytics data:', error);
+                    this.showAnalyticsError('Kunde inte ladda analysdata. Försök igen senare.');
+                } finally {
+                    this.showAnalyticsLoading(false);
+                }
+            },
+
+            validateAnalyticsData(data) {
+                const requiredFields = ['statistics', 'monthlyRegistrations', 'loanActivity', 'statusDistribution', 'feeDistribution'];
+                for (const field of requiredFields) {
+                    if (!data[field]) {
+                        throw new Error(`Saknad data: ${field}`);
+                    }
+                }
+            },
+
+            updateAnalyticsUI(data) {
+                const stats = data.statistics;
+                const updateElement = (id, value, formatter = null) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = formatter ? formatter(value) : value;
+                    }
+                };
+
+                // Update statistics
+                updateElement('totalMembers', stats.totalMembers || 0);
+                updateElement('activeMembers', stats.activeMembers || 0);
+                updateElement('suspendedMembers', stats.suspendedMembers || 0);
+                updateElement('membersWithOverdueBooks', stats.membersWithOverdueBooks || 0);
+                updateElement('totalOutstandingFees', stats.totalOutstandingFees || 0, v => v.toFixed(2));
+                updateElement('newMembersThisMonth', stats.newMembersThisMonth || 0);
+            },
+
+            renderAnalyticsCharts(data) {
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js is not loaded');
+                    return;
+                }
+
+                this.destroyExistingCharts();
+
+                // Render all charts
+                this.renderMemberRegistrationChart(data.monthlyRegistrations);
+                this.renderLoanActivityChart(data.loanActivity);
+                this.renderStatusDistributionChart(data.statusDistribution);
+                this.renderFeeDistributionChart(data.feeDistribution);
+            },
+
+            destroyExistingCharts() {
+                Object.values(this.state.charts).forEach(chart => {
+                    if (chart && typeof chart.destroy === 'function') {
+                        chart.destroy();
+                    }
+                });
+                this.state.charts = {};
+            },
+
+            renderMemberRegistrationChart(data) {
+                const ctx = document.getElementById('memberRegistrationChart');
+                if (!ctx) return;
+
+                this.state.charts.memberRegistration = new Chart(ctx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: data.labels || [],
+                        datasets: [{
+                            label: 'Nya medlemmar',
+                            data: data.data || [],
+                            borderColor: this.config.chartColors.primary,
+                            backgroundColor: this.config.chartColors.primary + '20',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: this.getChartOptions('Medlemsregistreringstrend', 'Antal medlemmar', 'Månad')
+                });
+            },
+
+            renderLoanActivityChart(data) {
+                const ctx = document.getElementById('loanActivityChart');
+                if (!ctx) return;
+
+                this.state.charts.loanActivity = new Chart(ctx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels || [],
+                        datasets: [{
+                            label: 'Aktiva lån',
+                            data: data.active || [],
+                            backgroundColor: this.config.chartColors.primary + 'B3'
+                        }, {
+                            label: 'Försenade lån',
+                            data: data.overdue || [],
+                            backgroundColor: this.config.chartColors.danger + 'B3'
+                        }, {
+                            label: 'Återlämnade lån',
+                            data: data.returned || [],
+                            backgroundColor: this.config.chartColors.success + 'B3'
+                        }]
+                    },
+                    options: {
+                        ...this.getChartOptions('Låneaktivitet per månad', 'Antal lån', 'Månad'),
+                        scales: {
+                            x: { stacked: true, title: { display: true, text: 'Månad' } },
+                            y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Antal lån' } }
+                        }
+                    }
+                });
+            },
+
+            renderStatusDistributionChart(data) {
+                const ctx = document.getElementById('statusDistributionChart');
+                if (!ctx) return;
+
+                this.state.charts.statusDistribution = new Chart(ctx.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['Aktiva', 'Avstängda', 'Inaktiva'],
+                        datasets: [{
+                            data: [
+                                data.active || 0,
+                                data.suspended || 0,
+                                data.inactive || 0
+                            ],
+                            backgroundColor: [
+                                this.config.chartColors.primary + 'B3',
+                                this.config.chartColors.danger + 'B3',
+                                '#9ca3af' + 'B3'
+                            ],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Medlemsstatusfördelning',
+                                font: { size: 16, weight: '600' }
+                            },
+                            legend: { position: 'right' },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        const total = data.total || context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? (context.raw / total * 100).toFixed(1) : 0;
+                                        return `${context.label}: ${context.raw} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+
+            renderFeeDistributionChart(data) {
+                const ctx = document.getElementById('feeDistributionChart');
+                if (!ctx) return;
+
+                this.state.charts.feeDistribution = new Chart(ctx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels || [],
+                        datasets: [{
+                            label: 'Förseningsavgifter',
+                            data: data.data || [],
+                            backgroundColor: this.config.chartColors.danger + 'B3',
+                            borderColor: this.config.chartColors.danger,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        ...this.getChartOptions('Förseningsavgifter per medlem', 'Avgift (kr)', 'Medlem'),
+                        plugins: {
+                            ...this.getChartOptions().plugins,
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => `${context.raw} kr`
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+
+            getChartOptions(title, yAxisTitle, xAxisTitle) {
+                return {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: title,
+                            font: { size: 16, weight: '600' }
+                        },
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: yAxisTitle }
+                        },
+                        x: {
+                            title: { display: true, text: xAxisTitle }
+                        }
+                    }
+                };
+            },
+
+            showAnalyticsLoading(show) {
+                // This would show/hide a loading indicator in the analytics modal
+                console.log(show ? 'Loading analytics...' : 'Analytics loaded');
+            },
+
+            showAnalyticsError(message) {
+                const modalBody = document.querySelector('#analyticsModal .modal-body');
+                if (modalBody) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-danger mt-3';
+                    errorDiv.innerHTML = `
+                        <i class="bi bi-exclamation-triangle mr-2"></i>
+                        ${message}
+                    `;
+                    modalBody.insertBefore(errorDiv, modalBody.firstChild);
+                }
+            },
+
+            // ================================================
+            // EVENT BINDING
+            // ================================================
+            bindEvents() {
+                // Analytics button
+                const analyticsBtn = document.getElementById('analyticsBtn');
+                if (analyticsBtn) {
+                    analyticsBtn.addEventListener('click', () => this.openAnalyticsModal());
+                }
+
+                // Message buttons (event delegation)
+                document.addEventListener('click', (e) => {
+                    const messageBtn = e.target.closest('.message-btn');
+                    if (messageBtn) {
+                        const memberId = messageBtn.getAttribute('data-member-id');
+                        const memberName = messageBtn.getAttribute('data-member-name');
+                        const memberEmail = messageBtn.getAttribute('data-member-email');
+                        this.openMessageModal(memberId, memberName, memberEmail);
+                    }
+                });
+
+                // Clear filters button
+                const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+                if (clearFiltersBtn) {
+                    clearFiltersBtn.addEventListener('click', () => this.clearFilters());
+                }
+
+                // Chart fullscreen buttons (event delegation)
+                document.addEventListener('click', (e) => {
+                    const chartBtn = e.target.closest('.chart-btn');
+                    if (chartBtn && chartBtn.title === 'Fullskärm') {
+                        const chartContainer = chartBtn.closest('.chart-container-modern');
+                        if (chartContainer) {
+                            this.toggleChartFullscreen(chartContainer);
+                        }
+                    }
+                });
+            },
+
+            toggleChartFullscreen(chartContainer) {
+                // Simple fullscreen toggle implementation
+                if (chartContainer.classList.contains('chart-fullscreen')) {
+                    chartContainer.classList.remove('chart-fullscreen');
+                } else {
+                    chartContainer.classList.add('chart-fullscreen');
+                }
+            },
+
+            // ================================================
+            // UTILITY METHODS
+            // ================================================
+            showAlert(title, text, icon, timer = null) {
+                if (typeof Swal !== 'undefined') {
+                    const options = { title, text, icon };
+                    if (timer) {
+                        options.timer = timer;
+                        options.showConfirmButton = false;
+                    }
+                    Swal.fire(options);
+                } else {
+                    alert(`${title}: ${text}`);
+                }
+            },
+
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+        };
+
+        // ================================================
+        // APPLICATION STARTUP
+        // ================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                MembersApp.init();
+            } catch (error) {
+                console.error('Failed to initialize MembersApp:', error);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterBtn = document.querySelector('.filter-btn');
+            const viewToggle = document.querySelector('.view-toggle');
+            const dataTablesFilter = document.querySelector('#membersTable_filter');
+            const dataTablesFilterWrapper = dataTablesFilter ? dataTablesFilter.parentElement : null;
+
+            if (!filterBtn || !viewToggle || !dataTablesFilter || !dataTablesFilterWrapper) {
+                console.warn('Required elements for z-index toggle not found');
+                return;
+            }
+
+            // Save original z-index values for restoration
+            const originalViewToggleZ = window.getComputedStyle(viewToggle).zIndex || '0';
+            const originalDataTablesWrapperZ = window.getComputedStyle(dataTablesFilterWrapper).zIndex || '0';
+
+            filterBtn.addEventListener('show.bs.dropdown', () => {
+                // When filter dropdown opens: set both to lower z-index
+                viewToggle.style.zIndex = '-20';
+                dataTablesFilterWrapper.style.zIndex = '-20';
+            });
+
+            filterBtn.addEventListener('hide.bs.dropdown', () => {
+                // When filter dropdown closes: restore original z-index values
+                viewToggle.style.zIndex = originalViewToggleZ;
+                dataTablesFilterWrapper.style.zIndex = originalDataTablesWrapperZ;
+            });
+        });
+ 
+
+        // ================================================
+        // Speech Recognition 
+        // ================================================
+        // Röstsökning: Browser Compatibility and Fallback
+        (function () {
+            // Support for Chrome, Edge (Blink): use webkitSpeechRecognition
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            const searchInput = document.getElementById('globalSearch');
+            const voiceBtn = document.getElementById('voiceSearch');
+
+            if (!voiceBtn) return; // If no mic button, exit
+
+            // 1. No API support: show tooltip or alert on click instead
+            if (!SpeechRecognition) {
+                voiceBtn.addEventListener('click', function () {
+                    alert('Röstsökning stöds inte av din webbläsare. Stöd finns i Google Chrome och Microsoft Edge.');
+                });
+                voiceBtn.classList.add('disabled');
+                voiceBtn.title = 'Röstsökning stöds endast i Chrome och Edge.';
+                return;
+            }
+
+            // 2. Chrome/Edge: Provide full recognition functionality
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'sv-SE';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            let recognizing = false;
+
+            // Visual feedback (optional: adjust style/CSS as needed)
+            const setListening = (isListening) => {
+                if (isListening) {
+                    voiceBtn.classList.add('listening');
+                    voiceBtn.title = 'Lyssnar... Klicka igen för att avbryta.';
+                } else {
+                    voiceBtn.classList.remove('listening');
+                    voiceBtn.title = 'Klicka för att börja röstsökning.';
+                }
+            };
+
+            setListening(false);
+
+            voiceBtn.addEventListener('click', function () {
+                // Toggle recognition
+                if (!recognizing) {
+                    try {
+                        recognition.start();
+                    } catch (err) {
+                        // Sometimes fails if already started, ignore
+                    }
+                    recognizing = true;
+                    setListening(true);
+                } else {
+                    recognition.stop();
+                    recognizing = false;
+                    setListening(false);
+                }
+            });
+
+            recognition.onresult = function (event) {
+                if (!searchInput) return;
+                const result = event.results[0][0].transcript;
+                searchInput.value = result;
+                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            };
+            recognition.onerror = function (event) {
+                recognizing = false;
+                setListening(false);
+                if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                    alert('Fel vid röstsökning: ' + event.error);
+                }
+            };
+            recognition.onend = function () {
+                recognizing = false;
+                setListening(false);
+            };
+        })();
+
+
+        // ================================================
+        // GLOBAL ERROR HANDLING
+        // ================================================
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+        });
+    </script>
+}
+
+
+<style>
+    /* Same styles as provided, with additions for charts */
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .chart-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: transform var(--transition-normal);
+    }
+
+        .chart-container:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+    .modal-content {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    /* Enhanced Header Animations */
+    .members-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+        border-radius: var(--radius-xl);
+        padding: 3rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .header-pattern {
+        background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+        animation: patternMove 20s ease-in-out infinite;
+    }
+
+    .modal-title {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    @@keyframes patternMove {
+        0%, 100% {
+            transform: translateX(0) translateY(0);
+        }
+
+        25% {
+            transform: translateX(1%) translateY(-1%);
+        }
+
+        50% {
+            transform: translateX(-1%) translateY(1%);
+        }
+
+        75% {
+            transform: translateX(1%) translateY(1%);
+        }
+    }
+
+    .header-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .particle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: rgba(59, 130, 246, 0.3);
+        border-radius: 50%;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @@keyframes float {
+        0%, 100% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 0;
+        }
+
+        50% {
+            transform: translateY(-20px) rotate(180deg);
+            opacity: 1;
+        }
+    }
+
+    .icon-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: var(--white);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        animation: iconBounce 2s ease-in-out infinite;
+    }
+
+    @@keyframes iconBounce {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    .icon-glow {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        border: 2px solid var(--primary-color);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+        opacity: 0.6;
+    }
+
+    @@keyframes glow {
+        from {
+            opacity: 0.5;
+        }
+
+        to {
+            opacity: 0.8;
+        }
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .stat-card {
+        /* background: rgba(255, 255, 255, 0.9); */
+        border-radius: var(--radius-lg);
+        padding: 0px 25px;
+        margin: 0px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all var(--transition-normal);
+        /* backdrop-filter: blur(10px); */
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+            transform: scaleX(0);
+            transition: transform var(--transition-normal);
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+    .stat-card-primary .stat-icon {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    }
+
+    .stat-card-success .stat-icon {
+        background: linear-gradient(135deg, var(--success-color), #059669);
+    }
+
+    .stat-card-info .stat-icon {
+        background: linear-gradient(135deg, var(--info-color), #0891b2);
+    }
+
+    .stat-card-warning .stat-icon {
+        background: linear-gradient(135deg, var(--warning-color), #d97706);
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: var(--white);
+        flex-shrink: 0;
+        animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    @@keyframes iconPulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.1);
+        }
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gray-800);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        color: var(--gray-600);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-trend {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    /* Search */
+    .advanced-search-container {
+        position: relative;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 1rem 1rem 1rem 3rem;
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        font-size: 1rem;
+        transition: all var(--transition-normal);
+        background: var(--white);
+        width: 100%;
+    }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        color: var(--gray-600);
+        font-size: 1.25rem;
+        top: 0;
+        left: 0.75rem;
+        transform: translateY(48%);
+        z-index: 10;
+    }
+
+    .voice-search-btn {
+        position: absolute;
+        top:0;
+        right: 0.75rem;
+        transform: translateY(45%);
+        background: none;
+        border: none;
+        color: var(--gray-600);
+        font-size: 1.25rem;
+        cursor: pointer;
+        transition: color var(--transition-fast);
+    }
+
+        .voice-search-btn:hover {
+            color: var(--primary-color);
+        }
+
+    .clear-search {
+        position: absolute;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: var(--gray-400);
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 50%;
+        transition: all var(--transition-fast);
+    }
+
+        .clear-search:hover {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+    .section-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all var(--transition-normal);
+    }
+
+    .section-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+        border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        padding: 1.5rem;
+        margin-bottom: 10px;
+    }
+
+    .section-title {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    /* Avatar */
+    .avatar-circle {
+        position: relative;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--white);
+        font-weight: 600;
+        font-size: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .avatar-status {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid var(--white);
+    }
+
+        .avatar-status.status-active {
+            background: var(--success-color);
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        .avatar-status.status-inactive {
+            background: var(--gray-400);
+        }
+
+    @@keyframes statusPulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.2);
+        }
+    }
+
+    /* Table */
+    .member-row {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all var(--transition-normal);
+    }
+
+        .member-row:hover {
+            background: rgba(59, 130, 246, 0.05);
+            transform: translateY(0);
+        }
+
+    /* Action Buttons */
+    .action-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--white);
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        text-decoration: none;
+        margin: 0 0.25rem;
+    }
+
+    .view-btn {
+        background: linear-gradient(135deg, var(--gray-600), var(--gray-700));
+    }
+
+    .edit-btn {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    }
+
+    .message-btn {
+        background: linear-gradient(135deg, var(--info-color), #0891b2);
+        color: white;
+    }
+
+    .more-btn {
+        background: linear-gradient(135deg, var(--gray-500), var(--gray-600));
+    }
+
+    .action-btn:hover {
+        transform: scale(1.1);
+        color: var(--white);
+        text-decoration: none;
+        box-shadow: var(--shadow-lg);
+    }
+
+    /* Contact Info Enhancement */
+    .contact-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(229, 231, 235, 0.5);
+        transition: all var(--transition-fast);
+    }
+
+        .detail-item:hover {
+            background: rgba(59, 130, 246, 0.05);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+    .detail-icon {
+        width: 20px;
+        height: 20px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+        margin-top: 0.1rem;
+    }
+
+    .detail-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 0;
+    }
+
+    .detail-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .detail-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        word-break: break-word;
+    }
+
+    /* Loan Status */
+    .loan-status-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .status-badge {
+        padding: 0.2rem 0.5rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: all var(--transition-fast);
+    }
+
+        .status-badge.status-active {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary-color);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .status-badge.status-inactive {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+    .loan-activity-chart {
+        width: 40px;
+        height: 4px;
+        background: var(--gray-200);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 0.25rem;
+    }
+
+        .loan-activity-chart::after {
+            content: '';
+            display: block;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+            width: 60%; /* This would be dynamically calculated */
+            transition: width var(--transition-slow);
+        }
+
+    /* Enhanced Button Styles */
+    .btn-modern {
+        position: relative;
+        overflow: hidden;
+        transition: all var(--transition-normal);
+    }
+
+        .btn-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left var(--transition-slow);
+        }
+
+        .btn-modern:hover::before {
+            left: 100%;
+        }
+
+    .btn-glow {
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border-radius: inherit;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        filter: blur(8px);
+        opacity: 0;
+        transition: opacity var(--transition-normal);
+        z-index: -1;
+    }
+
+    .btn-modern:hover .btn-glow {
+        opacity: 0.6;
+    }
+
+    /* Enhanced Empty State */
+    .empty-state {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-xl);
+        padding: 4rem 2rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .empty-animation {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 2rem;
+    }
+
+        .empty-animation i {
+            font-size: 4rem;
+            color: var(--gray-300);
+            animation: emptyBounce 2s ease-in-out infinite;
+        }
+
+    @@keyframes emptyBounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    .empty-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+        .empty-particles::before,
+        .empty-particles::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            animation: emptyParticles 3s ease-in-out infinite;
+        }
+
+        .empty-particles::before {
+            top: 20%;
+            left: 20%;
+            animation-delay: 0s;
+        }
+
+        .empty-particles::after {
+            top: 60%;
+            right: 20%;
+            animation-delay: 1s;
+        }
+
+    @@keyframes emptyParticles {
+        0%, 100% {
+            opacity: 0;
+            transform: scale(0);
+        }
+
+        50% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .search-input-wrapper {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .voice-search-btn {
+             align-self: flex-end;
+        }
+
+        .action-buttons .btn-group {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+    }
+
+    /* Additional Animations */
+    .subtitle-animation {
+        opacity: 0;
+        animation: slideInUp 1s ease-out 0.5s forwards;
+    }
+
+    @@keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Filter Dropdown */
+    .filter-dropdown-menu {
+        padding: 1rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: var(--shadow-xl);
+        min-width: 300px;
+    }
+
+    .filter-option {
+        margin-bottom: 1rem;
+    }
+
+        .filter-option label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+    .filter-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    /* Chart Containers */
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .chart-container {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Meddelandemodal */
+    .message-btn {
+        background: linear-gradient(135deg, #06b6d4, #0891b2);
+    }
+
+        .message-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+        }
+
+    /* Kortvy */
+    .members-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .member-card {
+        background: rgba(250,250,299,0.95);
+        border-radius: var(--radius-xl);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all var(--transition-normal);
+        margin-bottom: 1.5rem;
+    }
+
+        .member-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+
+    .member-card-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .member-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .member-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    /* Listvy */
+    .member-list-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(250,250,299,0.95);
+        border-radius: var(--radius-lg);
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
+        transition: all var(--transition-normal);
+    }
+
+        .member-list-item:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-md);
+        }
+
+    .member-list-avatar {
+        flex-shrink: 0;
+    }
+
+    .member-list-info {
+        flex: 1;
+    }
+
+    .member-list-status {
+        flex-shrink: 0;
+    }
+
+    .member-list-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+
+    /* Responsiv design för kort och lista */
+    @@media (max-width: 768px) {
+        .member-card-header {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .member-list-item {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .member-list-actions {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Modern Modal Styling */
+    .modern-modal {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.2);
+        overflow: hidden;
+    }
+
+    .modern-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%);
+        border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-content {
+        display: flex;
+        align-items: start;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .modal-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+
+    .header-text .modal-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--primary-color) !important;
+        margin: 0;
+    }
+
+    .modal-subtitle {
+        color: #64748b;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .btn-close-modern {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        border: none;
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        .btn-close-modern:hover {
+            background: rgba(239, 68, 68, 0.2);
+            transform: scale(1.05);
+        }
+
+    .modern-body {
+        padding: 2rem;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    /* Section Titles */
+    .section-title-modern {
+        display: flex;
+        align-items: center;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .title-accent {
+        flex: 1;
+        height: 2px;
+        background: linear-gradient(90deg, rgba(59, 130, 246, 0.3), transparent);
+        margin-left: 1rem;
+    }
+
+    /* Modern Stats Grid */
+    .stats-grid-modern {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    /* Modern Stat Cards */
+    .stat-card-modern {
+        position: relative;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 20px;
+        padding: 2rem;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+    }
+
+        .stat-card-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--card-gradient, #3b82f6), var(--card-gradient-end, #1d4ed8));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card-modern:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-card-modern:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+    .card-background {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 120px;
+        height: 120px;
+        background: radial-gradient(circle, var(--card-bg-color, rgba(59, 130, 246, 0.1)) 0%, transparent 70%);
+        border-radius: 50%;
+        transform: translate(40px, -40px);
+        transition: all 0.3s ease;
+    }
+
+    .stat-card-modern:hover .card-background {
+        transform: translate(30px, -30px) scale(1.1);
+    }
+
+    .stat-icon-modern {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, var(--icon-color, #3b82f6), var(--icon-color-end, #1d4ed8));
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 25px var(--icon-shadow, rgba(59, 130, 246, 0.3));
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 2;
+    }
+
+    .stat-card-modern:hover .stat-icon-modern {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .stat-content-modern {
+        position: relative;
+        z-index: 2;
+    }
+
+    .stat-number-modern {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+        line-height: 1;
+        background: linear-gradient(135deg, #1e293b, #475569);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label-modern {
+        color: #64748b;
+        font-weight: 500;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        line-height: 1.4;
+    }
+
+    .stat-trend {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        z-index: 3;
+    }
+
+        .stat-trend.positive {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
+        .stat-trend.negative {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .stat-trend.neutral {
+            background: rgba(148, 163, 184, 0.1);
+            color: #94a3b8;
+        }
+
+    /* Card Color Variants */
+    .stat-card-modern.primary {
+        --card-gradient: #3b82f6;
+        --card-gradient-end: #1d4ed8;
+        --card-bg-color: rgba(59, 130, 246, 0.1);
+        --icon-color: #3b82f6;
+        --icon-color-end: #1d4ed8;
+        --icon-shadow: rgba(59, 130, 246, 0.3);
+        --progress-color: #3b82f6;
+        --progress-color-end: #1d4ed8;
+    }
+
+    .stat-card-modern.success {
+        --card-gradient: #10b981;
+        --card-gradient-end: #059669;
+        --card-bg-color: rgba(16, 185, 129, 0.1);
+        --icon-color: #10b981;
+        --icon-color-end: #059669;
+        --icon-shadow: rgba(16, 185, 129, 0.3);
+        --progress-color: #10b981;
+        --progress-color-end: #059669;
+    }
+
+    .stat-card-modern.warning {
+        --card-gradient: #f59e0b;
+        --card-gradient-end: #d97706;
+        --card-bg-color: rgba(245, 158, 11, 0.1);
+        --icon-color: #f59e0b;
+        --icon-color-end: #d97706;
+        --icon-shadow: rgba(245, 158, 11, 0.3);
+        --progress-color: #f59e0b;
+        --progress-color-end: #d97706;
+    }
+
+    .stat-card-modern.info {
+        --card-gradient: #06b6d4;
+        --card-gradient-end: #0891b2;
+        --card-bg-color: rgba(6, 182, 212, 0.1);
+        --icon-color: #06b6d4;
+        --icon-color-end: #0891b2;
+        --icon-shadow: rgba(6, 182, 212, 0.3);
+        --progress-color: #06b6d4;
+        --progress-color-end: #0891b2;
+    }
+
+    .stat-card-modern.accent {
+        --card-gradient: #8b5cf6;
+        --card-gradient-end: #7c3aed;
+        --card-bg-color: rgba(139, 92, 246, 0.1);
+        --icon-color: #8b5cf6;
+        --icon-color-end: #7c3aed;
+        --icon-shadow: rgba(139, 92, 246, 0.3);
+        --progress-color: #8b5cf6;
+        --progress-color-end: #7c3aed;
+    }
+
+    .stat-card-modern.gradient-1 {
+        --card-gradient: #ec4899;
+        --card-gradient-end: #be185d;
+        --card-bg-color: rgba(236, 72, 153, 0.1);
+        --icon-color: #ec4899;
+        --icon-color-end: #be185d;
+        --icon-shadow: rgba(236, 72, 153, 0.3);
+        --progress-color: #ec4899;
+        --progress-color-end: #be185d;
+    }
+
+    .stat-card-modern.gradient-2 {
+        --card-gradient: #06b6d4;
+        --card-gradient-end: #0e7490;
+        --card-bg-color: rgba(6, 182, 212, 0.1);
+        --icon-color: #06b6d4;
+        --icon-color-end: #0e7490;
+        --icon-shadow: rgba(6, 182, 212, 0.3);
+        --progress-color: #06b6d4;
+        --progress-color-end: #0e7490;
+    }
+
+    .stat-card-modern.gradient-3 {
+        --card-gradient: #84cc16;
+        --card-gradient-end: #65a30d;
+        --card-bg-color: rgba(132, 204, 22, 0.1);
+        --icon-color: #84cc16;
+        --icon-color-end: #65a30d;
+        --icon-shadow: rgba(132, 204, 22, 0.3);
+        --progress-color: #84cc16;
+        --progress-color-end: #65a30d;
+    }
+
+    /* Modern Charts */
+    .analytics-grid-modern {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 2rem;
+    }
+
+    .chart-container-modern {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 20px;
+        padding: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .chart-container-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+        }
+
+        .chart-container-modern:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+        .chart-header h6 {
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+
+    .chart-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: none;
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .chart-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: scale(1.1);
+        }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .stats-grid-modern {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .analytics-grid-modern {
+            grid-template-columns: 1fr;
+        }
+
+        .stat-card-modern {
+            padding: 1.5rem;
+        }
+
+        .modern-header {
+            padding: 1.5rem;
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .modern-body {
+            padding: 1.5rem;
+        }
+    }
+
+    /* Animation for progress bars */
+    .stat-card-modern[data-aos="fade-up"][data-aos-delay] {
+        --progress-width: attr(data-percentage %);
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0px !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        color: transparent !important;
+        padding: .2em !important;
+    }
+
+    /* Fullscreen Chart Styles */
+    .chart-fullscreen {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 9999 !important;
+        background: white !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        padding: 2rem !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+        .chart-fullscreen .chart-header {
+            flex-shrink: 0;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+            .chart-fullscreen .chart-header h6 {
+                font-size: 1.5rem;
+                font-weight: 700;
+            }
+
+        .chart-fullscreen canvas {
+            max-height: calc(100vh - 150px) !important;
+            width: 100% !important;
+        }
+
+    /* Custom Fullscreen Overlay */
+    .custom-fullscreen-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .custom-fullscreen-content {
+        background: white;
+        border-radius: 12px;
+        width: 95vw;
+        height: 95vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    }
+
+    .custom-fullscreen-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid #e5e7eb;
+        background: #f8fafc;
+    }
+
+        .custom-fullscreen-header h6 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+    .custom-fullscreen-close {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        border: none;
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        .custom-fullscreen-close:hover {
+            background: rgba(239, 68, 68, 0.2);
+            transform: scale(1.05);
+        }
+
+    .custom-fullscreen-chart {
+        flex: 1;
+        padding: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .custom-fullscreen-chart canvas {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto !important;
+            height: auto !important;
+        }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Enhanced chart button hover effects */
+    .chart-btn {
+        transition: all 0.2s ease;
+    }
+
+        .chart-btn:hover {
+            background: rgba(59, 130, 246, 0.2) !important;
+            transform: scale(1.1);
+        }
+
+        .chart-btn:active {
+            transform: scale(0.95);
+        }
+
+    /* Responsive fullscreen */
+    @@media (max-width: 768px) {
+        .chart-fullscreen {
+            padding: 1rem !important;
+        }
+
+        .custom-fullscreen-content {
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+        }
+
+        .custom-fullscreen-header {
+            padding: 1rem;
+        }
+
+        .custom-fullscreen-chart {
+            padding: 1rem;
+        }
+    }
+
+    /* Filter button improvements */
+    .filter-btn {
+        transition: all 0.3s ease;
+    }
+
+        .filter-btn.btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-color: transparent;
+        }
+
+    .filter-count-badge {
+        animation: bounceIn 0.3s ease;
+    }
+
+    @@keyframes bounceIn {
+        0%
+
+    {
+        transform: scale(0);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+
+    }
+
+    .voice-search-btn.listening {
+        color: #10b981; /* Green or preferred color */
+        background: #e0f7fa;
+        animation: glow-mic 1s infinite alternate;
+    }
+
+    @@keyframes glow-mic {
+        from
+
+    {
+        box-shadow: 0 0 5px #10b981;
+    }
+
+    to {
+        box-shadow: 0 0 15px #10b981;
+    }
+
+    }
+
+
+    /* Empty state improvements */
+    .empty-state {
+        transition: all 0.3s ease;
+    }
+
+</style>

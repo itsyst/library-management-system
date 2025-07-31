@@ -1,0 +1,1031 @@
+﻿@using Library.Domain.Enums
+@model Library.MVC.ViewModels.MemberViewModel
+@{
+    ViewData["Title"] = "Redigera medlem";
+}
+@Html.AntiForgeryToken()
+
+<div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-11">
+            <div class="edit-member-container">
+
+                <!-- RUBRIKSEKTION -->
+                <header class="edit-header mb-5 position-relative overflow-hidden">
+                    <div class="header-pattern position-absolute w-100 h-100"></div>
+                    <div class="position-relative z-2">
+                        <div class="row align-iteml-center">
+                            <div class="col-lg-8">
+                                <div class="header-content">
+                                    <div class="edit-icon mb-3">
+                                        <div class="icon-wrapper">
+                                             <i class="fas fa-user-edit text-white"></i>
+                                             <div class="icon-pulse"></div>
+                                        </div>
+                                    </div>
+                                    <h1 class="display-6 fw-bold pb-2 header-title">Redigera medlem</h1>
+                                    <p class="page-subtitle fs-5 mb-0">
+                                        Uppdatera medlemsinformation för <strong class="text-primary">@Model?.Member?.Name</strong>
+                                    </p>
+
+                                    <!-- SNABBINFO -->
+                                    <div class="quick-info mt-4">
+                                        <div class="info-item">
+                                            <i class="bi bi-person-badge text-primary"></i>
+                                            <span class="info-label">Medlem #@Model?.Member?.Id</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <i class="bi bi-calendar-heart text-success"></i>
+                                            <span class="info-label">Registrerad @Model?.Member?.CreatedDate.ToString("MMM yyyy", new System.Globalization.CultureInfo("sv-SE"))</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <i class="bi bi-shield-check text-info"></i>
+                                            <span class="info-label status-@Model?.Member?.Status.ToString().ToLower()">@GetSwedishMemberStatus(Model.Member.Status)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 text-lg-end">
+                                <div class="member-avatar-large">
+                                    <div class="avatar-circle-large">
+                                        <span class="avatar-initials-large">
+                                            @(Model.Member.Name.Split(' ').Take(2).Select(n => n.FirstOrDefault()).Aggregate("", (acc, c) => acc + c))
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="header-actions d-flex flex-column gap-3 mt-3">
+                                    <a asp-controller="Members" asp-action="Index" class="btn btn-outline-secondary m-1">
+                                        <i class="bi bi-arrow-left mr-2"></i>
+                                        <span>Tillback till medlemmar</span>
+                                        <div class="btn-glow"></div>
+                                    </a>
+                                    <div class="export-actions d-flex gap-2 m-1">
+                                        <button type="button" class="btn btn-primary" id="directSaveBtn">
+                                            <i class="bi bi-check-circle mr-2"></i>
+                                            Spara ändringar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- REDIGERINGSFORMULÄR -->
+                <div class="row">
+                    <div class="col-xl-8">
+                        <div class="edit-form-card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-person-lines-fill mr-2"></i>
+                                    Personuppgifter
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="editMemberForm" asp-action="Edit" asp-route-id="@Model.Member.Id" method="post">
+                                    <input asp-for="@Model.Member.Id" type="hidden" />
+                                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                                    <div class="row g-4">
+                                        <!-- Namn -->
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input asp-for="@Model.Member.Name" type="text" class="form-control" id="name"
+                                                       value="@Model.Member.Name" required>
+                                                <label asp-for="@Model.Member.Name" for="name">Fullständigt namn</label>
+                                                <div class="form-text">
+                                                    <i class="bi bi-info-circle mr-1"></i>
+                                                    Ange för- och efternamn
+                                                </div>
+                                                <span asp-validation-for="@Model.Member.Name" class="validation-message"></span>
+                                            </div>
+                                        </div>
+                                        <!-- Personnummer -->
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input asp-for="@Model.Member.SSN" type="text" class="form-control" id="ssn" 
+                                                       value="@Model.Member.SSN" required pattern="[0-9]{8}-[0-9]{4}">
+                                                <label asp-for="@Model.Member.SSN">Personnummer</label>
+                                                <div class="form-text">
+                                                    <i class="bi bi-info-circle mr-1"></i>
+                                                    Format: YYYYMMDD-XXXX
+                                                </div>
+                                                <span asp-validation-for="@Model.Member.SSN" class="validation-message"></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- E-post -->
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input asp-for="@Model.Member.Email" type="email" class="form-control" id="email" 
+                                                       value="@Model.Member.Email" required>
+                                                <label asp-for="@Model.Member.Email">E-postadress</label>
+                                                <div class="form-text">
+                                                    <i class="bi bi-info-circle mr-1"></i>
+                                                    Används för kommunikation
+                                                </div>
+                                                <span asp-validation-for="@Model.Member.Email" class="validation-message"></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Telefon -->
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input asp-for="@Model.Member.PhoneNumber" type="tel" class="form-control" id="phone" 
+                                                       value="@Model.Member.PhoneNumber">
+                                                <label asp-for="@Model.Member.PhoneNumber">Telefonnummer</label>
+                                                <div class="form-text">
+                                                    <i class="bi bi-info-circle mr-1"></i>
+                                                    Valfritt fält
+                                                </div>
+                                                <span asp-validation-for="@Model.Member.PhoneNumber" class="validation-message"></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Adress -->
+                                        <div class="col-12">
+                                            <div class="form-floating">
+                                                <textarea asp-for="@Model.Member.Address" class="form-control" id="address" 
+                                                          style="height: 100px">@Model.Member.Address</textarea>
+                                                <label asp-for="@Model.Member.Address">Adress</label>
+                                                <div class="form-text">
+                                                    <i class="bi bi-info-circle mr-1"></i>
+                                                    Fullständig postadress
+                                                </div>
+                                                <span asp-validation-for="@Model.Member.Address" class="validation-message"></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Status -->
+                                        <div class="col-md-6">
+                                            <div class="form-floating w-50">
+                                                <select asp-for="@Model.Member.Status" class="form-control" id="status" required>
+                                                    <option value="">Välj status</option>
+                                                    @foreach (MembershipStatus status in Enum.GetValues<MembershipStatus>())
+                                                    {
+                                                        <option value="@status">
+                                                            @GetSwedishMemberStatus(status)
+                                                        </option>
+                                                    }
+                                                </select>
+                                                <label asp-for="@Model.Member.Status">Medlemsstatus</label>
+                                                <span asp-validation-for="@Model.Member.Status" class="validation-message"></span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Max lån -->
+                                        <div class="col-md-6">
+                                            <div class="form-floating">
+                                                <input asp-for="@Model.Member.MaxLoans" type="number" class="form-control" id="maxLoans" 
+                                                       value="@Model.Member.MaxLoans" min="1" max="3" required>
+                                                <label asp-for="@Model.Member.MaxLoans">Max antal lån</label>
+                                                <div class="form-text">
+                                                    <i class="bi bi-info-circle mr-1"></i>
+                                                    Medlemmen kan låna upp till detta antal böcker
+                                                </div>
+                                                <span asp-validation-for="@Model.Member.MaxLoans" class="validation-message"></span>
+                                            </div>
+                                        </div>
+                                        <!-- Anteckningar -->
+                                        <div class="col-12">
+                                            <div class="form-floating">
+                                                <textarea asp-for="@Model.Member.Notes" class="form-control" id="notes" 
+                                                          style="height: 150px">@Model.Member?.Notes</textarea>
+                                                <label asp-for="@Model.Member.Notes">Anteckningar</label>
+                                                <div class="form-text">
+                                                    <i class="bi bi-info-circle mr-1"></i>
+                                                    Interna anteckningar om medlemmen
+                                                </div>
+                                                <span asp-validation-for="@Model.Member.Notes" class="validation-message"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- FORMKNAPPAR -->
+                                    <div class="form-actions mt-4">
+                                        <div>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-check-circle mr-2"></i>
+                                                Spara ändringar
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info" id="previewBtn">
+                                                <i class="bi bi-eye mr-2"></i>
+                                                Förhandsgranska
+                                            </button>
+                                        </div>
+                                        <a asp-action="Details" asp-route-id="@Model.Member.Id" class="btn btn-outline-secondary">
+                                            <i class="bi bi-x-circle mr-2"></i>
+                                            Avbryt
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SIDOPANEL -->
+                    <div class="col-xl-4">
+                        <div class="sidebar-cards">
+
+                            <!-- MEDLEMSSTATISTIK -->
+                            <div class="sidebar-card stats-card">
+                                <div class="card-header">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-graph-up mr-2"></i>
+                                        Medlemsstatistik
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="stats-grid">
+                                        <div class="stat-item">
+                                            <div class="stat-icon bg-primary">
+                                                <i class="bi bi-book text-white"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <div class="stat-number">@Model.Member.Loans?.Count(l => l.ReturnDate == null)</div>
+                                                <div class="stat-label">Aktiva lån</div>
+                                            </div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-icon bg-success">
+                                                <i class="bi bi-check-circle text-white"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <div class="stat-number">@Model.Member.Loans?.Count(l => l.ReturnDate != null)</div>
+                                                <div class="stat-label">Återlämnade</div>
+                                            </div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-icon bg-warning">
+                                                <i class="bi bi-exclamation-triangle text-danger"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <div class="stat-number">@Model.Member.Loans?.Count(l => l.DueDate < DateTime.Now && l.ReturnDate == null)</div>
+                                                <div class="stat-label">Försenade</div>
+                                            </div>
+                                        </div>
+                                        <div class="stat-item">
+                                            <div class="stat-icon bg-info">
+                                                <i class="bi bi-currency-dollar text-white"></i>
+                                            </div>
+                                            <div class="stat-content">
+                                                <div class="stat-number">@Model.Member.Loans?.Where(l => l.Fee > 0).Sum(l => l.Fee).ToString("F2")</div>
+                                                <div class="stat-label">Avgifter (kr)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SNABBÅTGÄRDER -->
+                            <div class="sidebar-card actions-card">
+                                <div class="card-header">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-lightning mr-2"></i>
+                                        Snabbåtgärder
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <a asp-controller="Loans" asp-action="Create" asp-route-memberId="@Model.Member.Id"
+                                           class="btn btn-outline-primary m-1">
+                                            <i class="bi bi-plus-circle mr-2"></i>
+                                            Skapa nytt lån
+                                        </a>
+                                        <a asp-controller="Loans" asp-action="Index" asp-route-memberId="@Model.Member.Id"
+                                           class="btn btn-outline-info m-1">
+                                            <i class="bi bi-clock-history mr-2"></i>
+                                            Relaterat medlemslån
+                                        </a>
+                                        <button class="btn btn-outline-success m-1" id="sendEmailBtn">
+                                            <i class="bi bi-envelope mr-2"></i>
+                                            Skicka e-post
+                                        </button>
+                                        <button id="generateReportBtn" class="btn btn-outline-warning me-2" onClick="generateMemberReport()">
+                                            <i class="bi bi-file-earmark-text me-1"></i> Generera rapport
+                                            <span id="loadingSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- SENASTE AKTIVITET -->
+                            <div class="sidebar-card activity-card">
+                                <div class="card-header">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-activity mr-2"></i>
+                                        Senaste aktivitet
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    @if (Model.Member.Loans?.Any() == true)
+                                    {
+                                        <div class="activity-timeline">
+                                            @foreach (var loan in Model.Member.Loans.OrderByDescending(l => l.StartDate).Take(5))
+                                            {
+                                                <div class="activity-item justify-content-between">
+                                                    <div class="row p-1 m-1">
+                                                        <div class="activity-icon @GetLoanStatusClass(loan.Status) mr-2">
+                                                            <i class="bi bi-@GetLoanStatusIcon(loan.Status)"></i>
+                                                        </div>
+                                                        <div class="activity-content">
+                                                            <div class="activity-title">
+                                                                Lån #@loan.Id
+                                                            </div>
+                                                            <div class="activity-description">
+                                                                @loan.BookCopyLoans.Count() böcker
+                                                            </div>
+                                                            <div class="activity-time">
+                                                                @loan.StartDate.ToString("MMM dd, yyyy")
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <span class="badge-@GetLoanBadgeStatusClass(loan.Status) badge-pill">@GetSwedishLoanStatus(loan.Status)</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="empty-activity">
+                                            <i class="bi bi-inbox"></i>
+                                            <p>Ingen aktivitet att visa</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FÖRHANDSGRANSKNINGSMODAL -->
+            <div class="modal fade" id="previewModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Förhandsgranska ändringar</h5>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fa-solid fa-x"></i></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="preview-content" id="previewContent">
+                                <!-- Förhandsgranskningsinnehåll kommer att fyllas i av JavaScript -->
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Stäng</button>
+                            <button type="button" class="btn btn-primary" id="modalSaveBtn">Spara ändringar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetSwedishMemberStatus(MembershipStatus status)
+    {
+        return status switch
+        {
+            MembershipStatus.Active => "Aktiv",
+            MembershipStatus.Inactive => "Inaktiv",
+            MembershipStatus.Suspended => "Avstängd",
+            MembershipStatus.Expired => "Utgången",
+            MembershipStatus.Cancelled => "Avbruten",
+            _ => "Okänd"
+        };
+    }
+
+    private static string GetSwedishLoanStatus(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "Aktiv",
+            LoanStatus.Returned => "Återlämnad",
+            LoanStatus.Overdue => "Försenad",
+            LoanStatus.Lost => "Förlorad",
+            LoanStatus.Cancelled => "Avbruten",
+            _ => "Okänd"
+        };
+    }
+    private string GetLoanStatusClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "status-active",
+            LoanStatus.Overdue => "status-overdue",
+            LoanStatus.Cancelled => "status-cancelled",
+            LoanStatus.Returned => "status-returned",
+            LoanStatus.Lost => "status-lost",
+            _ => "status-unknown"
+        };
+    }
+    private string GetLoanBadgeStatusClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "primary",
+            LoanStatus.Overdue => "danger",
+            LoanStatus.Cancelled => "secondary",
+            LoanStatus.Returned => "success",
+            LoanStatus.Lost => "warning",
+            _ => "light"
+        };
+    }
+
+    private string GetLoanStatusIcon(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "play-circle",
+            LoanStatus.Returned => "check-circle",
+            LoanStatus.Overdue => "exclamation-circle",
+            LoanStatus.Lost => "x-circle",
+            LoanStatus.Cancelled => "slash-circle",
+            _ => "question-circle"
+        };
+    }
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        const memberId = @Model.Member.Id;
+
+        // ================================================
+        // HEADER: Utility Functions
+        // ================================================
+        // These are standalone helper functions used throughout the script.
+        function getAntiForgeryToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value ||
+                   document.querySelector('meta[name="__RequestVerificationToken"]')?.content;
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        // ================================================
+        // HEADER: Main Initialization Function
+        // ================================================
+        // This function runs on DOMContentLoaded and sets up all event listeners
+        // and initializes components. Order: Declare elements, attach listeners.
+        function initializeApp() {
+            // Declare DOM elements
+            const form = document.getElementById('editMemberForm');
+            const previewBtn = document.getElementById('previewBtn');
+            const directSaveBtn = document.getElementById('directSaveBtn');
+            const modalSaveBtn = document.getElementById('modalSaveBtn');
+            const sendEmailBtn = document.getElementById('sendEmailBtn');
+            const generateReportBtn = document.getElementById('generateReportBtn');
+
+            const previewModalElement = document.getElementById('previewModal');
+            const previewModal = new bootstrap.Modal(previewModalElement);
+
+            // Setup real-time validation for required fields
+            setupRealTimeValidation();
+
+            // Attach event listeners
+            setupFormSubmit(form, previewModal);
+            setupPreviewButton(previewBtn, form, previewModal);
+            setupDirectSave(directSaveBtn, form, previewModal);
+            setupModalSave(modalSaveBtn, form, previewModal);
+            setupSendEmail(sendEmailBtn);
+            setupGenerateReport(generateReportBtn);
+        }
+
+        // ================================================
+        // HEADER: Event Listener Setup Functions
+        // ================================================
+        // These functions attach specific event listeners to DOM elements
+        // for handling user interactions.
+
+        function setupRealTimeValidation() {
+            const requiredFields = ['name', 'ssn', 'email', 'status', 'maxLoans'];
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                field.addEventListener('input', () => validateField(field)); // Validera per fält vid input
+            });
+        }
+
+        function setupFormSubmit(form, previewModal) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (validateForm()) {
+                    submitForm(form, previewModal);
+                } else {
+                    toastr.error('Fyll i alla obligatoriska fält korrekt.');
+                }
+            });
+        }
+
+        function setupPreviewButton(previewBtn, form, previewModal) {
+            previewBtn.addEventListener('click', function() {
+                if (validateForm()) { // Validera innan preview
+                    generatePreview(form);
+                    previewModal.show();
+                } else {
+                    toastr.warning('Formuläret är inte giltigt. Kontrollera fälten.');
+                }
+            });
+        }
+
+        function setupDirectSave(directSaveBtn, form, previewModal) {
+            directSaveBtn.addEventListener('click', function() {
+                if (validateForm()) {
+                    submitForm(form, previewModal);
+                } else {
+                    toastr.error('Fyll i alla obligatoriska fält korrekt.');
+                }
+            });
+        }
+
+        function setupModalSave(modalSaveBtn, form, previewModal) {
+            modalSaveBtn.addEventListener('click', function() {
+                previewModal.hide();
+                if (validateForm()) {
+                    submitForm(form, previewModal);
+                } else {
+                    toastr.error('Fyll i alla obligatoriska fält korrekt.');
+                }
+            });
+        }
+
+        function setupSendEmail(sendEmailBtn) {
+            sendEmailBtn.addEventListener('click', function() {
+                const memberEmail = document.getElementById('email').value;
+                if (memberEmail) {
+                    window.location.href = `mailto:${memberEmail}`;
+                } else {
+                    Swal.fire('Fel', 'Ingen e-postadress angiven', 'error');
+                }
+            });
+        }
+
+        function setupGenerateReport(generateReportBtn) {
+            generateReportBtn.addEventListener('click', function() {
+                generateMemberReport(generateReportBtn);
+            });
+        }
+
+        // ================================================
+        // HEADER: Helper Functions
+        // ================================================
+        // These are utility functions for validation, submission, preview generation, and report handling.
+
+        async function generateMemberReport(reportBtn) {
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // Show loading state
+            if (loadingSpinner) loadingSpinner.classList.remove('d-none');
+            reportBtn.disabled = true;
+            reportBtn.textContent = 'Genererar...';
+
+            try {
+                const response = await fetch(`/Members/GenerateReport/${memberId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Nätverksfel vid generering av rapport');
+                }
+
+                // Handle file download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = response.headers.get('Content-Disposition')?.split('filename=')[1] || 'medlemsrapport.txt';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+                toastr.success('Rapport genererad och nedladdad framgångsrikt!');
+            } catch (error) {
+                console.error('Fel vid generering av rapport:', error);
+                toastr.error('Misslyckades med att generera rapport. Försök igen.');
+            } finally {
+                // Reset button state
+                if (loadingSpinner) loadingSpinner.classList.add('d-none');
+                reportBtn.disabled = false;
+                reportBtn.textContent = 'Generera rapport';
+            }
+        }
+
+        function validateField(field) {
+            const validationSpan = field.nextElementSibling?.nextElementSibling; // asp-validation-for span
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                if (validationSpan) validationSpan.textContent = 'Detta fält är obligatoriskt.';
+            } else {
+                field.classList.remove('is-invalid');
+                if (validationSpan) validationSpan.textContent = '';
+            }
+        }
+
+        function validateForm() {
+            const requiredFields = ['name', 'ssn', 'email', 'status', 'maxLoans'];
+            let isValid = true;
+
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                validateField(field); // Använd real-time validering
+                if (field.classList.contains('is-invalid')) isValid = false;
+            });
+
+            return isValid;
+        }
+
+        function submitForm(form, previewModal) {
+            const formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Serverfel: ${response.status} - ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Framgång!',
+                        html: `<div style="text-align: center;">Medlemmen har uppdaterats framgångsrikt.</div>`,
+                        icon: 'success',
+                        confirmButtonColor: '#5cb85c',
+                        confirmButtonText: 'OK',
+                    }).then(() => {
+                        window.location.href = data.redirectUrl || '/Members';
+                    });
+                } else {
+                    Swal.fire('Fel', data.message || 'Ett fel uppstod på servern', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Submission error:', error); // Logga full error för debug
+                Swal.fire('Fel', error.message || 'Ett oväntat fel uppstod. Kontrollera konsolen för detaljer.', 'error');
+            });
+        }
+
+        function generatePreview(form) {
+            const formData = new FormData(form);
+            const previewContent = document.getElementById('previewContent');
+
+            previewContent.innerHTML = `
+                <div class="preview-member">
+                    <h6 class="text-primary fw-bold">Medlemsinformation</h6>
+                    <table class="table table-borderless">
+                        <tr><td><strong>Namn:</strong></td><td>${formData.get('Member.Name')}</td></tr>
+                        <tr><td><strong>Personnummer:</strong></td><td>${formData.get('Member.SSN')}</td></tr>
+                        <tr><td><strong>E-post:</strong></td><td>${formData.get('Member.Email')}</td></tr>
+                        <tr><td><strong>Telefon:</strong></td><td>${formData.get('Member.PhoneNumber') || 'Ej angivet'}</td></tr>
+                        <tr><td><strong>Status:</strong></td><td>${getStatusText(formData.get('Member.Status'))}</td></tr>
+                        <tr><td><strong>Max lån:</strong></td><td>${formData.get('Member.MaxLoans')}</td></tr>
+                        <tr><td><strong>Adress:</strong></td><td>${formData.get('Member.Address') || 'Ej angivet'}</td></tr>
+                        <tr><td><strong>Anteckningar:</strong></td><td>${formData.get('Member.Notes') || 'Inga anteckningar'}</td></tr>
+                    </table>
+                </div>
+            `;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'Active': 'Aktiv',
+                'Inactive': 'Inaktiv',
+                'Suspended': 'Avstängd',
+                'Expired': 'Utgången'
+            };
+            return statusMap[status] || status;
+        }
+    </script>
+}
+
+<style>
+    /* Redigeringsspecifik styling */
+    .edit-header {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+        border-radius: var(--radius-xl);
+        padding: 3rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .edit-icon .icon-wrapper {
+        background: linear-gradient(135deg, #22c55e 0%, #3b82f6 100%);
+        position:relative;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        box-shadow: 0 8px 25px rgba(34, 197, 94, 0.3);
+    }
+
+    .icon-wrapper .icon-pulse {
+        position: absolute;
+        width: 100px;
+        height: 100px;
+        border: 2px solid currentColor;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+        opacity: 0.6;
+    }
+
+    .quick-info {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.05rem .5rem;
+        background: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .member-avatar-large {
+        display: flex;
+        justify-content: center;
+    }
+
+    .avatar-circle-large {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #22c55e 0%, #3b82f6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 600;
+        box-shadow: 0 8px 25px rgba(34, 197, 94, 0.3);
+    }
+
+    .edit-form-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        margin-bottom: 2rem;
+    }
+
+        .edit-form-card .card-header {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.1);
+            padding: 1.5rem;
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        }
+
+    .form-floating {
+        margin-bottom: 1rem;
+    }
+
+        .form-floating .form-control:focus {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.25);
+        }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .card-header .card-title {
+        color: var(--primary-color);
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .sidebar-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .sidebar-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+        .sidebar-card .card-header {
+            background: rgba(248, 250, 252, 0.8);
+            border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .sidebar-card .card-title {
+            color: var(--primary-color);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .stat-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .stat-number {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gray-800);
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+        font-weight: 500;
+    }
+
+    .activity-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-md);
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .activity-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        color: white;
+        flex-shrink: 0;
+    }
+
+        .activity-icon.status-active {
+            background: var(--primary-color);
+        }
+
+        .activity-icon.status-expired {
+            background: var(--warning-color);
+        }
+
+        .activity-icon.status-inactive {
+            background: var(--gray-500);
+        }
+
+        .activity-icon.status-overdue {
+            background: var(--danger-color);
+        }
+
+        .activity-icon.status-returned {
+            background: var(--success-color);
+        }
+
+        .activity-icon.status-suspended {
+            background: var(--warning-color);
+        }
+
+    .activity-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--gray-800);
+    }
+
+    .activity-description {
+        font-size: 0.8rem;
+        color: var(--gray-600);
+    }
+
+    .activity-time {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+    }
+
+    .empty-activity {
+        text-align: center;
+        padding: 2rem;
+        color: var(--gray-400);
+    }
+
+        .empty-activity i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+    .info-label.status-active {
+        color: black !important;
+    }
+
+    .status-active {
+        color: white;
+    }
+
+    .status-inactive {
+        color: #6b7280;
+    }
+
+    .status-suspended {
+        color: #ef4444;
+    }
+
+    .status-expired {
+        color: #f59e0b;
+    }
+
+    .preview-member {
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+        .preview-member h6 {
+            color: var(--gray-700);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .preview-member .table td {
+            padding: 0.5rem 0;
+            border: none;
+        }
+
+    .validation-message {
+        color: var(--danger-color);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: block;
+    }
+
+    @@media (max-width: 768px) {
+        .edit-header {
+            padding: 2rem 1rem;
+        }
+
+        .quick-info {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+            .form-actions .btn {
+                width: 100%;
+            }
+    }
+</style>
