@@ -20,7 +20,7 @@ public class Loan : AuditableEntity
     [Display(Name = "Returdatum")]
     [DataType(DataType.DateTime)]
     public DateTime? ReturnDate { get; set; }
-
+ 
     [Required(ErrorMessage = "Avgift är obligatoriskt.")]
     [Range(0, 999999.99, ErrorMessage = "Avgiften måste vara mellan 0 och 999999,99 SEK.")]
     public decimal Fee { get; set; } = 0;

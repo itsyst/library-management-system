@@ -1,56 +1,57 @@
-﻿@model IEnumerable<Library.Domain.BookDetails>
+﻿@using Library.Domain.Entities
+@model IEnumerable<BookDetails>
 
 @{
-    ViewData["Title"] = "Discover books";
+    ViewData["Title"] = "Upptäck böcker";
 }
 
-<!-- ---------- BOOK GRID ---------- -->
+<!-- ---------- BOKRUTNÄT ---------- -->
 <div class="container">
     <div class="row g-4">
         @foreach (var book in Model)
         {
             <div class="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4">
                 <div class="home-book-card position-relative">
-                    <!-- Main card container -->
+                    <!-- Huvudkortcontainer -->
                     <div class="book-card-inner">
-                        <!-- Image container with overlay -->
+                        <!-- Bildcontainer med overlay -->
                         <div class="home-image-container position-relative overflow-hidden">
                             <img src="@book.ImageBinary"
                                  alt="@book.Title"
                                  class="book-image" />
 
-                            <!-- Gradient overlay -->
+                            <!-- Gradientoverlay -->
                             <div class="home-gradient-overlay"></div>
 
-                            <!-- Status badge -->
+                            <!-- Statusemblem -->
                             <div class="status-badge @(book.Copies.Any() ? "available" : "unavailable")">
                                 <i class="fas @(book.Copies.Any() ? "fa-check-circle" : "fa-times-circle")"></i>
-                                @(book.Copies.Any() ? "Available" : "Unavailable")
+                                @(book.Copies.Any() ? "Tillgänglig" : "Ej tillgänglig")
                             </div>
 
-                            <!-- Book info overlay -->
+                            <!-- Bokinformation overlay -->
                             <div class="home-book-overlay position-absolute">
                                 <div class="home-book-meta">
                                     <div class="home-copies-count">
                                         <span class="home-count-number">@book.Copies.Count()</span>
-                                        <span class="home-count-label">copies</span>
+                                        <span class="home-count-label">exemplar</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Content area -->
+                        <!-- Innehållsområde -->
                         <div class="home-book-content">
                             <div class="home-card-info">
                                 <h3 class="home-book-title">@book.Title</h3>
-                                <p class="home-book-author">by: @book.Author?.Name</p>
+                                <p class="home-book-author">av: @book.Author?.Name</p>
                                 <p class="home-book-description">@book.Description</p>
                             </div>
-                            <!-- Action area -->
+                            <!-- Åtgärdsområde -->
                             <div class="card-actions">
-                                <a asp-controller="Books" asp-action="Edit" asp-route-id="@book.ID"
+                                <a asp-controller="Books" asp-action="Edit" asp-route-id="@book.Id"
                                    class="btn-modern">
-                                    <span>Manage Book</span>
+                                    <span>Hantera bok</span>
                                     <i class="fas fa-arrow-right"></i>
                                 </a>
                             </div>

@@ -2,6 +2,7 @@
 using Library.Domain.Enums;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Library.Domain.Entities;
 
@@ -53,33 +54,45 @@ public class Member : AuditableEntity
     [Range(1, 10, ErrorMessage = "Maximalt antal lån måste vara mellan 1 och 10")]
     public int MaxLoans { get; set; } = 3;
 
+    [Display(Name = "Anteckningar")]
+    [StringLength(500, ErrorMessage = "Anteckningarna får vara högst 500 tecken")]
+    public string? Notes { get; set; }
+
     [ValidateNever]
     public virtual ICollection<Loan> Loans { get; set; } = new List<Loan>();
 
     // Beräknade egenskaper
+    [NotMapped]
     [Display(Name = "Aktiva lån")]
-    public int ActiveLoansCount => Loans?.Count(l => l.ReturnDate == null) ?? 0;
-
+    public int ActiveLoansCount => Loans?.Count(l => !l.ReturnDate.HasValue || l.ReturnDate == null) ?? 0;
+    
+    [NotMapped]
     [Display(Name = "Kan låna")]
     public bool CanBorrow => ActiveLoansCount < MaxLoans && Status == MembershipStatus.Active;
 
+    [NotMapped]
     [Display(Name = "Försenade lån")]
     public int OverdueLoansCount => Loans?.Count(l => l.IsOverdue) ?? 0;
 
+    [NotMapped]
     [Display(Name = "Totala avgifter")]
     public decimal TotalFees => Loans?.Sum(l => l.Fee) ?? 0;
 
+    [NotMapped]
     [Display(Name = "Obetalda avgifter")]
     public decimal OutstandingFees => Loans?.Where(l => l.ReturnDate == null).Sum(l => l.Fee) ?? 0;
 
+    [NotMapped]
     [Display(Name = "Ålder")]
     public int? Age => DateOfBirth.HasValue ?
         DateTime.Today.Year - DateOfBirth.Value.Year -
         (DateTime.Today.DayOfYear < DateOfBirth.Value.DayOfYear ? 1 : 0) : null;
 
+    [NotMapped]
     [Display(Name = "Medlem i antal dagar")]
     public int MembershipDays => (DateTime.Today - MembershipStartDate.Date).Days;
 
+    [NotMapped]
     [Display(Name = "Fullständig information")]
     public string FullDisplayName => $"{Name} ({Email})";
 

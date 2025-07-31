@@ -5,5 +5,6 @@ public enum MembershipStatus
     Active,
     Suspended,
     Expired,
-    Cancelled
+    Cancelled,
+    Inactive
 }
