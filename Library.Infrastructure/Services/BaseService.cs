@@ -61,7 +61,7 @@ public partial class BaseService<T> : IAsyncGenericRepository<T> where T : class
         var entity = await GetByIdAsync(id);
         if (entity == null)
             throw new KeyNotFoundException($"Entitet av typen {typeof(T).Name} med Id={id} hittades inte.");
-
+ 
         _table.Remove(entity);
         await _context.SaveChangesAsync();
 
