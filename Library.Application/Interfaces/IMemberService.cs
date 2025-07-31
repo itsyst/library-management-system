@@ -8,6 +8,7 @@ public interface IMemberService : IAsyncGenericRepository<Member>
     Task<IReadOnlyList<Member>> GetAllMembersAsync(
         Expression<Func<Member, bool>>? filter = null,
         Func<IQueryable<Member>, IOrderedQueryable<Member>>? orderBy = null,
+        bool includeAllProperties = false,
         params Expression<Func<Member, object>>[] includeProperties);
 
     Task<Member?> GetMemberByIdAsync(int id, bool includeProperties = false);
@@ -21,4 +22,9 @@ public interface IMemberService : IAsyncGenericRepository<Member>
     Task<IReadOnlyList<Member>> GetMembersWithOverdueLoans();
     Task<bool> CanMemberBorrowAsync(int memberId);
     Task<int> GetActiveLoanCountAsync(int memberId);
+
+    Task AddRangeAsync(IEnumerable<Member> members);
+    Task<HashSet<string>> GetExistingSSNsAsync();
+    Task<HashSet<string>> GetExistingEmailsAsync();
+
 }

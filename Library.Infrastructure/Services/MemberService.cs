@@ -22,6 +22,7 @@ public class MemberService : BaseService<Member>, IMemberService
     public async Task<IReadOnlyList<Member>> GetAllMembersAsync(
         Expression<Func<Member, bool>>? filter = null,
         Func<IQueryable<Member>, IOrderedQueryable<Member>>? orderBy = null,
+        bool includeAllProperties = false,
         params Expression<Func<Member, object>>[] includeProperties)
     {
         try
@@ -34,9 +35,17 @@ public class MemberService : BaseService<Member>, IMemberService
                 query = query.Where(filter);
             }
 
-            // Apply includes if provided
-            if (includeProperties != null && includeProperties.Length > 0)
+            // Include all navigation properties if requested
+            if (includeAllProperties)
             {
+                query = query
+                    .Include(m => m.Loans)
+                        .ThenInclude(l => l.BookCopyLoans)
+                            .ThenInclude(bc => bc.BookCopy);
+            }
+            else if (includeProperties != null && includeProperties.Length > 0)
+            {
+                // Apply specific includes if provided
                 foreach (var includeProperty in includeProperties)
                 {
                     query = query.Include(includeProperty);
@@ -62,6 +71,7 @@ public class MemberService : BaseService<Member>, IMemberService
             throw new InvalidOperationException("Error retrieving members", ex);
         }
     }
+
 
     /// <summary>
     /// Gets a member by ID with optional includes
@@ -230,10 +240,9 @@ public class MemberService : BaseService<Member>, IMemberService
                 .Where(m => m.Loans.Any(l => l.ReturnDate == null && l.DueDate < DateTime.UtcNow))
                 .CountAsync();
 
-            //var totalOutstandingFees = await _context.Loans
-            //    .Where(l => l.ReturnDate == null && l.Fee > 0)
-            //    .SumAsync(l => l.Fee);
-            var totalOutstandingFees = 0;
+            var totalOutstandingFees = await _table
+                .Select(l => l.Loans.Where(l => l.ReturnDate == null && l.Fee > 0))
+                .SumAsync(static l => l.Sum(static x => x.Fee));
  
             var newMembersThisMonth = await _table
                 .Where(m => m.MembershipStartDate.Month == DateTime.Now.Month &&
@@ -254,6 +263,27 @@ public class MemberService : BaseService<Member>, IMemberService
         {
             throw new InvalidOperationException("Error calculating member statistics", ex);
         }
+    }
+
+    public async Task AddRangeAsync(IEnumerable<Member> members)
+    {
+        await _table.AddRangeAsync(members);
+    }
+
+    public async Task<HashSet<string>> GetExistingSSNsAsync()
+    {
+        return new HashSet<string>(
+            await _table.Select(m => m.SSN).ToListAsync(),
+            StringComparer.OrdinalIgnoreCase
+        );
+    }
+
+    public async Task<HashSet<string>> GetExistingEmailsAsync()
+    {
+        return new HashSet<string>(
+            await _table.Select(m => m.Email).ToListAsync(),
+            StringComparer.OrdinalIgnoreCase
+        );
     }
 }
  

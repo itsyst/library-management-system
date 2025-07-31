@@ -5,6 +5,9 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
 	<ItemGroup>
+	  <PackageReference Include="CsvHelper" />
+	</ItemGroup>
+	<ItemGroup>
 		<ProjectReference Include="..\Library.Domain\Library.Domain.csproj" />
 	</ItemGroup>
 </Project>
