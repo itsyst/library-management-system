@@ -459,9 +459,10 @@
         {
             MembershipStatus.Active => "Aktiv",
             MembershipStatus.Suspended => "Avstängd",
-            MembershipStatus.Expired => "Utgången",
+            MembershipStatus.Expired => "Utgått",
+            MembershipStatus.Inactive => "Inaktiv",
             MembershipStatus.Cancelled => "Avbruten",
-            _ => "Okänd"
+            _ => "Okänt"
         };
     }
 
@@ -492,6 +493,8 @@
 }
 
 @section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
     <script>
         // Konfigurera toastr
         toastr.options = {
