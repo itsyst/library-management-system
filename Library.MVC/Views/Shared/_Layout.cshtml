@@ -1,22 +1,22 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Library</title>
-    @await Html.PartialAsync("_StylesheetPartial")
-
-</head>
-<body>
-    @await Html.PartialAsync("_NavBar")
-    <div class="container-fluid">
-        <main role="main" class="pb-3">
-            @await Html.PartialAsync("_Notification")
-            @RenderBody()
-        </main>
-    </div>
-    @await Html.PartialAsync("_Footer")
-    @await Html.PartialAsync("_ScriptsPartial")
-    @RenderSection("Scripts", required: false)
-</body>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>@ViewData["Title"] - Library</title>
+        @await Html.PartialAsync("_StylesheetPartial")
+        @RenderSection("Styles", required: false)
+    </head>
+    <body>
+        @await Html.PartialAsync("_NavBar")
+        <div class="container-fluid">
+            <main role="main" class="pb-3">
+                @await Html.PartialAsync("_Notification")
+                @RenderBody()
+            </main>
+        </div>
+        @await Html.PartialAsync("_Footer")
+        @await Html.PartialAsync("_ScriptsPartial")
+        @RenderSection("Scripts", required: false)
+    </body>
 </html>
