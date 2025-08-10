@@ -26,6 +26,8 @@ public class MembersController(
     private readonly IMemberService _memberService = memberService;
     private readonly IBookCopyLoanService _bookCopyLoanService = bookCopyLoanService;
     private readonly ILogger<MembersController> _logger;
+    private static readonly string[] data = ["Dubblett personnummer"];
+    private static readonly string[] dataArray = ["Dubblett e-post"];
     #endregion
 
     #region CRUD Operationer
@@ -224,7 +226,7 @@ public class MembersController(
 
             if (existingMemberBySSN != null)
             {
-                return Json(new { success = false, message = "En medlem med detta personnummer finns redan.", errors = new { Member_SSN = new[] { "Dubblett personnummer" } } });
+                return Json(new { success = false, message = "En medlem med detta personnummer finns redan.", errors = new { Member_SSN = data } });
             }
 
             var existingMemberByEmail = await _memberService.GetMemberOrDefaultAsync(
@@ -232,7 +234,7 @@ public class MembersController(
 
             if (existingMemberByEmail != null)
             {
-                return Json(new { success = false, message = "En medlem med denna e-postadress finns redan.", errors = new { Member_Email = new[] { "Dubblett e-post" } } });
+                return Json(new { success = false, message = "En medlem med denna e-postadress finns redan.", errors = new { Member_Email = dataArray } });
             }
 
             // Skapa ny medlem
@@ -436,7 +438,7 @@ public class MembersController(
                     SuspendedMembers = members.Count(m => m.Status == MembershipStatus.Suspended),
                     MembersWithOverdueBooks = members.Count(m => m.Loans.Any(l => l.IsOverdue)),
                     TotalOutstandingFees = members.Sum(m => m.Loans.Sum(l => l.Fee)),
-                    TotalBooksBorrowed = members.Sum(m => m.Loans.Sum(x => x.BookCopyLoans.Count))
+                    TotalBooksBorrowed = members.Sum(m => m.Loans.Sum(selector: x => x.BookCopyLoans.Count))
                 }
             };
 
@@ -512,7 +514,7 @@ public class MembersController(
                 ActiveMembers = members.Count(m => m.Status == MembershipStatus.Active),
                 SuspendedMembers = members.Count(m => m.Status == MembershipStatus.Suspended),
                 MembersWithOverdueBooks = members.Count(m => m.Loans.Any(l => l.IsOverdue)),
-                TotalOutstandingFees = members.Sum(m => m.Loans.Sum(l => l.Fee)),
+                TotalOutstandingFees = members.Sum(m => m.Loans.Sum(selector: l => l.Fee)),
                 NewMembersThisMonth = members.Count(m => m.MembershipStartDate.Year == now.Year && m.MembershipStartDate.Month == now.Month),
                 AverageLoansPerMember = members.Any() ? members.Average(m => m.Loans.Count) : 0,
                 MembersWhoCanBorrow = members.Count(m => m.CanBorrow),
@@ -541,18 +543,16 @@ public class MembersController(
             if (deep)
             {
                 // Calculate top borrowers (top 10 members by total loans)
-                topBorrowers = members
+                topBorrowers = [.. members
                     .OrderByDescending(m => m.Loans.Count)
                     .Take(10)
                     .Select(m => new
-                    {
-                        Name = m.Name,
+                    { m.Name,
                         TotalLoans = m.Loans.Count
-                    })
-                    .ToList<object>();
+                    })];
 
                 // Calculate fee trends (last 12 months)
-                feeTrends = Enumerable.Range(0, 12)
+                feeTrends = [.. Enumerable.Range(0, 12)
                     .Select(i => now.AddMonths(-i))
                     .OrderBy(d => d)
                     .Select(d => new
@@ -561,11 +561,10 @@ public class MembersController(
                         TotalFees = loans
                             .Where(l => l.StartDate.Year == d.Year && l.StartDate.Month == d.Month)
                             .Sum(l => l.Fee)
-                    })
-                    .ToList<object>();
+                    })];
 
                 // Calculate loan duration (histogram, binned by 5-day intervals)
-                loanDuration = loans
+                loanDuration = [.. loans
                     .Where(l => l.ReturnDate != null)
                     .Select(l => (l.ReturnDate.Value - l.StartDate).Days)
                     .GroupBy(d => Math.Min(d / 5, 10) * 5) // Bin by 5-day intervals, max 50 days
@@ -574,11 +573,10 @@ public class MembersController(
                     {
                         Range = $"{g.Key}-{g.Key + 4} dagar",
                         Count = g.Count()
-                    })
-                    .ToList<object>();
+                    })];
 
                 // Calculate LoanHistoryStatistics for top 5 members
-                loanHistoryStatistics = members
+                loanHistoryStatistics = [.. members
                     .OrderByDescending(m => m.Loans.Count)
                     .Take(5)
                     .Select(m => new
@@ -589,11 +587,10 @@ public class MembersController(
                         MemberActiveLoans = m.Loans.Count(l => l.Status == LoanStatus.Active),
                         MemberTotalFees = m.Loans.Sum(l => l.Fee),
                         TotalBooksLoaned = m.Loans.Sum(l => l.TotalBooks),
-                        AverageBookPopularity = m.Loans.Any() ? m.Loans.Average(l => l.BookCopyLoans?.Count ?? 0) : 0,
+                        AverageBookPopularity = m.Loans.Count != 0 ? m.Loans.Average(l => l.BookCopyLoans?.Count ?? 0) : 0,
                         MemberSince = m.MembershipStartDate,
                         DaysSinceMembership = (now - m.MembershipStartDate).Days
-                    })
-                    .ToList<object>();
+                    })];
             }
 
             // Declare analyticsData once with all properties
@@ -705,7 +702,7 @@ public class MembersController(
         try
         {
             if (string.IsNullOrWhiteSpace(term))
-                return Json(new { success = true, data = new object[0] });
+                return Json(new { success = true, data = Array.Empty<object>() });
 
             var members = await _memberService.GetAllMembersAsync(
                 filter: m => m.Name.Contains(term) ||
@@ -841,7 +838,7 @@ public class MembersController(
             if (memberLoans.Count > 500)
             {
                 _logger.LogWarning("Too many loans ({Count}) for member {MemberId}; truncating report.", memberLoans.Count, memberId);
-                memberLoans = memberLoans.Take(500).ToList(); // Begränsa för prestanda
+                memberLoans = [.. memberLoans.Take(500)]; // Begränsa för prestanda
             }
 
             // Beräkna statistik
@@ -888,56 +885,52 @@ public class MembersController(
                 orderBy: x => x.OrderBy(m => m.Name),
                 includeProperties: m => m.Loans);
 
-            using (var memoryStream = new MemoryStream())
+            using var memoryStream = new MemoryStream();
+            using (var streamWriter = new StreamWriter(memoryStream, new UTF8Encoding(false)))
             {
-                using (var streamWriter = new StreamWriter(memoryStream, new UTF8Encoding(false)))
+                var config = GetCsvConfig(null, streamWriter);
+                using var csv = new CsvWriter(streamWriter, config);
+                // Write headers
+                var headers = new[]
                 {
-                    var config = GetCsvConfig(null, streamWriter);
-                    using (var csv = new CsvWriter(streamWriter, config))
-                    {
-                        // Write headers
-                        var headers = new[]
-                        {
                         "Namn", "E-post", "Personnummer", "Telefon", "Adress",
                         "Födelsedatum", "Medlemskap Startdatum", "Status", "MaxLån",
                         "Skapelsedatum", "Skapad av", "Uppdaterad av", "Raderad",
                         "Raderingsdatum", "Raderad av", "Anteckningar"
                     };
 
-                        foreach (var header in headers)
-                        {
-                            csv.WriteField(header);
-                        }
-                        await csv.NextRecordAsync();
-
-                        // Write member data
-                        foreach (var member in members)
-                        {
-                            csv.WriteField(member.Name ?? "");
-                            csv.WriteField(member.Email ?? "");
-                            csv.WriteField(member.SSN ?? "");
-                            csv.WriteField(member.PhoneNumber ?? "");
-                            csv.WriteField(member.Address ?? "");
-                            csv.WriteField(member.DateOfBirth?.ToString("yyyy-MM-dd") ?? "");
-                            csv.WriteField(member.MembershipStartDate.ToString("yyyy-MM-dd"));
-                            csv.WriteField(member.Status == MembershipStatus.Active ? "Aktiv" : "Inaktiv");
-                            csv.WriteField(member.MaxLoans.ToString());
-                            csv.WriteField(member.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss"));
-                            csv.WriteField(member.CreatedBy ?? "");
-                            csv.WriteField(member.UpdatedBy ?? "");
-                            csv.WriteField(member.IsDeleted ? "True" : "False");
-                            csv.WriteField(member.DeletedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "");
-                            csv.WriteField(member.DeletedBy ?? "");
-                            csv.WriteField(member.Notes ?? "");
-
-                            await csv.NextRecordAsync();
-                        }
-                    }
+                foreach (var header in headers)
+                {
+                    csv.WriteField(header);
                 }
+                await csv.NextRecordAsync();
 
-                var fileName = $"medlemmar_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-                return File(memoryStream.ToArray(), "text/csv; charset=utf-8", fileName);
+                // Write member data
+                foreach (var member in members)
+                {
+                    csv.WriteField(member.Name ?? "");
+                    csv.WriteField(member.Email ?? "");
+                    csv.WriteField(member.SSN ?? "");
+                    csv.WriteField(member.PhoneNumber ?? "");
+                    csv.WriteField(member.Address ?? "");
+                    csv.WriteField(member.DateOfBirth?.ToString("yyyy-MM-dd") ?? "");
+                    csv.WriteField(member.MembershipStartDate.ToString("yyyy-MM-dd"));
+                    csv.WriteField(member.Status == MembershipStatus.Active ? "Aktiv" : "Inaktiv");
+                    csv.WriteField(member.MaxLoans.ToString());
+                    csv.WriteField(member.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss"));
+                    csv.WriteField(member.CreatedBy ?? "");
+                    csv.WriteField(member.UpdatedBy ?? "");
+                    csv.WriteField(member.IsDeleted ? "True" : "False");
+                    csv.WriteField(member.DeletedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "");
+                    csv.WriteField(member.DeletedBy ?? "");
+                    csv.WriteField(member.Notes ?? "");
+
+                    await csv.NextRecordAsync();
+                }
             }
+
+            var fileName = $"medlemmar_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            return File(memoryStream.ToArray(), "text/csv; charset=utf-8", fileName);
         }
         catch (Exception ex)
         {
@@ -989,222 +982,220 @@ public class MembersController(
             using (var reader = new StreamReader(stream, new UTF8Encoding(true, true)))
             {
                 var config = GetCsvConfig(reader, null);
-                using (var csv = new CsvReader(reader, config))
+                using var csv = new CsvReader(reader, config);
+                try
                 {
-                    try
+                    // Read and validate header
+                    await csv.ReadAsync();
+                    csv.ReadHeader();
+
+                    if (csv.HeaderRecord == null || csv.HeaderRecord.Length == 0)
                     {
-                        // Read and validate header
-                        await csv.ReadAsync();
-                        csv.ReadHeader();
-
-                        if (csv.HeaderRecord == null || csv.HeaderRecord.Length == 0)
-                        {
-                            return Json(new { success = false, message = "Filen verkar vara tom eller har ingen rubrikrad." });
-                        }
-
-                        // Verify essential headers exist
-                        var requiredHeaders = new[] { "Namn", "E-post", "Personnummer" };
-                        var headerRecord = csv.HeaderRecord.Select(h => h.Replace("\"", "").Trim()).ToArray();
-                        var missingHeaders = requiredHeaders.Where(h => !headerRecord.Contains(h, StringComparer.OrdinalIgnoreCase)).ToList();
-
-                        if (missingHeaders.Any())
-                        {
-                            _logger.LogWarning("Missing headers: {Missing}. Available headers: {Available}",
-                                string.Join(", ", missingHeaders), string.Join(", ", headerRecord));
-
-                            return Json(new
-                            {
-                                success = false,
-                                message = $"Saknade obligatoriska rubriker: {string.Join(", ", missingHeaders)}",
-                                details = $"Tillgängliga rubriker: {string.Join(", ", headerRecord)}"
-                            });
-                        }
-
-                        // Create header index mapping (case-insensitive)
-                        var headerIndexMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                        for (int i = 0; i < csv.HeaderRecord.Length; i++)
-                        {
-                            var cleanHeader = csv.HeaderRecord[i].Replace("\"", "").Trim();
-                            headerIndexMap[cleanHeader] = i;
-                        }
-
-                        int processedRows = 0;
-                        while (await csv.ReadAsync())
-                        {
-                            processedRows++;
-                            var rowNumber = csv.Parser.Row;
-
-                            // Limit processing to prevent memory issues
-                            if (processedRows > 1000)
-                            {
-                                warnings.Add("Import begränsad till 1000 rader för prestanda.");
-                                break;
-                            }
-
-                            try
-                            {
-                                // Validate field count matches header
-                                if (csv.Parser.Count != csv.HeaderRecord.Length)
-                                {
-                                    errors.Add($"Rad {rowNumber}: Antal fält ({csv.Parser.Count}) matchar inte rubriker ({csv.HeaderRecord.Length})");
-                                    continue;
-                                }
-
-                                // Get fields by header index (case-insensitive)
-                                var getField = new Func<string, string>(header =>
-                                {
-                                    if (headerIndexMap.TryGetValue(header, out int index) && index < csv.Parser.Count)
-                                    {
-                                        var value = csv.Parser[index]?.Trim();
-                                        return string.IsNullOrEmpty(value) ? null : value;
-                                    }
-                                    return null;
-                                });
-
-                                var name = getField("Namn");
-                                var email = getField("E-post");
-                                var ssn = getField("Personnummer");
-                                var phone = getField("Telefon");
-                                var address = getField("Adress");
-                                var dateOfBirth = getField("Födelsedatum");
-                                var startDateStr = getField("Medlemskap Startdatum");
-                                var status = getField("Status") ?? "Aktiv";
-                                var notes = getField("Anteckningar");
-
-                                // Validate required fields
-                                var fieldErrors = new List<string>();
-                                if (string.IsNullOrWhiteSpace(ssn))
-                                    fieldErrors.Add("Personnummer saknas");
-                                if (string.IsNullOrWhiteSpace(name))
-                                    fieldErrors.Add("Namn saknas");
-                                if (string.IsNullOrWhiteSpace(email))
-                                    fieldErrors.Add("E-post saknas");
-
-                                if (fieldErrors.Any())
-                                {
-                                    errors.Add($"Rad {rowNumber}: {string.Join(", ", fieldErrors)}");
-                                    continue;
-                                }
-
-                                // Create record
-                                var record = new Member
-                                {
-                                    Name = name,
-                                    Email = email,
-                                    SSN = ssn,
-                                    PhoneNumber = phone,
-                                    Address = address,
-                                    Status = status.Equals("Aktiv", StringComparison.OrdinalIgnoreCase)
-                                        ? MembershipStatus.Active
-                                        : MembershipStatus.Inactive,
-                                    Notes = notes
-                                };
-
-                                // Parse and validate dates
-                                if (!string.IsNullOrEmpty(dateOfBirth))
-                                {
-                                    if (DateTime.TryParseExact(dateOfBirth, new[] { "yyyy-MM-dd", "yyyy/MM/dd", "dd/MM/yyyy", "dd-MM-yyyy" },
-                                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var dob))
-                                    {
-                                        if (dob > DateTime.Now.AddYears(-10) || dob < DateTime.Now.AddYears(-120))
-                                        {
-                                            errors.Add($"Rad {rowNumber}: Orealistiskt födelsedatum: {dateOfBirth}");
-                                            continue;
-                                        }
-                                        record.DateOfBirth = dob;
-                                    }
-                                    else
-                                    {
-                                        errors.Add($"Rad {rowNumber}: Ogiltigt format för födelsedatum: '{dateOfBirth}'");
-                                        continue;
-                                    }
-                                }
-
-                                if (!string.IsNullOrEmpty(startDateStr))
-                                {
-                                    if (DateTime.TryParseExact(startDateStr, new[] { "yyyy-MM-dd", "yyyy/MM/dd", "dd/MM/yyyy", "dd-MM-yyyy" },
-                                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var startDate))
-                                    {
-                                        record.MembershipStartDate = startDate;
-                                    }
-                                    else
-                                    {
-                                        errors.Add($"Rad {rowNumber}: Ogiltigt format för startdatum: '{startDateStr}'");
-                                        continue;
-                                    }
-                                }
-
-                                // Validate SSN format
-                                if (!Regex.IsMatch(record.SSN, @"^\d{6,8}-?\d{4}$"))
-                                {
-                                    errors.Add($"Rad {rowNumber}: Ogiltigt personnummerformat: {record.SSN}");
-                                    continue;
-                                }
-
-                                // Validate email format
-                                if (!IsValidEmail(record.Email))
-                                {
-                                    errors.Add($"Rad {rowNumber}: Ogiltig e-postadress: {record.Email}");
-                                    continue;
-                                }
-
-                                // Check duplicates and skip if found
-                                var duplicateErrors = new List<string>();
-                                if (existingSSNs.Contains(record.SSN) || currentFileSSNs.Contains(record.SSN))
-                                {
-                                    duplicateErrors.Add($"Personnummer {record.SSN}");
-                                }
-                                if (existingEmails.Contains(record.Email) || currentFileEmails.Contains(record.Email))
-                                {
-                                    duplicateErrors.Add($"E-post {record.Email}");
-                                }
-
-                                if (duplicateErrors.Any())
-                                {
-                                    skippedRecords.Add($"Rad {rowNumber}: {record.Name} - {string.Join(", ", duplicateErrors)} finns redan");
-                                    continue;
-                                }
-
-                                // Set defaults for new records
-                                record.CreatedDate = DateTime.UtcNow;
-                                record.MembershipStartDate = record.MembershipStartDate == default
-                                    ? DateTime.UtcNow.Date
-                                    : record.MembershipStartDate;
-                                record.MaxLoans = 3; // Default value
-                                record.CreatedBy = User.Identity?.Name ?? "Import";
-
-                                // Track identifiers for duplicates within file
-                                currentFileSSNs.Add(record.SSN);
-                                currentFileEmails.Add(record.Email);
-                                validRecords.Add(record);
-                            }
-                            catch (Exception ex)
-                            {
-                                errors.Add($"Rad {rowNumber}: Fel vid bearbetning - {ex.Message}");
-                            }
-                        }
-                    }
-                    catch (CsvHelperException ex)
-                    {
-                        return Json(new { success = false, message = $"CSV-format fel: {ex.Message}" });
+                        return Json(new { success = false, message = "Filen verkar vara tom eller har ingen rubrikrad." });
                     }
 
-                    // Batch save valid records
-                    if (validRecords.Any())
+                    // Verify essential headers exist
+                    var requiredHeaders = new[] { "Namn", "E-post", "Personnummer" };
+                    var headerRecord = csv.HeaderRecord.Select(h => h.Replace("\"", "").Trim()).ToArray();
+                    var missingHeaders = requiredHeaders.Where(h => !headerRecord.Contains(h, StringComparer.OrdinalIgnoreCase)).ToList();
+
+                    if (missingHeaders.Count != 0)
                     {
+                        _logger.LogWarning("Missing headers: {Missing}. Available headers: {Available}",
+                            string.Join(", ", missingHeaders), string.Join(", ", headerRecord));
+
+                        return Json(new
+                        {
+                            success = false,
+                            message = $"Saknade obligatoriska rubriker: {string.Join(", ", missingHeaders)}",
+                            details = $"Tillgängliga rubriker: {string.Join(", ", headerRecord)}"
+                        });
+                    }
+
+                    // Create header index mapping (case-insensitive)
+                    var headerIndexMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                    for (int i = 0; i < csv.HeaderRecord.Length; i++)
+                    {
+                        var cleanHeader = csv.HeaderRecord[i].Replace("\"", "").Trim();
+                        headerIndexMap[cleanHeader] = i;
+                    }
+
+                    int processedRows = 0;
+                    while (await csv.ReadAsync())
+                    {
+                        processedRows++;
+                        var rowNumber = csv.Parser.Row;
+
+                        // Limit processing to prevent memory issues
+                        if (processedRows > 1000)
+                        {
+                            warnings.Add("Import begränsad till 1000 rader för prestanda.");
+                            break;
+                        }
+
                         try
                         {
-                            foreach (var record in validRecords)
+                            // Validate field count matches header
+                            if (csv.Parser.Count != csv.HeaderRecord.Length)
                             {
-                                await _memberService.AddAsync(record);
-                                importedCount++;
+                                errors.Add($"Rad {rowNumber}: Antal fält ({csv.Parser.Count}) matchar inte rubriker ({csv.HeaderRecord.Length})");
+                                continue;
                             }
+
+                            // Get fields by header index (case-insensitive)
+                            var getField = new Func<string, string>(header =>
+                            {
+                                if (headerIndexMap.TryGetValue(header, out int index) && index < csv.Parser.Count)
+                                {
+                                    var value = csv.Parser[index]?.Trim();
+                                    return string.IsNullOrEmpty(value) ? null : value;
+                                }
+                                return null;
+                            });
+
+                            var name = getField("Namn");
+                            var email = getField("E-post");
+                            var ssn = getField("Personnummer");
+                            var phone = getField("Telefon");
+                            var address = getField("Adress");
+                            var dateOfBirth = getField("Födelsedatum");
+                            var startDateStr = getField("Medlemskap Startdatum");
+                            var status = getField("Status") ?? "Aktiv";
+                            var notes = getField("Anteckningar");
+
+                            // Validate required fields
+                            var fieldErrors = new List<string>();
+                            if (string.IsNullOrWhiteSpace(ssn))
+                                fieldErrors.Add("Personnummer saknas");
+                            if (string.IsNullOrWhiteSpace(name))
+                                fieldErrors.Add("Namn saknas");
+                            if (string.IsNullOrWhiteSpace(email))
+                                fieldErrors.Add("E-post saknas");
+
+                            if (fieldErrors.Count != 0)
+                            {
+                                errors.Add($"Rad {rowNumber}: {string.Join(", ", fieldErrors)}");
+                                continue;
+                            }
+
+                            // Create record
+                            var record = new Member
+                            {
+                                Name = name,
+                                Email = email,
+                                SSN = ssn,
+                                PhoneNumber = phone,
+                                Address = address,
+                                Status = status.Equals("Aktiv", StringComparison.OrdinalIgnoreCase)
+                                    ? MembershipStatus.Active
+                                    : MembershipStatus.Inactive,
+                                Notes = notes
+                            };
+
+                            // Parse and validate dates
+                            if (!string.IsNullOrEmpty(dateOfBirth))
+                            {
+                                if (DateTime.TryParseExact(dateOfBirth, ["yyyy-MM-dd", "yyyy/MM/dd", "dd/MM/yyyy", "dd-MM-yyyy"],
+                                    CultureInfo.InvariantCulture, DateTimeStyles.None, out var dob))
+                                {
+                                    if (dob > DateTime.Now.AddYears(-10) || dob < DateTime.Now.AddYears(-120))
+                                    {
+                                        errors.Add($"Rad {rowNumber}: Orealistiskt födelsedatum: {dateOfBirth}");
+                                        continue;
+                                    }
+                                    record.DateOfBirth = dob;
+                                }
+                                else
+                                {
+                                    errors.Add($"Rad {rowNumber}: Ogiltigt format för födelsedatum: '{dateOfBirth}'");
+                                    continue;
+                                }
+                            }
+
+                            if (!string.IsNullOrEmpty(startDateStr))
+                            {
+                                if (DateTime.TryParseExact(startDateStr, ["yyyy-MM-dd", "yyyy/MM/dd", "dd/MM/yyyy", "dd-MM-yyyy"],
+                                    CultureInfo.InvariantCulture, DateTimeStyles.None, out var startDate))
+                                {
+                                    record.MembershipStartDate = startDate;
+                                }
+                                else
+                                {
+                                    errors.Add($"Rad {rowNumber}: Ogiltigt format för startdatum: '{startDateStr}'");
+                                    continue;
+                                }
+                            }
+
+                            // Validate SSN format
+                            if (!Regex.IsMatch(record.SSN, @"^\d{6,8}-?\d{4}$"))
+                            {
+                                errors.Add($"Rad {rowNumber}: Ogiltigt personnummerformat: {record.SSN}");
+                                continue;
+                            }
+
+                            // Validate email format
+                            if (!IsValidEmail(record.Email))
+                            {
+                                errors.Add($"Rad {rowNumber}: Ogiltig e-postadress: {record.Email}");
+                                continue;
+                            }
+
+                            // Check duplicates and skip if found
+                            var duplicateErrors = new List<string>();
+                            if (existingSSNs.Contains(record.SSN) || currentFileSSNs.Contains(record.SSN))
+                            {
+                                duplicateErrors.Add($"Personnummer {record.SSN}");
+                            }
+                            if (existingEmails.Contains(record.Email) || currentFileEmails.Contains(record.Email))
+                            {
+                                duplicateErrors.Add($"E-post {record.Email}");
+                            }
+
+                            if (duplicateErrors.Count != 0)
+                            {
+                                skippedRecords.Add($"Rad {rowNumber}: {record.Name} - {string.Join(", ", duplicateErrors)} finns redan");
+                                continue;
+                            }
+
+                            // Set defaults for new records
+                            record.CreatedDate = DateTime.UtcNow;
+                            record.MembershipStartDate = record.MembershipStartDate == default
+                                ? DateTime.UtcNow.Date
+                                : record.MembershipStartDate;
+                            record.MaxLoans = 3; // Default value
+                            record.CreatedBy = User.Identity?.Name ?? "Import";
+
+                            // Track identifiers for duplicates within file
+                            currentFileSSNs.Add(record.SSN);
+                            currentFileEmails.Add(record.Email);
+                            validRecords.Add(record);
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, "Database error during import");
-                            return Json(new { success = false, message = $"Databasfel: {ex.Message}" });
+                            errors.Add($"Rad {rowNumber}: Fel vid bearbetning - {ex.Message}");
                         }
+                    }
+                }
+                catch (CsvHelperException ex)
+                {
+                    return Json(new { success = false, message = $"CSV-format fel: {ex.Message}" });
+                }
+
+                // Batch save valid records
+                if (validRecords.Count != 0)
+                {
+                    try
+                    {
+                        foreach (var record in validRecords)
+                        {
+                            await _memberService.AddAsync(record);
+                            importedCount++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Database error during import");
+                        return Json(new { success = false, message = $"Databasfel: {ex.Message}" });
                     }
                 }
             }
@@ -1215,25 +1206,25 @@ public class MembersController(
             {
                 responseMessage = $"{importedCount} medlemmar importerade framgångsrikt.";
             }
-            if (skippedRecords.Any())
+            if (skippedRecords.Count != 0)
             {
                 responseMessage += $" {skippedRecords.Count} rader skippade pga dubbletter.";
             }
-            if (warnings.Any())
+            if (warnings.Count != 0)
             {
                 responseMessage += $" {warnings.Count} varningar.";
             }
 
-            var success = importedCount > 0 || (!errors.Any() && skippedRecords.Any());
+            var success = importedCount > 0 || (errors.Count == 0 && skippedRecords.Count != 0);
 
             return Json(new
             {
-                success = importedCount > 0 && !skippedRecords.Any(), // Success only if records were imported and no duplicates
-                message = importedCount > 0 && !skippedRecords.Any()
+                success = importedCount > 0 && skippedRecords.Count == 0, // Success only if records were imported and no duplicates
+                message = importedCount > 0 && skippedRecords.Count == 0
                     ? $"{importedCount} medlemmar importerade framgångsrikt."
                     : null, // Message only for successful imports
-                errors = skippedRecords.Any()
-                    ? new List<string> { $"Import misslyckades: {skippedRecords.Count} dubbletter hittades." }
+                errors = skippedRecords.Count != 0
+                    ? [$"Import misslyckades: {skippedRecords.Count} dubbletter hittades."]
                     : errors, // Add duplicate error message if any
                 skipped = skippedRecords, // Still include skipped records for debugging
                 importedCount
@@ -1412,9 +1403,9 @@ public class MembersController(
                     {
                         if (c == '"') inQuotes = !inQuotes;
 
-                        if (!inQuotes && delimiterCounts.ContainsKey(c))
+                        if (!inQuotes && delimiterCounts.TryGetValue(c, out int value))
                         {
-                            delimiterCounts[c]++;
+                            delimiterCounts[c] = ++value;
                         }
                     }
 

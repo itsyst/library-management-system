@@ -1,5 +1,5 @@
 ﻿using Library.Application.Interfaces;
-using Library.Domain;
+using Library.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Data.Common;
@@ -107,6 +107,25 @@ namespace Library.MVC.Controllers
             return await _authorService.GetByIdAsync(id) != null;
         }
 
+        public async Task<IActionResult> Details(int id)
+        {
+            var author = await _authorService.GetAuthorOrDefaultAsync(
+                a => a.Id == id,
+                includeProperties: "Books");
+
+            if (author == null)
+                return NotFound();
+
+            return View(author);
+        }
+
+        //[HttpGet]
+        //public async Task<IActionResult> Search(string searchTerm)
+        //{
+        //    var authors = await _authorService.SearchAuthorsAsync(searchTerm);
+        //    return Json(authors.Select(a => new { id = a.Id, name = a.Name }));
+        //}
+
         #region API CALLS
         // GET: Authors/GetAll
         [HttpGet]
@@ -132,7 +151,7 @@ namespace Library.MVC.Controllers
                 name = author.Name,
                 books = author.Books?.Select(b => new
                 {
-                    id = b.ID,
+                    id = b.Id,
                     title = b.Title
                 })
             };
@@ -146,7 +165,7 @@ namespace Library.MVC.Controllers
         {
             var authorInDb = await _authorService.GetByIdAsync(id);
 
-            var bookInDb = await _bookService.GetBookOrDefaultAsync(filter: b => b.Author.Id == authorInDb.Id);
+            var bookInDb = await _bookService.GetBookOrDefault(filter: b => b.Author.Id == authorInDb.Id);
 
             if (bookInDb != null)
                 return Json(new { error = true, message = "You can not delete this author as long it has books refering to it (check books)!" });
