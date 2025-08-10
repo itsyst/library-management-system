@@ -39,7 +39,7 @@ public class EmailService(IConfiguration config) : IEmailService
 
         var mxRecords = result.Answers.MxRecords().ToList();
 
-        return mxRecords.Any();
+        return mxRecords.Count != 0;
     }
 }
 

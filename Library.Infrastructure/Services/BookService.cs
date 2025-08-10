@@ -7,13 +7,9 @@ using System.Linq.Expressions;
 namespace Library.Infrastructure.Services;
 
 #nullable disable
-public class BookService : BaseService<BookDetails>, IBookService
+public class BookService(ApplicationDbContext context) : BaseService<BookDetails>(context), IBookService
 {
-    public BookService(ApplicationDbContext context) : base(context)
-    {
-    }
-
-    public async Task<IReadOnlyList<BookDetails>> GetAllBookDetailsAsync(Expression<Func<BookDetails, bool>>? filter = null, Func<IQueryable<BookDetails>, IOrderedQueryable<BookDetails>>? orderBy = null, params Expression<Func<BookDetails, object>>[] includeProperties)
+    public async Task<IReadOnlyList<BookDetails>> GetAllBookDetailsAsync(Expression<Func<BookDetails, bool>> filter = null, Func<IQueryable<BookDetails>, IOrderedQueryable<BookDetails>> orderBy = null, params Expression<Func<BookDetails, object>>[] includeProperties)
     {
         IQueryable<BookDetails> query = _table;
         if (filter != null)
@@ -36,7 +32,7 @@ public class BookService : BaseService<BookDetails>, IBookService
         return await query.ToListAsync();
     }
 
-    public async Task<BookDetails> GetBookOrDefaultAsync(Expression<Func<BookDetails, bool>> filter, string? includeProperties = null, bool tracked = true)
+    public async Task<BookDetails> GetBookOrDefault(Expression<Func<BookDetails, bool>> filter, string includeProperties = null, bool tracked = true)
     {
         if (tracked)
         {
@@ -45,13 +41,13 @@ public class BookService : BaseService<BookDetails>, IBookService
             query = query.Where(filter);
             if (includeProperties != null)
             {
-                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (var includeProp in includeProperties.Split([','], StringSplitOptions.RemoveEmptyEntries))
                 {
                     query = query.Include(includeProp);
                 }
             }
 
-            return query.FirstOrDefault();
+            return await query.FirstOrDefaultAsync();
         }
         else
         {
@@ -60,13 +56,13 @@ public class BookService : BaseService<BookDetails>, IBookService
             query = query.Where(filter);
             if (includeProperties != null)
             {
-                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (var includeProp in includeProperties.Split([','], StringSplitOptions.RemoveEmptyEntries))
                 {
                     query = query.Include(includeProp);
                 }
             }
 
-            return query.FirstOrDefault();
+            return await query.FirstOrDefaultAsync();
         }
     }
 }

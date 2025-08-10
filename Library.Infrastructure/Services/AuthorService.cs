@@ -6,12 +6,8 @@ using System.Linq.Expressions;
 
 namespace Library.Infrastructure.Services;
 
-public class AuthorService : BaseService<Author>, IAuthorService
+public class AuthorService(ApplicationDbContext context) : BaseService<Author>(context), IAuthorService
 {
-    public AuthorService(ApplicationDbContext context) : base(context)
-    {
-    }
-
     public async Task<IReadOnlyList<Author>> GetAllAuthorsAsync(Expression<Func<Author, bool>>? filter = null, Func<IQueryable<Author>, IOrderedQueryable<Author>>? orderBy = null, params Expression<Func<Author, object>>[] includeProperties)
     {
         IQueryable<Author> query = _table;

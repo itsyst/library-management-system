@@ -28,6 +28,12 @@
 	<ItemGroup>
 
 
+		<PackageReference Include="DnsClient" />
+
+
+		<PackageReference Include="MailKit" />
+
+
 		<PackageReference Include="Microsoft.EntityFrameworkCore" />
 
 
@@ -38,6 +44,9 @@
 
 
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" />
+
+
+		<PackageReference Include="MimeKit" />
 
 
 	</ItemGroup>
