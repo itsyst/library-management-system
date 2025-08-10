@@ -1,38 +1,748 @@
-﻿@model Library.Domain.Author
+﻿@using Library.Domain.Entities
+@model IEnumerable<Author>
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Authors Management";
 }
 
+<!-- Modern Authors Index Container -->
+<div class="container-fluid px-4 py-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Creative Header Section -->
+            <div class="authors-header mb-5 position-relative overflow-hidden">
+                <!-- Background Pattern -->
+                <div class="header-pattern position-absolute w-100 h-100"></div>
 
-<div class="p-3">
-    <div class="row pt-4">
-        <div class="col-6">
-            <h2 class="text-primary">Create Author</h2>
-        </div>
-    </div>
-    <hr />
-    <div class="row justify-content-center">
-        <div class="col-md-4">
-            <form asp-action="Create">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <div class="form-group">
-                    <label asp-for="Name" class="control-label"></label>
-                    <input asp-for="Name" class="form-control" />
-                    <span asp-validation-for="Name" class="text-danger"></span>
+                <div class="position-relative z-2">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="authors-icon mb-3">
+                                <div class="icon-wrapper">
+                                    <i class="bi bi-people-fill"></i>
+                                    <div class="icon-pulse"></div>
+                                </div>
+                            </div>
+
+                            <h1 class="display-5 fw-bold mb-2 header-title">Authors Library</h1>
+                            <p class="text-muted mb-4 fs-5">Manage your collection of authors</p>
+
+                            <!-- Stats Row -->
+                            <div class="stats-row d-flex flex-wrap gap-4">
+                                <div class="stat-item">
+                                    <i class="bi bi-people me-2"></i>
+                                    <span class="stat-number">@Model.Count()</span>
+                                    <span class="stat-label">Total Authors</span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="bi bi-plus-circle me-2"></i>
+                                    <span class="stat-number">@Model.Count(a => a.CreatedDate >= DateTime.Now.AddMonths(-1))</span>
+                                    <span class="stat-label">Added This Month</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4 text-lg-end">
+                            <a asp-action="Create" class="btn-add-new btn-lg px-4 mb-3">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                Add New Author
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <input type="submit" value="Save" class="btn btn-primary" /> |
-                    <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+            </div>
+
+            <!-- Search and Filter Section -->
+            <div class="search-filter-section mb-4">
+                <div class="row g-3">
+                    <div class="col-lg-8">
+                        <div class="search-container">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0 ps-0"
+                                       id="searchInput"
+                                       placeholder="Search authors by name..."
+                                       autocomplete="off">
+                                <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="filter-container">
+                            <select class="form-select" id="sortSelect">
+                                <option value="name-asc">Name (A-Z)</option>
+                                <option value="name-desc">Name (Z-A)</option>
+                                <option value="date-desc">Recently Added</option>
+                                <option value="date-asc">Oldest First</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-            </form>
+            </div>
+
+            <!-- Authors Grid Section -->
+            <div class="authors-grid-section">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="results-info">
+                        <span class="text-muted">
+                            <span id="resultsCount">@Model.Count()</span> authors found
+                        </span>
+                    </div>
+                    <div class="view-options">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary active" id="gridView">
+                                <i class="bi bi-grid-3x3-gap"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="listView">
+                                <i class="bi bi-list-ul"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid View -->
+                <div id="authorsGrid" class="authors-grid">
+                    @if (Model.Any())
+                    {
+                        <div class="row g-4" id="authorsContainer">
+                            @foreach (var author in Model)
+                            {
+                                <div class="col-lg-4 col-md-6 col-12 author-item" data-name="@author.Name.ToLower()">
+                                    <div class="author-card">
+                                        <div class="card-body">
+                                            <!-- Author Avatar -->
+                                            <div class="author-avatar mb-3">
+                                                <div class="avatar-circle">
+                                                    <span class="avatar-initials">@author.Name.Split(' ').Select(n => n.FirstOrDefault()).Take(2).Aggregate("", (current, c) => current + c)</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Author Info -->
+                                            <div class="author-info text-center">
+                                                <h5 class="author-name mb-2">@author.Name</h5>
+                                                <p class="author-meta text-muted mb-3">
+                                                    <small>
+                                                        <i class="bi bi-calendar-event me-1"></i>
+                                                        Added @author.CreatedDate.ToString("MMM dd, yyyy")
+                                                    </small>
+                                                </p>
+                                                <div class="author-stats mb-3">
+                                                    <span class="badge bg-light text-dark me-2">
+                                                        <i class="bi bi-book me-1"></i>
+                                                        @author.Books?.Count() Books
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Action Buttons -->
+                                            <div class="card-actions d-flex justify-content-center gap-2">
+                                                <a asp-action="Details" asp-route-id="@author.Id"
+                                                   class="btn btn-outline-primary btn-sm action-btn"
+                                                   title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a asp-action="Edit" asp-route-id="@author.Id"
+                                                   class="btn btn-outline-warning btn-sm action-btn"
+                                                   title="Edit Author">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button type="button"
+                                                        class="btn btn-outline-danger btn-sm action-btn delete-btn"
+                                                        data-id="@author.Id"
+                                                        data-name="@author.Name"
+                                                        title="Delete Author">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-state text-center py-5">
+                            <div class="empty-icon mb-4">
+                                <i class="bi bi-person-plus"></i>
+                            </div>
+                            <h3 class="mb-3">No Authors Found</h3>
+                            <p class="text-muted mb-4">Start building your authors collection by adding your first author.</p>
+                            <a asp-action="Create" class="btn-add-new btn-lg px-4">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                Add Your First Author
+                            </a>
+                        </div>
+                    }
+                </div>
+
+                <!-- List View (Hidden by default) -->
+                <div id="authorsList" class="authors-list d-none">
+                    <div class="list-group">
+                        @foreach (var author in Model)
+                        {
+                            <div class="list-group-item author-list-item" data-name="@author.Name.ToLower()">
+                                <div class="d-flex align-items-center">
+                                    <div class="author-avatar-small me-3">
+                                        <div class="avatar-circle-small">
+                                            <span class="avatar-initials-small">@author.Name.Split(' ').Select(n => n.FirstOrDefault()).Take(2).Aggregate("", (current, c) => current + c)</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">@author.Name</h6>
+                                        <p class="mb-0 text-muted small">
+                                            <i class="bi bi-book me-1"></i>@author.Books?.Count() Books •
+                                            <i class="bi bi-calendar-event me-1"></i>Added @author.CreatedDate.ToString("MMM dd, yyyy")
+                                        </p>
+                                    </div>
+                                    <div class="list-actions">
+                                        <a asp-action="Details" asp-route-id="@author.Id" class="btn btn-outline-primary btn-sm me-1">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@author.Id" class="btn btn-outline-warning btn-sm me-1">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger btn-sm delete-btn" data-id="@author.Id" data-name="@author.Name">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- No Results Message -->
+            <div id="noResults" class="text-center py-5 d-none">
+                <div class="empty-icon mb-4">
+                    <i class="bi bi-search"></i>
+                </div>
+                <h4 class="mb-3">No Authors Found</h4>
+                <p class="text-muted mb-4">Try adjusting your search terms or filters.</p>
+                <button class="btn btn-outline-primary" onclick="clearSearch()">
+                    <i class="bi bi-arrow-clockwise me-2"></i>
+                    Clear Search
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                    Confirm Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Are you sure you want to delete the author <strong id="deleteAuthorName"></strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <small>This action cannot be undone. All books by this author will also be affected.</small>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form asp-action="Delete" method="post" class="d-inline">
+                    <input type="hidden" id="deleteAuthorId" name="id" value="">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>
+                        Delete Author
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
-    @{
-    await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    <script>
+        // Configure toastr
+        toastr.options = {
+            closeButton: true,
+            newestOnTop: true,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            timeOut: "3500"
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const clearSearch = document.getElementById('clearSearch');
+            const sortSelect = document.getElementById('sortSelect');
+            const gridView = document.getElementById('gridView');
+            const listView = document.getElementById('listView');
+            const authorsGrid = document.getElementById('authorsGrid');
+            const authorsList = document.getElementById('authorsList');
+            const resultsCount = document.getElementById('resultsCount');
+            const noResults = document.getElementById('noResults');
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+
+            let allAuthors = Array.from(document.querySelectorAll('.author-item, .author-list-item'));
+            let currentView = 'grid';
+
+            // Search functionality
+            function performSearch() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                let visibleCount = 0;
+
+                allAuthors.forEach(author => {
+                    const authorName = author.dataset.name;
+                    const isVisible = authorName.includes(searchTerm);
+
+                    if (isVisible) {
+                        author.style.display = '';
+                        visibleCount++;
+                    } else {
+                        author.style.display = 'none';
+                    }
+                });
+
+                updateResultsCount(visibleCount);
+                toggleNoResults(visibleCount === 0 && searchTerm !== '');
+            }
+
+            searchInput.addEventListener('input', performSearch);
+            clearSearch.addEventListener('click', function() {
+                searchInput.value = '';
+                performSearch();
+                searchInput.focus();
+            });
+
+            // Sort functionality
+            sortSelect.addEventListener('change', function() {
+                const sortValue = this.value;
+                const container = currentView === 'grid' ?
+                    document.getElementById('authorsContainer') :
+                    document.querySelector('.list-group');
+
+                const items = Array.from(container.children);
+
+                items.sort((a, b) => {
+                    const nameA = a.querySelector('.author-name, h6').textContent.trim();
+                    const nameB = b.querySelector('.author-name, h6').textContent.trim();
+
+                    switch(sortValue) {
+                        case 'name-asc':
+                            return nameA.localeCompare(nameB);
+                        case 'name-desc':
+                            return nameB.localeCompare(nameA);
+                        case 'date-desc':
+                        case 'date-asc':
+                            // For demo purposes, using name as fallback
+                            return sortValue === 'date-desc' ?
+                                nameB.localeCompare(nameA) :
+                                nameA.localeCompare(nameB);
+                        default:
+                            return 0;
+                    }
+                });
+
+                // Clear and re-append sorted items
+                container.innerHTML = '';
+                items.forEach(item => container.appendChild(item));
+
+                // Update allAuthors array
+                allAuthors = Array.from(document.querySelectorAll('.author-item, .author-list-item'));
+            });
+
+            // View toggle functionality
+            gridView.addEventListener('click', function() {
+                if (currentView !== 'grid') {
+                    authorsGrid.classList.remove('d-none');
+                    authorsList.classList.add('d-none');
+                    this.classList.add('active');
+                    listView.classList.remove('active');
+                    currentView = 'grid';
+                }
+            });
+
+            listView.addEventListener('click', function() {
+                if (currentView !== 'list') {
+                    authorsGrid.classList.add('d-none');
+                    authorsList.classList.remove('d-none');
+                    this.classList.add('active');
+                    gridView.classList.remove('active');
+                    currentView = 'list';
+                }
+            });
+
+            // Delete functionality
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const authorId = this.dataset.id;
+                    const authorName = this.dataset.name;
+
+                    document.getElementById('deleteAuthorId').value = authorId;
+                    document.getElementById('deleteAuthorName').textContent = authorName;
+
+                    deleteModal.show();
+                });
+            });
+
+            // Utility functions
+            function updateResultsCount(count) {
+                resultsCount.textContent = count;
+            }
+
+            function toggleNoResults(show) {
+                if (show) {
+                    authorsGrid.classList.add('d-none');
+                    authorsList.classList.add('d-none');
+                    noResults.classList.remove('d-none');
+                } else {
+                    noResults.classList.add('d-none');
+                    if (currentView === 'grid') {
+                        authorsGrid.classList.remove('d-none');
+                    } else {
+                        authorsList.classList.remove('d-none');
+                    }
+                }
+            }
+
+            // Global clear search function
+            window.clearSearch = function() {
+                searchInput.value = '';
+                performSearch();
+                searchInput.focus();
+            };
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+F to focus search
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault();
+                    searchInput.focus();
+                }
+
+                // Escape to clear search
+                if (e.key === 'Escape' && searchInput.value) {
+                    clearSearch();
+                }
+            });
+
+            // Animation on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all author cards
+            document.querySelectorAll('.author-card').forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'all 0.5s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
 }
-}
+
+<style>
+    /* Header Styling */
+    .authors-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+        border-radius: var(--radius-xl);
+        padding: 3rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .header-pattern {
+        background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+    }
+
+    .header-title {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Authors Icon */
+    .authors-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    .icon-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+
+    .icon-pulse {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        border: 2px solid var(--primary-color);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+        opacity: 0.6;
+    }
+
+    @@keyframes pulse {
+        0%
+
+    {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.3;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    }
+
+    /* Stats Styling */
+    .stats-row {
+        margin-top: 1.5rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: var(--radius-lg);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .stat-number {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+
+    /* Search and Filter Section */
+    .search-filter-section {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .search-container .input-group-text {
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid var(--gray-200);
+        border-right: none;
+    }
+
+    .search-container .form-control {
+        border: 2px solid var(--gray-200);
+        border-left: none;
+        padding: 0.75rem;
+    }
+
+        .search-container .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+    /* Author Cards */
+    .author-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all var(--transition-normal);
+        height: 100%;
+    }
+
+        .author-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+    /* Avatar Styling */
+    .author-avatar {
+        display: flex;
+        justify-content: center;
+    }
+
+    .avatar-circle {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.5rem;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .avatar-circle-small {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    /* Action Buttons */
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition-fast);
+    }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+    /* List View */
+    .author-list-item {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: var(--radius-lg);
+        transition: all var(--transition-normal);
+        margin-bottom: 0.5rem;
+    }
+
+        .author-list-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+    /* Empty State */
+    .empty-state {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-xl);
+        padding: 4rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        color: var(--gray-300);
+    }
+
+    /* View Options */
+    .view-options .btn {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+    }
+
+        .view-options .btn.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+    /* Modal Styling */
+    .modal-content {
+        border-radius: var(--radius-xl);
+        border: none;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .authors-header
+
+    {
+        padding: 2rem 1rem;
+    }
+
+    .search-filter-section {
+        padding: 1rem;
+    }
+
+    .stats-row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .stat-item {
+        justify-content: center;
+    }
+
+    }
+
+    /* Dark mode support */
+    @@media (prefers-color-scheme: dark) {
+        .author-card, .search-filter-section, .empty-state
+
+    {
+        background: rgba(30, 30, 30, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .authors-header {
+        background: rgba(30, 30, 30, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .author-list-item {
+        background: rgba(30, 30, 30, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stat-item {
+        background: rgba(30, 30, 30, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    }
+</style>
