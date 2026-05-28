@@ -1,683 +1,1130 @@
-﻿@model IEnumerable<Library.Domain.BookDetails>
+﻿@using Library.Domain.Entities
+@model Library.MVC.ViewModels.BookDetailsViewModel
 @Html.AntiForgeryToken()
 
 @{
-    ViewData["Title"] = "Books Library";
-    var status = Context.Request.Query["status"];
-    var isAvailable = "filter-btn";
-    var all = "filter-btn";
-
-    switch (status)
-    {
-        case "isAvailable":
-            isAvailable = "filter-btn active";
-            break;
-        case "all":
-            all = "filter-btn active";
-            break;
-        default:
-            all = "filter-btn active";
-            break;
-    }
+    ViewData["Title"] = "Bokbibliotek";
+    var books = ViewBag.Books as List<BookDetails>;
+    var sortBy = ViewBag.SortBy as string ?? "title";
 }
 
-<!-- Modern Books Container -->
+<!-- Böcker Container -->
 <div class="container-fluid px-4 py-5">
-    <!-- Header Section -->
-    <div class="books-header mb-5">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <div class="header-content">
-                <h1 class="display-6 fw-bold mb-2">Books Library</h1>
-                <p class="text-muted">Manage your book collection with ease</p>
-            </div>
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-11">
+            <!-- Kreativ Header Sektion -->
+            <div class="books-header mb-5 position-relative overflow-hidden">
 
-            <!-- Filter & Action Bar -->
-            <div class="header-actions d-flex align-items-center gap-3 flex-wrap">
-                <!-- Filter Buttons -->
-                <div class="filter-group">
-                    <a asp-controller="Books" asp-action="Index" asp-route-status="all"
-                       class="@all" onclick="handleFilterChange(event, 'all')">
-                        <i class="bi bi-collection"></i>
-                        All Books
-                    </a>
-                    <a asp-controller="Books" asp-action="Index" asp-route-status="isAvailable"
-                       class="@isAvailable" onclick="handleFilterChange(event, 'isAvailable')">
-                        <i class="bi bi-check-circle"></i>
-                        Available
-                    </a>
-                </div>
+                <!-- Bakgrundsmönster -->
+                <div class="header-pattern position-absolute w-100 h-100"></div>
 
-                <!-- Add New Button -->
-                <a asp-controller="Books" asp-action="Create" class="btn-add-new">
-                    <i class="bi bi-plus-circle"></i>
-                    Add New Book
-                </a>
-            </div>
-        </div>
-
-        <!-- Search Bar -->
-        <div class="search-section mt-4">
-            <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="Search books by title, author, or ISBN...">
-                <i class="bi bi-search search-icon"></i>
-                <button type="button" id="clearSearch" class="clear-search" style="display: none;">
-                    <i class="bi bi-x"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Results Info -->
-        <div class="results-info mt-3">
-            <span id="resultsCount">@Model.Count() books</span>
-            <span id="loadingSpinner" class="spinner-border spinner-border-sm ms-2" style="display: none;"></span>
-        </div>
-    </div>
-
-    <!-- Books Grid -->
-    <div class="books-grid" id="booksGrid">
-        @foreach (var book in Model)
-        {
-            <div class="book-card"
-                 data-title="@book.Title.ToLower()"
-                 data-author="@(book.Author?.Name?.ToLower() ?? "")"
-                 data-isbn="@book.ISBN.ToLower()"
-                 data-book-id="@book.ID">
-                <div class="book-card-inner">
-                    <!-- Book Cover -->
-                    <div class="book-cover">
-                        <img src="@(book.ImageBinary ?? "/uploads/9780555816023.png")"
-                             alt="@book.Title"
-                             class="cover-image"
-                             onerror="this.src='/uploads/9780555816023.png'">
-
-                        <!-- Status Badge -->
-                        <div class="status-badge @(book.Copies.Any() ? "available" : "unavailable")">
-                            <i class="bi @(book.Copies.Any() ? "bi-check-circle-fill" : "bi-x-circle-fill")"></i>
-                            @(book.Copies.Any() ? "Available" : "Unavailable")
-                        </div>
-
-                        <!-- Quick Actions Overlay -->
-                        <div class="quick-actions">
-                            <a asp-controller="Books" asp-action="Edit" asp-route-id="@book.ID"
-                               class="action-btn edit-btn" title="Edit Book">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <button onclick="showBookDetails(@book.ID)"
-                                    class="action-btn view-btn" title="Quick View">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                            <button onclick="addBookCopy(@book.ID, '@book.Title')"
-                                    class="action-btn add-btn" title="Add Copy">
-                                <i class="bi bi-plus-circle"></i>
-                            </button>
-                            <button onclick="deleteBook(@book.ID, '@book.Title')"
-                                    class="btn btn-danger action-btn delete-btn" title="Delete Book">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Book Info -->
-                    <div class="book-info">
-                        <h3 class="book-title" title="@book.Title">@book.Title</h3>
-                        <p class="book-author">by @(book.Author?.Name ?? "Unknown Author")</p>
-                        <p class="book-isbn">ISBN: @book.ISBN</p>
-
-                        <!-- Book Stats -->
-                        <div class="book-stats">
-                            <div class="stat-item">
-                                <i class="bi bi-files"></i>
-                                <span>@book.Copies.Count copies</span>
+                <div class="position-relative z-2">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="library-icon mb-3">
+                                <div class="icon-wrapper">
+                                    <i class="bi bi-collection"></i>
+                                    <div class="icon-pulse"></div>
+                                </div>
                             </div>
-                            <div class="stat-item">
-                                <i class="bi bi-check-circle"></i>
-                                <span>@book.Copies.Count(c => c.IsAvailable) available</span>
+
+                            <h1 class="display-5 fw-bold mb-2 header-title">Bokbibliotek</h1>
+                            <p class="text-muted mb-3 fs-5">Upptäck och hantera din kompletta boksamling</p>
+
+                            <!-- Snabbstatistik -->
+                            @if (Model.Statistics != null)
+                            {
+                                <div class="quick-stats d-flex flex-wrap gap-3">
+                                    <div class="stat-item m-1">
+                                        <i class="bi bi-collection mr-2"></i>
+                                        <span class="stat-value">@Model.Statistics.TotalBooks</span>
+                                        <span class="stat-label">Böcker</span>
+                                    </div>
+                                    <div class="stat-item m-1">
+                                        <i class="bi bi-files mr-2"></i>
+                                        <span class="stat-value">@Model.Statistics.TotalCopies</span>
+                                        <span class="stat-label">Exemplar</span>
+                                    </div>
+                                    <div class="stat-item m-1">
+                                        <i class="bi bi-check-circle mr-2"></i>
+                                        <span class="stat-value">@Model.Statistics.AvailableCopies</span>
+                                        <span class="stat-label">Tillgängliga</span>
+                                    </div>
+                                    <div class="stat-item m-1">
+                                        <i class="bi bi-person mr-2"></i>
+                                        <span class="stat-value">@Model.Statistics.TotalAuthors</span>
+                                        <span class="stat-label">Författare</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="col-lg-4 text-lg-end">
+                            <div class="header-actions d-flex flex-column gap-2">
+                                <a asp-action="Create" class="btn btn-primary btn-lg m-1">
+                                    <i class="bi bi-plus-circle mr-2"></i>
+                                    Lägg till ny bok
+                                </a>
+                                <div class="export-actions d-flex gap-2">
+                                    <a asp-action="ExportToCsv" class="btn btn-outline-success btn-sm m-1">
+                                        <i class="bi bi-file-earmark-spreadsheet mr-1"></i>
+                                        Exportera CSV
+                                    </a>
+                                    <a asp-action="ExportToJson" class="btn btn-outline-info btn-sm m-1">
+                                        <i class="bi bi-filetype-json mr-1"></i>
+                                        Exportera JSON
+                                    </a>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- Primary Action -->
-                        <a asp-controller="Books" asp-action="Edit" asp-route-id="@book.ID"
-                           class="primary-action">
-                            Manage Book
-                            <i class="bi bi-arrow-right"></i>
-                        </a>
                     </div>
                 </div>
             </div>
-        }
-    </div>
 
-    <div class="empty-state" id="emptyState" style="display: none;">
-        <div class="empty-content">
-            <i class="bi bi-book"></i>
-            <h3>No books found</h3>
-            <p>Try adjusting your search or filters</p>
-            <a asp-controller="Books" asp-action="Create" class="btn-add-new">
-                <i class="bi bi-plus-circle"></i>
-                Add First Book
-            </a>
+            <!-- Avancerad sök- och filtreringssektion -->
+            <div class="search-filter-section mb-4">
+                <form method="get" asp-action="Index" class="search-form">
+                    <div class="row g-3">
+                        <!-- Sökinput -->
+                        <div class="col-md-4">
+                            <div class="search-container">
+                                <input type="text"
+                                       name="search"
+                                       value="@Model.SearchTerm"
+                                       class="form-control search-input"
+                                       placeholder="Sök böcker efter titel, författare eller ISBN..."
+                                       id="searchInput">
+                                <i class="bi bi-search search-icon"></i>
+                                @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                                {
+                                    <button type="button" class="clear-search" onclick="clearSearch()">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                }
+                            </div>
+                            <!-- Keyboard shortcut hint -->
+                            <div class="keyboard-hint text-muted small mt-1">
+                                <span class="d-none d-md-inline p-0 m-0">Tips: Använd</span>
+                                <kbd>Ctrl/Cmd + K</kbd> för att fokusera och <kbd>Esc</kbd> för att rensa
+                            </div>
+                        </div>
+
+                        <!-- Författarfilter -->
+                        <div class="col-md-2">
+                            <select name="authorId" class="form-control" onchange="this.form.submit()">
+                                <option value="">Alla författare</option>
+                                @if (Model.Authors != null)
+                                {
+                                    @foreach (var author in Model.Authors.Skip(1)) // Hoppa över "Alla författare" alternativet
+                                    {
+                                        <option value="@author.Value" selected="@author.Selected">@author.Text</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Genrefilter -->
+                        <div class="col-md-2">
+                            <select name="genre" class="form-control" onchange="this.form.submit()">
+                                <option value="">Alla genrer</option>
+                                @if (Model.Genres != null)
+                                {
+                                    @foreach (var genre in Model.Genres.Skip(1)) // Hoppa över "Alla genrer" alternativet
+                                    {
+                                        <option value="@genre.Value" selected="@genre.Selected">@genre.Text</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Tillgänglighetsfilter -->
+                        <div class="col-md-2">
+                            <select name="available" class="form-control" onchange="this.form.submit()">
+                                <option value="">Alla böcker</option>
+                                <option value="true" selected="@(Model.AvailabilityFilter == true)">Tillgängliga</option>
+                                <option value="false" selected="@(Model.AvailabilityFilter == false)">Otillgängliga</option>
+                            </select>
+                        </div>
+
+                        <!-- Sorteringsalternativ -->
+                        <div class="col-md-2">
+                            <select name="sort" class="form-control" onchange="this.form.submit()">
+                                <option value="title" selected="@(sortBy == "title")">Titel A-Ö</option>
+                                <option value="title_desc" selected="@(sortBy == "title_desc")">Titel Ö-A</option>
+                                <option value="author" selected="@(sortBy == "author")">Författare A-Ö</option>
+                                <option value="author_desc" selected="@(sortBy == "author_desc")">Författare Ö-A</option>
+                                <option value="date" selected="@(sortBy == "date")">Äldsta först</option>
+                                <option value="date_desc" selected="@(sortBy == "date_desc")">Nyaste först</option>
+                                <option value="copies" selected="@(sortBy == "copies")">Färst exemplar</option>
+                                <option value="copies_desc" selected="@(sortBy == "copies_desc")">Flest exemplar</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Dolda inputs för sidnumrering -->
+                    <input type="hidden" name="page" value="@Model.CurrentPage">
+                    <input type="hidden" name="pageSize" value="@Model.PageSize">
+                </form>
+            </div>
+
+            <!-- Resultatinfo -->
+            <div class="results-info mb-4 d-flex justify-content-between align-items-center">
+                <div class="results-text mx-4">
+                    @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                    {
+                        <span>Hittade <strong>@Model.TotalRecords</strong> böcker som matchar "<em>@Model.SearchTerm</em>"</span>
+                    }
+                    else
+                    {
+                        <span>Visar <strong>@Model.TotalRecords</strong> böcker</span>
+                    }
+                </div>
+
+                <div class="view-options">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary active" onclick="setGridView()">
+                            <i class="bi bi-grid-3x3-gap"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="setListView()">
+                            <i class="bi bi-list"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bokrutnät -->
+            <div class="books-container" id="booksContainer">
+                @if (books != null && books.Any())
+                {
+                    <div class="books-grid" id="booksGrid">
+                        @foreach (var book in books)
+                        {
+                            <div class="book-card" data-book-id="@book.Id">
+                                <div class="book-card-inner">
+                                    <!-- Bokomslag -->
+                                    <div class="book-cover">
+                                        <img src="@(book.ImageBinary ?? "/uploads/9780555816023.png")"
+                                             alt="@book.Title"
+                                             class="cover-image"
+                                             onerror="this.src='/uploads/9780555816023.png'">
+
+                                        <!-- Statusmärkning -->
+                                        <div class="status-badge @(book.IsAvailable ? "available" : "unavailable")">
+                                            <i class="bi @(book.IsAvailable ? "bi-check-circle-fill" : "bi-x-circle-fill")"></i>
+                                            @(book.IsAvailable ? "Tillgänglig" : "Otillgänglig")
+                                        </div>
+
+                                        <!-- Snabbåtgärder Overlay -->
+                                        <div class="quick-actions">
+                                            <a asp-action="Details" asp-route-id="@book.Id"
+                                               class="action-btn view-btn m-1" title="Visa detaljer">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@book.Id"
+                                               class="action-btn edit-btn m-1" title="Redigera bok">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button onclick="addBookCopy(@book.Id, '@Html.Raw(book.Title.Replace("'", "\\'"))')"
+                                                    class="action-btn add-btn m-1" title="Lägg till exemplar">
+                                                <i class="bi bi-plus-circle"></i>
+                                            </button>
+                                            <button onclick="downloadCover(@book.Id)"
+                                                    class="action-btn download-btn m-1" title="Ladda ner omslag">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                            <button onclick="generateReport(@book.Id)"
+                                                    class="action-btn report-btn m-1" title="Generera rapport">
+                                                <i class="bi bi-file-text"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bokinfo -->
+                                    <div class="book-info">
+                                        <h3 class="book-title" title="@book.Title">@book.Title</h3>
+                                        @if (!string.IsNullOrEmpty(book.Subtitle))
+                                        {
+                                            <p class="book-subtitle">@book.Subtitle</p>
+                                        }
+                                        <p class="book-author">av @(book.Author?.Name ?? "Okänd författare")</p>
+
+                                        <div class="book-meta">
+                                            <span class="meta-item">
+                                                <i class="bi bi-bookmark mr-1"></i>
+                                                @book.ISBN
+                                            </span>
+                                            @if (!string.IsNullOrEmpty(book.Genre))
+                                            {
+                                                <span class="meta-item">
+                                                    <i class="bi bi-tag mr-1"></i>
+                                                    @book.Genre
+                                                </span>
+                                            }
+                                            @if (book.Pages.HasValue)
+                                            {
+                                                <span class="meta-item">
+                                                    <i class="bi bi-file-text mr-1"></i>
+                                                    @book.Pages sidor
+                                                </span>
+                                            }
+                                        </div>
+
+                                        <!-- Bokstatistik -->
+                                        <div class="book-stats">
+                                            <div class="stat-group">
+                                                <div class="stat-item">
+                                                    <i class="bi bi-files"></i>
+                                                    <span>@book.TotalCopies exemplar</span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <i class="bi bi-check-circle"></i>
+                                                    <span class="@(book.AvailableCopies > 0 ? "text-success" : "text-danger")">
+                                                        @book.AvailableCopies tillgängliga
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                    <!-- Åtgärdsknappar -->
+                                    <div class="book-actions">
+                                        <a asp-action="Details" asp-route-id="@book.Id" class="btn btn-primary btn-sm text-nowrap">
+                                            <i class="bi bi-eye mr-1"></i>
+                                            Visa detaljer
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@book.Id" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-pencil mr-1"></i>
+                                            Redigera
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Sidnumrering -->
+                    @if (Model.TotalPages > 1)
+                    {
+                        <nav class="pagination-nav mt-5">
+                            <ul class="pagination justify-content-center">
+                                <!-- Föregående knapp -->
+                                <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
+                                    <a class="page-link" href="@GetPageUrl(Model.CurrentPage - 1)">
+                                        <i class="bi bi-chevron-left"></i>
+                                        Föregående
+                                    </a>
+                                </li>
+
+                                <!-- Sidnummer -->
+                                @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); i++)
+                                {
+                                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                        <a class="page-link" href="@GetPageUrl(i)">@i</a>
+                                    </li>
+                                }
+
+                                <!-- Nästa knapp -->
+                                <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
+                                    <a class="page-link" href="@GetPageUrl(Model.CurrentPage + 1)">
+                                        Nästa
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+
+                            <!-- Sidinfo -->
+                            <div class="page-info text-center mt-3">
+                                <small class="text-muted">
+                                    Sida @Model.CurrentPage av @Model.TotalPages
+                                    (@Model.TotalRecords böcker totalt)
+                                </small>
+                            </div>
+                        </nav>
+                    }
+                }
+                else
+                {
+                    <!-- Tomt tillstånd -->
+                    <div class="empty-state text-center py-5">
+                        <div class="empty-content">
+                            <i class="bi bi-book fs-1 text-muted"></i>
+                            <h3 class="mt-3">Inga böcker hittades</h3>
+                            @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                            {
+                                <p class="text-muted">Inga böcker matchar din sökning "<em>@Model.SearchTerm</em>"</p>
+                                <button class="btn btn-outline-primary" onclick="clearSearch()">
+                                    <span class="row justify-content-center align-items-center m-1">
+                                        <i class="bi bi-x-circle m-2"></i>
+                                        Rensa sökning
+                                    </span>
+                                </button>
+                            }
+                            else
+                            {
+                                <p class="text-muted">Börja bygga ditt bibliotek genom att lägga till din första bok</p>
+                                <a asp-action="Create" class="btn btn-primary">
+                                    <span class="row justify-content-center align-items-center m-1">
+                                        <i class="bi bi-plus-circle m-2"></i>
+                                        Lägg till din första bok
+                                    </span>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 </div>
 
+@functions {
+    private string GetPageUrl(int page)
+    {
+        var routeValues = new Dictionary<string, object?>
+        {
+            { "page", page },
+            { "pageSize", Model.PageSize },
+            { "search", Model.SearchTerm },
+            { "authorId", Model.AuthorFilter },
+            { "genre", Model.GenreFilter },
+            { "available", Model.AvailabilityFilter },
+            { "sort", ViewBag.SortBy }
+        };
+
+        var filteredRouteValues = routeValues.Where(x => x.Value != null).ToDictionary(x => x.Key, x => x.Value);
+        var url = Url.Action("Index", "Books", filteredRouteValues);
+        return url ?? string.Empty;
+    }
+}
+
 @section Scripts {
     <script>
-        // ====================================================================
-        // CONFIGURATION & INITIALIZATION
-        // ====================================================================
-
-        // Configure toastr
-        if (typeof toastr !== 'undefined') {
-            toastr.options = {
-                closeButton: true,
-                debug: false,
-                newestOnTop: true,
-                progressBar: true,
-                positionClass: "toast-top-right",
-                preventDuplicates: false,
-                showDuration: "300",
-                hideDuration: "1000",
-                timeOut: "5000",
-                extendedTimeOut: "1000",
-                showEasing: "swing",
-                hideEasing: "linear",
-                showMethod: "fadeIn",
-                hideMethod: "fadeOut"
-            };
-        }
-
-        // Global variables
-        let currentBooks = @Html.Raw(Json.Serialize(Model));
-        let filteredBooks = [...currentBooks];
-        let currentStatus = '@status' || 'all';
-
-        // ====================================================================
-        // SEARCH FUNCTIONALITY
-        // ====================================================================
-
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const bookCards = document.querySelectorAll('.book-card');
-            const clearBtn = document.getElementById('clearSearch');
-            let visibleCount = 0;
-
-            // Show/hide clear button
-            clearBtn.style.display = searchTerm ? 'flex' : 'none';
-
-            bookCards.forEach(card => {
-                const title = card.getAttribute('data-title');
-                const author = card.getAttribute('data-author');
-                const isbn = card.getAttribute('data-isbn');
-
-                if (title.includes(searchTerm) ||
-                    (author && author.includes(searchTerm)) ||
-                    isbn.includes(searchTerm)) {
-                    card.style.display = 'block';
-                    card.classList.add('search-match');
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                    card.classList.remove('search-match');
-                }
-            });
-
-            // Update results count
-            updateResultsCount(visibleCount, searchTerm);
-
-            // Show/hide empty state
-            document.getElementById('emptyState').style.display =
-                visibleCount === 0 ? 'block' : 'none';
-        });
-
-        // Clear search
-        document.getElementById('clearSearch').addEventListener('click', function() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('searchInput').dispatchEvent(new Event('input'));
-            this.style.display = 'none';
-        });
-
-        // ====================================================================
-        // FILTER FUNCTIONALITY
-        // ====================================================================
-
-        async function handleFilterChange(event, status) {
-            event.preventDefault();
-
-            // Update active filter button
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.closest('.filter-btn').classList.add('active');
-
-            // Load new data
-            await loadBooksData(status);
-
-            // Update URL without page reload
-            const newUrl = `${window.location.pathname}?status=${status}`;
-            window.history.pushState({ status }, '', newUrl);
-        }
-
-        // ====================================================================
-        // DATA LOADING
-        // ====================================================================
-
-        async function loadBooksData(status) {
-            try {
-                showLoading(true);
-
-                const response = await fetch(`/Books/GetAll?status=${status}`);
-                const result = await response.json();
-
-                if (result && result.data) {
-                    currentBooks = result.data;
-                    filteredBooks = [...currentBooks];
-                    renderBooks(currentBooks);
-                    currentStatus = status;
-
-                    showSuccess(`Loaded ${currentBooks.length} books`);
-                } else {
-                    throw new Error('Invalid response format');
-                }
-            } catch (error) {
-                console.error('Error loading books:', error);
-                showError('Failed to load books. Please refresh the page.');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // ====================================================================
-        // BOOK RENDERING
-        // ====================================================================
-
-        function renderBooks(books) {
-            const booksGrid = document.getElementById('booksGrid');
-
-            if (books.length === 0) {
-                booksGrid.innerHTML = '';
-                document.getElementById('emptyState').style.display = 'block';
-                return;
-            }
-
-            document.getElementById('emptyState').style.display = 'none';
-
-            booksGrid.innerHTML = books.map((book, index) => createBookCardHTML(book, index)).join('');
-
-            // Animate cards entrance
-            setTimeout(() => {
-                const cards = document.querySelectorAll('.book-card');
-                cards.forEach((card, index) => {
-                    setTimeout(() => {
-                        card.classList.add('loaded');
-                    }, index * 50);
-                });
-            }, 100);
-
-            updateResultsCount(books.length);
-        }
-
-        function createBookCardHTML(book, index) {
-            const isAvailable = book.copies && book.copies.length > 0;
-            const availableCopies = isAvailable ? book.copies.filter(c => c.isAvailable).length : 0;
-            const bookData = JSON.stringify({
-                id: book.id,
-                title: book.title,
-                author: book.author?.name || 'Unknown',
-                isbn: book.isbn,
-                description: book.description || 'No description',
-                totalCopies: book.copies?.length || 0,
-                availableCopies: availableCopies,
-                imageBinary: book.imageBinary || '/uploads/9780555816023.png'
-            });
-
-            return `
-                <div class="book-card"
-                     data-title="${book.title.toLowerCase()}"
-                     data-author="${(book.author?.name || '').toLowerCase()}"
-                     data-isbn="${book.isbn.toLowerCase()}"
-                     data-book-id="${book.id}"
-                     style="animation-delay: ${index * 50}ms">
-                    <div class="book-card-inner">
-                        <div class="book-cover">
-                            <img src="${book.imageBinary || '/uploads/9780555816023.png'}"
-                                 alt="${book.title}"
-                                 class="cover-image"
-                                 onerror="this.src='/uploads/9780555816023.png'">
-
-                            <div class="status-badge ${isAvailable ? 'available' : 'unavailable'}">
-                                <i class="bi ${isAvailable ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i>
-                                ${isAvailable ? 'Available' : 'Unavailable'}
-                            </div>
-
-                            <div class="quick-actions">
-                                <a href="/Books/Edit/${book.id}" class="action-btn edit-btn" title="Edit Book">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <button onclick="showBookDetails(${book.id}, '${bookData.replace(/'/g, "\\'")}')"
-                                        class="action-btn view-btn" title="Quick View">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button onclick="addBookCopy(${book.id}, '${book.title.replace(/'/g, "\\'")}')"
-                                        class="action-btn add-btn" title="Add Copy">
-                                    <i class="bi bi-plus-circle"></i>
-                                </button>
-                                <button onclick="deleteBook(${book.id}, '${book.title.replace(/'/g, "\\'")}')"
-                                        class="action-btn delete-btn" title="Delete Book">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="book-info">
-                            <h3 class="book-title" title="${book.title}">${book.title}</h3>
-                            <p class="book-author">by ${book.author?.name || 'Unknown Author'}</p>
-                            <p class="book-isbn">ISBN: ${book.isbn}</p>
-
-                            <div class="book-stats">
-                                <div class="stat-item">
-                                    <i class="bi bi-files"></i>
-                                    <span>${book.copies?.length || 0} copies</span>
-                                </div>
-                                <div class="stat-item">
-                                    <i class="bi bi-check-circle"></i>
-                                    <span>${availableCopies} available</span>
-                                </div>
-                            </div>
-
-                            <a href="/Books/Edit/${book.id}" class="primary-action">
-                                Manage Book
-                                <i class="bi bi-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ====================================================================
-        // BOOK ACTIONS
-        // ====================================================================
-
-        // Show book details in SweetAlert modal
-        async function showBookDetails(bookId) {
-            try {
-                const response = await fetch(`/Books/GetBook/${bookId}`);
-                const bookData = await response.json();
-
-                // Capitalize first letter of title
-                const formattedTitle = bookData.title.charAt(0).toUpperCase() + bookData.title.slice(1);
-
-                // Unicode non-breaking space (U+00A0) for proper spacing
-                const nbsp = '\u00A0';
-
-                Swal.fire({
-                    title: bookData.title,
-                    html: `
-                        <div class="row">
-                            <div class="col-md-4">
-                                <img src="${bookData.imageBinary}"
-                                     class="img-fluid rounded"
-                                     alt="${bookData.title}"
-                                     style="max-height: 100%; width: 100%; object-fit: cover;">
-                            </div>
-                            <div class="col-md-8">
-                                <p class="row mb-2"><strong style="color:gray;">Author:</strong>${nbsp}${bookData.author}</p>
-                                <p class="row mb-2"><strong style="color:gray;">ISBN:</strong>${nbsp}${bookData.isbn}</p>
-                                <p class="row mb-2"><strong style="color:gray;">Description:</strong><span style="text-align:start;">${bookData.description}</span></p>
-                                <p class="row mb-2"><strong style="color:gray;">Total Copies:</strong>${nbsp}${bookData.totalCopies}</p>
-                                <p class="row mb-2"><strong style="color:gray;">Available:</strong>${nbsp}${bookData.availableCopies}</p>
-                            </div>
-                        </div>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: `<i class="bi bi-pencil"></i>${nbsp}Edit Book`,
-                    cancelButtonText: 'Close',
-                    confirmButtonColor: '#1d4ed8',
-                    cancelButtonColor: '#6c757d',
-                    width: '600px'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = `/Books/Edit/${bookData.id}`;
-                    }
-                });
-            } catch (error) {
-                console.error('Error fetching book details:', error);
-                showError('Failed to load book details');
-            }
-        }
-
-        // Add book copy with proper statistics update
-        async function addBookCopy(bookId, bookTitle) {
-            const result = await Swal.fire({
-                title: 'Add Book Copy',
-                html: `Add a new copy of "<strong>${bookTitle}</strong>"?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#28a745',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="bi bi-plus-circle"></i> Yes, add copy!',
-                cancelButtonText: 'Cancel'
-            });
-
-            if (result.isConfirmed) {
-                try {
-                    const response = await fetch(`/Books/AddBookCopy/${bookId}`, {
-                        method: 'POST',
-                        headers: {
-                            'RequestVerificationToken': getAntiForgeryToken(),
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        // Show success toastr
-                        toastr.success(data.message, 'Copy Added!');
-
-                        // Update the specific book card statistics
-                        updateBookCardStatistics(bookId, data.totalCopies, data.availableCopies);
-
-                    } else {
-                        toastr.error(data.message, 'Cannot Add Copy');
-                    }
-                } catch (error) {
-                    console.error('Error adding book copy:', error);
-                    toastr.error('Failed to add copy. Please try again.', 'Network Error');
-                }
-            }
-        }
-
-        // Update book card statistics without full page reload
-        function updateBookCardStatistics(bookId, totalCopies, availableCopies) {
-            // Find the specific book card
-            const bookCard = document.querySelector(`[data-book-id="${bookId}"]`);
-
-            if (bookCard) {
-                // Update total copies stat
-                const totalCopiesElement = bookCard.querySelector('.stat-item:first-child span');
-                if (totalCopiesElement) {
-                    totalCopiesElement.textContent = `${totalCopies} copies`;
-
-                    // Add visual feedback
-                    totalCopiesElement.style.animation = 'countUp 0.6s ease';
-                    totalCopiesElement.style.color = '#28a745';
-                    setTimeout(() => {
-                        totalCopiesElement.style.color = '';
-                        totalCopiesElement.style.animation = '';
-                    }, 1000);
-                }
-
-                // Update available copies stat
-                const availableCopiesElement = bookCard.querySelector('.stat-item:last-child span');
-                if (availableCopiesElement) {
-                    availableCopiesElement.textContent = `${availableCopies} available`;
-
-                    // Add visual feedback
-                    availableCopiesElement.style.animation = 'countUp 0.6s ease';
-                    availableCopiesElement.style.color = '#28a745';
-                    setTimeout(() => {
-                        availableCopiesElement.style.color = '';
-                        availableCopiesElement.style.animation = '';
-                    }, 1000);
-                }
-
-                // Update status badge if book was unavailable
-                const statusBadge = bookCard.querySelector('.status-badge');
-                if (statusBadge && statusBadge.classList.contains('unavailable')) {
-                    statusBadge.classList.remove('unavailable');
-                    statusBadge.classList.add('available');
-                    statusBadge.innerHTML = '<i class="bi bi-check-circle-fill"></i> Available';
-                }
-
-                // Add highlight effect to the entire card
-                bookCard.style.outline = '2px solid #28a745';
-                bookCard.style.outlineOffset = '4px';
-                setTimeout(() => {
-                    bookCard.style.outline = '';
-                    bookCard.style.outlineOffset = '';
-                }, 1500);
-            }
-        }
-
-        // Utility function for anti-forgery token
-        function getAntiForgeryToken() {
-            const token = document.querySelector('input[name="__RequestVerificationToken"]');
-            return token ? token.value : '';
-        }
-
-
-        // Delete book with SweetAlert confirmation
-        async function deleteBook(bookId, bookTitle) {
-            const nbsp = '\u00A0';
-
-            const result = await Swal.fire({
-                title: 'Are you sure?',
-                html: `You want to delete "<strong>${bookTitle}</strong>"?<br><small class="text-muted">This action cannot be undone!</small>`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: `<i class="bi bi-trash"></i>${nbsp}Yes, delete it!`,
-                cancelButtonText: 'Cancel',
-                reverseButtons: false,
-                focusCancel: true
-            });
-
-            if (result.isConfirmed) {
-                try {
-                    const response = await fetch(`/Books/Delete/${bookId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'RequestVerificationToken': getAntiForgeryToken(),
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        await Swal.fire({
-                            title: 'Deleted!',
-                            text: 'The book has been deleted successfully.',
-                            icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-
-                        showSuccess(data.message);
-                        await loadBooksData(currentStatus);
-                    } else {
-                        showError(data.message || 'Failed to delete book');
-                    }
-                } catch (error) {
-                    console.error('Error deleting book:', error);
-                    showError('An error occurred while deleting the book');
-                }
-            }
-        }
-
-        // ====================================================================
-        // UTILITY FUNCTIONS
-        // ====================================================================
-
-        function updateResultsCount(count, searchTerm = '') {
-            const countElement = document.getElementById('resultsCount');
-            if (countElement) {
-                if (searchTerm) {
-                    countElement.textContent = `Found ${count} books matching "${searchTerm}"`;
-                } else {
-                    countElement.textContent = `${count} books`;
-                }
-            }
-        }
-
-        function showLoading(show) {
-            const spinner = document.getElementById('loadingSpinner');
-            const grid = document.getElementById('booksGrid');
-
-            if (spinner) spinner.style.display = show ? 'inline-block' : 'none';
-            if (grid) grid.style.opacity = show ? '0.6' : '1';
-        }
-
-        function getAntiForgeryToken() {
-            const token = document.querySelector('input[name="__RequestVerificationToken"]');
-            return token ? token.value : '';
-        }
-
-        function showSuccess(message) {
-            if (typeof toastr !== 'undefined') {
-                toastr.success(message);
-            }
-        }
-
-        function showError(message) {
-            if (typeof toastr !== 'undefined') {
-                toastr.error(message);
-            }
-        }
-
-        function showInfo(message) {
-            if (typeof toastr !== 'undefined') {
-                toastr.info(message);
-            }
-        }
-
-        // ====================================================================
-        // INITIALIZATION
-        // ====================================================================
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Animate initial cards
-            const bookCards = document.querySelectorAll('.book-card');
-            bookCards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.classList.add('loaded');
-                }, index * 100);
-            });
-
-            // Show welcome message if no books
-            if (currentBooks.length === 0) {
-                showInfo('Welcome! Start by adding your first book.');
-            }
-
-            // Add keyboard shortcuts
-            document.addEventListener('keydown', function(e) {
-                // Ctrl/Cmd + K to focus search
-                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                    e.preventDefault();
-                    document.getElementById('searchInput').focus();
-                }
-
-                // Escape to clear search
-                if (e.key === 'Escape') {
-                    const searchInput = document.getElementById('searchInput');
-                    if (searchInput.value) {
-                        searchInput.value = '';
-                        searchInput.dispatchEvent(new Event('input'));
-                    }
-                }
-            });
-        });
+         // Konfigurera toastr
+         toastr.options = {
+             closeButton: true,
+             newestOnTop: true,
+             progressBar: true,
+             positionClass: "toast-top-right",
+             timeOut: "3500",
+             showMethod: "fadeIn",
+             hideMethod: "fadeOut"
+         };
+
+         // Globala variabler
+         let currentPage = @Model.CurrentPage;
+         let totalPages = @Model.TotalPages;
+
+         // ====================================================================
+         // SÖKFUNKTIONALITET
+         // ====================================================================
+
+         function clearSearch() {
+             const url = new URL(window.location);
+             url.searchParams.delete('search');
+             url.searchParams.set('page', '1'); // Återställ till första sidan
+             window.location.href = url.toString();
+         }
+
+        // Tangentbordsgenvägar
+         document.addEventListener('keydown', function(e) {
+             // Convert key to lowercase for case-insensitive comparison
+             const keyPressed = e.key.toLowerCase();
+
+             // Ctrl/Cmd + K to focus search (works with any Caps Lock state)
+             if ((e.ctrlKey || e.metaKey) && keyPressed === 'k') {
+                 e.preventDefault();
+                 document.getElementById('searchInput').focus();
+             }
+
+             // Escape to clear search (works with any Caps Lock state)
+             if (keyPressed === 'escape') {
+                 const searchInput = document.getElementById('searchInput');
+                 if (searchInput.value) {
+                     clearSearch();
+                 }
+             }
+         });
+
+         // ====================================================================
+         // BOKÅTGÄRDER
+         // ====================================================================
+
+         async function addBookCopy(bookId, bookTitle) {
+             const result = await Swal.fire({
+                 title: 'Lägg till bokexemplar',
+                 html: `
+                     <p>Lägg till ett nytt exemplar av "<strong>${bookTitle}</strong>"?</p>
+                     <div class="row g-3 mt-3">
+                         <div class="col-6">
+                             <label class="form-label">Skick:</label>
+                             <select id="copyCondition" class="form-control">
+                                 <option value="New">Ny</option>
+                                 <option value="Excellent">Utmärkt</option>
+                                 <option value="Good" selected>Bra</option>
+                                 <option value="Fair">Godtagbar</option>
+                                 <option value="Poor">Dålig</option>
+                             </select>
+                         </div>
+                         <div class="col-6">
+                             <label class="form-label">Plats:</label>
+                             <input type="text" id="copyLocation" class="form-control" placeholder="t.ex. A-101">
+                         </div>
+                         <div class="col-12">
+                             <label class="form-label">Inköpspris:</label>
+                             <input type="number" id="copyPrice" class="form-control" step="0.01" min="0" placeholder="0.00">
+                         </div>
+                     </div>
+                 `,
+                 icon: 'question',
+                 showCancelButton: true,
+                 confirmButtonColor: '#28a745',
+                 cancelButtonColor: '#6c757d',
+                 confirmButtonText: '<i class="bi bi-plus-circle"></i> Lägg till exemplar',
+                 cancelButtonText: 'Avbryt',
+                 preConfirm: () => {
+                     return {
+                         condition: document.getElementById('copyCondition').value,
+                         location: document.getElementById('copyLocation').value,
+                         price: document.getElementById('copyPrice').value
+                     };
+                 }
+             });
+
+             if (result.isConfirmed) {
+                 try {
+                     const formData = new FormData();
+                     formData.append('condition', result.value.condition);
+                     formData.append('location', result.value.location);
+                     if (result.value.price) {
+                         formData.append('purchasePrice', result.value.price);
+                     }
+
+                     const response = await fetch(`/Books/AddBookCopy/${bookId}`, {
+                         method: 'POST',
+                         headers: {
+                             'RequestVerificationToken': getAntiForgeryToken()
+                         },
+                         body: formData
+                     });
+
+                     const data = await response.json();
+
+                     if (data.success) {
+                         toastr.success(data.message);
+                         // Ladda om sidan för att visa uppdaterad statistik
+                         setTimeout(() => window.location.reload(), 1000);
+                     } else {
+                         toastr.error(data.message);
+                     }
+                 } catch (error) {
+                     console.error('Fel vid tillägg av bokexemplar:', error);
+                     toastr.error('Misslyckades att lägga till exemplar. Försök igen.');
+                 }
+             }
+         }
+
+         async function downloadCover(bookId) {
+             try {
+                 const response = await fetch(`/Books/DownloadCover/${bookId}`);
+                 if (response.ok) {
+                     const blob = await response.blob();
+                     const url = window.URL.createObjectURL(blob);
+                     const a = document.createElement('a');
+                     a.href = url;
+                     a.download = `bok_${bookId}_omslag.jpg`;
+                     document.body.appendChild(a);
+                     a.click();
+                     document.body.removeChild(a);
+                     window.URL.revokeObjectURL(url);
+                     toastr.success('Omslag nedladdat framgångsrikt');
+                 } else {
+                     toastr.error('Misslyckades att ladda ner omslag');
+                 }
+             } catch (error) {
+                 console.error('Fel vid nedladdning av omslag:', error);
+                 toastr.error('Misslyckades att ladda ner omslag');
+             }
+         }
+
+         async function generateReport(bookId) {
+             try {
+                 const response = await fetch(`/Books/GenerateBookReport/${bookId}`);
+                 if (response.ok) {
+                     const blob = await response.blob();
+                     const url = window.URL.createObjectURL(blob);
+                     const a = document.createElement('a');
+                     a.href = url;
+                     a.download = `bokrapport_${bookId}.txt`;
+                     document.body.appendChild(a);
+                     a.click();
+                     document.body.removeChild(a);
+                     window.URL.revokeObjectURL(url);
+                     toastr.success('Rapport genererad framgångsrikt');
+                 } else {
+                     toastr.error('Misslyckades att generera rapport');
+                 }
+             } catch (error) {
+                 console.error('Fel vid rapportgenerering:', error);
+                 toastr.error('Misslyckades att generera rapport');
+             }
+         }
+
+         // ====================================================================
+         // VYOMKOPPLARE
+         // ====================================================================
+
+         function setGridView() {
+             document.getElementById('booksContainer').className = 'books-container';
+             document.getElementById('booksGrid').className = 'books-grid';
+
+             // Uppdatera knappstatus
+             document.querySelectorAll('.view-options .btn').forEach(btn => btn.classList.remove('active'));
+             event.target.closest('.btn').classList.add('active');
+         }
+
+         function setListView() {
+             document.getElementById('booksContainer').className = 'books-container list-view';
+             document.getElementById('booksGrid').className = 'books-list';
+
+             // Uppdatera knappstatus
+             document.querySelectorAll('.view-options .btn').forEach(btn => btn.classList.remove('active'));
+             event.target.closest('.btn').classList.add('active');
+         }
+
+         // ====================================================================
+         // HJÄLPFUNKTIONER
+         // ====================================================================
+
+         function getAntiForgeryToken() {
+             const token = document.querySelector('input[name="__RequestVerificationToken"]');
+             return token ? token.value : '';
+         }
+
+         // ====================================================================
+         // INITIALISERING
+         // ====================================================================
+
+         document.addEventListener('DOMContentLoaded', function() {
+             // Animera bokkort vid laddning
+             const bookCards = document.querySelectorAll('.book-card');
+             bookCards.forEach((card, index) => {
+                 setTimeout(() => {
+                     card.classList.add('loaded');
+                 }, index * 50);
+             });
+
+             // Visa framgångsmeddelande om omdirigerad från skapa/redigera
+             @if (TempData["Success"] != null)
+             {
+                                         <text>toastr.success('@TempData["Success"]');</text>
+             }
+
+             @if (TempData["Error"] != null)
+             {
+                                         <text>toastr.error('@TempData["Error"]');</text>
+             }
+
+             // Tangentbordsgenvägar
+             document.addEventListener('keydown', function(e) {
+                 // Ctrl/Cmd + K för att fokusera sök
+                 if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                     e.preventDefault();
+                     document.getElementById('searchInput').focus();
+                 }
+
+                 // Escape för att rensa sökning
+                 if (e.key === 'Escape') {
+                     const searchInput = document.getElementById('searchInput');
+                     if (searchInput.value) {
+                         clearSearch();
+                     }
+                 }
+             });
+         });
     </script>
 }
+
+<style>
+    /* Header Styling */
+    .books-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+        border-radius: var(--radius-xl);
+        padding: 3rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .header-pattern {
+        background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+    }
+
+    .header-title {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Biblioteksikon */
+    .library-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    .icon-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+
+    .icon-pulse {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        border: 2px solid var(--primary-color);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+        opacity: 0.6;
+    }
+
+    @@keyframes pulse {
+        0% {
+            transform: scale(1);
+            opacity: 0.6;
+        }
+
+        50% {
+            transform: scale(1.1);
+            opacity: 0.3;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 0.6;
+        }
+    }
+
+    /* Snabbstatistik */
+    .quick-stats {
+        margin-top: 1.5rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.05rem .5rem;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        font-size: 0.9rem;
+    }
+
+    .stat-value {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--primary-color);
+    }
+
+    .stat-label {
+        font-weight: 500;
+        color: var(--gray-600);
+    }
+
+    /* Sök- och filtreringssektion */
+    .search-filter-section {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-xl);
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .search-container {
+        position: relative;
+    }
+
+    .search-input {
+        padding-left: 3rem;
+        padding-right: 3rem;
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        transition: all var(--transition-normal);
+    }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-400);
+    }
+
+    .clear-search {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--gray-400);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        transition: all var(--transition-fast);
+    }
+
+        .clear-search:hover {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+    /* Bokrutnät */
+    .books-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 2rem;
+    }
+
+    .books-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .list-view .book-card {
+        display: flex;
+        max-width: none;
+    }
+
+    .list-view .book-card-inner {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        gap: 1.5rem;
+    }
+
+    .list-view .book-cover {
+        width: 280px;
+        flex-shrink: 0;
+    }
+
+    .list-view .book-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    /* Bokkort */
+    .book-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all var(--transition-normal);
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+        .book-card.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .book-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+        }
+
+    .book-card-inner {
+        padding: 1.5rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Bokomslag */
+    .book-cover {
+        position: relative;
+        width: 100%;
+        height: 280px;
+        margin-bottom: 1.5rem;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .cover-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: all var(--transition-normal);
+    }
+
+    .book-card:hover .cover-image {
+        transform: scale(1.05);
+    }
+
+    /* Statusmärkning */
+    .status-badge {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--radius-md);
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        backdrop-filter: blur(10px);
+    }
+
+        .status-badge.available {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+        }
+
+        .status-badge.unavailable {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+        }
+
+    /* Snabbåtgärder */
+    .quick-actions {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        opacity: 0;
+        transition: all var(--transition-normal);
+    }
+
+    .book-card:hover .quick-actions {
+        opacity: 1;
+    }
+
+    .action-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid white;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all var(--transition-fast);
+        backdrop-filter: blur(10px);
+    }
+
+        .action-btn:hover {
+            background: white;
+            color: var(--gray-800);
+            transform: scale(1.1);
+        }
+
+    /* Bokinfo */
+    .book-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .book-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--gray-800);
+        margin-bottom: 0.5rem;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .book-subtitle {
+        font-size: 0.9rem;
+        color: var(--gray-600);
+        margin-bottom: 0.5rem;
+        font-style: italic;
+    }
+
+    .book-author {
+        color: var(--gray-600);
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+    }
+
+    .book-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .meta-item {
+        font-size: 0.85rem;
+        color: var(--gray-500);
+        display: flex;
+        align-items: center;
+    }
+
+    /* Bokstatistik */
+    .book-stats {
+        margin-bottom: 1rem;
+    }
+
+    .stat-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .book-stats .stat-item {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+        border-radius: var(--radius-md);
+        background: rgba(248, 250, 252, 0.8);
+    }
+
+    /* Bokåtgärder */
+    .book-actions {
+        display: flex;
+        align-items: start;
+        gap: 0.5rem;
+    }
+
+        .book-actions .btn {
+            flex: 1;
+            font-size: 0.85rem;
+        }
+
+    /* Sidnumrering */
+    .pagination-nav {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-xl);
+        padding: 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .pagination .page-link {
+        border: 2px solid var(--gray-200);
+        color: var(--gray-600);
+        padding: 0.75rem 1rem;
+        margin: 0 0.25rem;
+        border-radius: var(--radius-md);
+        transition: all var(--transition-normal);
+    }
+
+    .pagination .page-item.active .page-link {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+
+    .pagination .page-link:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background: rgba(59, 130, 246, 0.1);
+    }
+
+    /* Tomt tillstånd */
+    .empty-state {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-xl);
+        padding: 4rem 2rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .empty-content i {
+        font-size: 4rem;
+        color: var(--gray-300);
+        margin-bottom: 1rem;
+    }
+
+    /* Responsiv design */
+    @@media (max-width: 768px) {
+        .books-header {
+            padding: 2rem 1rem;
+        }
+
+        .search-filter-section {
+            padding: 1.5rem;
+        }
+
+            .search-filter-section .row > div {
+                margin-bottom: 1rem;
+            }
+
+        .books-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .quick-stats {
+            flex-direction: column;
+        }
+
+        .header-actions {
+            text-align: center;
+        }
+
+        .list-view .book-card-inner {
+            flex-direction: column;
+        }
+
+        .list-view .book-cover {
+            width: 100%;
+            height: 200px;
+        }
+    }
+
+    /* Räkna upp animation */
+    @@keyframes countUp {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.2);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+</style>

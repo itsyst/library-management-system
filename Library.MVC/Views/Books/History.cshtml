@@ -1,0 +1,1040 @@
+﻿@using Library.Domain.Entities
+@using Library.Domain.Enums
+@using Library.MVC.Controllers
+@using Library.MVC.ViewModels
+@model Library.MVC.ViewModels.BookHistoryViewModel
+
+@{
+    ViewData["Title"] = $"Bokhistorik - {Model.Book.Title}";
+    var bookLoans = ViewBag.BookLoans as IEnumerable<Loan>;
+    var bookStats = ViewBag.BookStatistics as BookHistoryStatistics;
+    var bookCopies = ViewBag.BookCopies as IEnumerable<BookCopy>;
+    var relatedBooks = ViewBag.RelatedBooks as IEnumerable<BookDetails>;
+}
+
+<!-- Modern bokhistorik-container -->
+<div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-11">
+            <!-- Kreativ bokrubriksektion -->
+            <div class="book-history-header mb-5 position-relative overflow-hidden">
+                <!-- Bokbakgrundsmönster -->
+                <div class="book-header-pattern position-absolute w-100 h-100"></div>
+
+                <div class="position-relative z-2">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="book-history-icon mb-3">
+                                <div class="book-icon-wrapper">
+                                    <i class="bi bi-book-half"></i>
+                                    <div class="book-pulse-indicator"></div>
+                                </div>
+                            </div>
+
+                            <h1 class="display-6 fw-bold mb-2 book-header-title">Bokhistorik</h1>
+                            <p class="text-muted mb-3 fs-5">
+                                Fullständig lånehistorik för <strong class="text-primary">@Model.Book.Title</strong>
+                            </p>
+
+                            <!-- Boksnabböversikt -->
+                            <div class="book-overview">
+                                <div class="book-overview-item m-1">
+                                    <i class="book-item-label bi bi-person-fill mr-1"></i>
+                                    <span class="book-item-value">av @(Model.Book.Author?.Name ?? "Okänd författare")</span>
+                                </div>
+                                <div class="book-overview-item m-1">
+                                    <i class="book-item-label bi bi-calendar-date mr-1"></i>
+                                    <span class="book-item-value">Publicerad @(Model.Book.PublicationDate?.ToString() ?? "Okänt år")</span>
+                                </div>
+                                <div class="book-overview-item m-1">
+                                    <i class="book-item-label bi bi-bookmark-fill mr-1"></i>
+                                    <span class="book-item-value">@(Model.Book.Genre ?? "Okänd genre")</span>
+                                </div>
+                                <div class="book-overview-item m-1">
+                                    <i class="book-item-label bi bi-collection mr-1"></i>
+                                    <span class="text-primary"><strong>@(bookCopies?.Count() ?? 0)</strong></span>
+                                    <span class="book-item-value">exemplar</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4 text-lg-end">
+                            <div class="book-cover-display m-2">
+                                <img src="@(Model.Book.ImageBinary ?? "/uploads/9780555816023.png")"
+                                     alt="@Model.Book.Title"
+                                     class="book-cover-large" />
+                                <div class="availability-badge @GetAvailabilityClass(Model.Book.IsAvailable)">
+                                    <i class="bi bi-@GetAvailabilityIcon(Model.Book.IsAvailable)"></i>
+                                    @GetSwedishAvailability(Model.Book.IsAvailable)
+                                </div>
+                            </div>
+                            <div class="book-header-actions d-flex flex-column gap-2">
+                                <a asp-controller="Books" asp-action="Details" asp-route-id="@Model.Book.Id" class="btn btn-primary m-1">
+                                    <i class="bi bi-eye mr-2"></i>
+                                    Visa bokdetaljer
+                                </a>
+                                <button onclick="printBookHistory()" class="btn btn-outline-secondary m-1">
+                                    <i class="bi bi-printer mr-2"></i>
+                                    Skriv ut historik
+                                </button>
+                                <a asp-controller="Loans" asp-action="Index" class="btn btn-outline-secondary m-1">
+                                    <i class="bi bi-arrow-left mr-2"></i>
+                                    Tillbaka till lån
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bokstatistik -->
+            @if (bookStats != null)
+            {
+                <div class="book-statistics-section mb-5">
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <h3 class="section-title">
+                                <i class="bi bi-graph-up-arrow mr-2"></i>
+                                Bokstatistik
+                            </h3>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card loans-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4 class="text-primary">@bookStats.TotalLoans</h4>
+                                    <p>Totalt antal lån</p>
+                                    <small class="text-muted">@bookStats.ActiveLoans för närvarande aktiva</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card popularity-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-heart-fill"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4 class="text-danger">@bookStats.PopularityScore</h4>
+                                    <p>Popularitetspoäng</p>
+                                    <small class="text-muted">Baserat på lånefrekvens</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card members-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-people-fill"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4 class="text-success">@bookStats.UniqueBorrowers</h4>
+                                    <p>Unika låntagare</p>
+                                    <small class="text-muted">Olika medlemmar som lånat boken</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="stat-card duration-stats">
+                                <div class="stat-icon">
+                                    <i class="bi bi-stopwatch"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h4 class="text-info">@bookStats.AverageLoanDays</h4>
+                                    <p>Genomsnittlig lånetid</p>
+                                    <small class="text-muted">Dagar per lån</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="row g-4">
+                <!-- Bokexemplar -->
+                <div class="col-12 col-lg-6 mb-3">
+                    <div class="book-history-card copies-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-collection mr-2"></i>
+                                Bokexemplar
+                            </h5>
+                            <p class="card-subtitle">Alla exemplar av denna bok</p>
+                        </div>
+                        <div class="card-body">
+                            @if (bookCopies != null && bookCopies.Any())
+                            {
+                                <div class="copies-list">
+                                    @foreach (var copy in bookCopies)
+                                    {
+                                        <div class="copy-item">
+                                            <div class="copy-info">
+                                                <div class="copy-header">
+                                                    <h6 class="copy-id">Exemplar #@copy.Id</h6>
+                                                    <span class="condition-badge @GetConditionClass(copy.Condition)">
+                                                        @GetSwedishCondition(copy.Condition)
+                                                    </span>
+                                                </div>
+                                                <div class="copy-details">
+                                                    <span class="detail-item">
+                                                        <i class="bi bi-geo-alt mr-1"></i>
+                                                        @copy.Location
+                                                    </span>
+                                                    <span class="detail-item">
+                                                        <i class="bi bi-calendar-plus mr-1"></i>
+                                                        Tillagd @copy.CreatedDate.ToString("MMM dd, yyyy")
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="copy-status">
+                                                @if (copy.IsAvailable)
+                                                {
+                                                    <span class="status-available">
+                                                        <i class="bi bi-check-circle"></i>
+                                                        Tillgänglig
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="status-unavailable">
+                                                        <i class="bi bi-x-circle"></i>
+                                                        Utlånad
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="empty-message">
+                                    <i class="bi bi-collection"></i>
+                                    <p>Inga exemplar registrerade</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lånehistorik tidslinje -->
+                <div class="col-12 col-lg-6 mb-3">
+                    <div class="book-history-card loan-timeline-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-clock-history mr-2"></i>
+                                Lånetidslinje
+                            </h5>
+                            <p class="card-subtitle">Kronologisk översikt av alla lån</p>
+                        </div>
+                        <div class="card-body">
+                            @if (bookLoans != null && bookLoans.Any())
+                            {
+                                <div class="loan-timeline">
+                                    @foreach (var loan in bookLoans.OrderByDescending(l => l.StartDate).Take(10))
+                                    {
+                                        <div class="timeline-item">
+                                            <div class="timeline-marker @GetStatusClass(loan.Status)">
+                                                <i class="bi bi-@GetStatusIcon(loan.Status)"></i>
+                                            </div>
+                                            <div class="timeline-content">
+                                                <div class="loan-summary">
+                                                    <h6 class="loan-title">
+                                                        <a asp-controller="Loans" asp-action="Details" asp-route-id="@loan.Id">
+                                                            Lån #@loan.Id
+                                                        </a>
+                                                        <span class="status-badge badge-@GetStatusBadgeClass(loan.Status)">
+                                                            @GetSwedishLoanStatus(loan.Status)
+                                                        </span>
+                                                    </h6>
+                                                    <p class="borrower-name">
+                                                        <i class="bi bi-person mr-1 text-muted"></i>
+                                                        @loan.Member?.Name
+                                                    </p>
+                                                    <div class="loan-details">
+                                                        <span class="detail-item">
+                                                            <i class="bi bi-calendar-check mr-1"></i>
+                                                            Lånad: @loan.StartDate.ToString("MMM dd, yyyy")
+                                                        </span>
+                                                        <span class="detail-item">
+                                                            <i class="bi bi-calendar-x mr-1"></i>
+                                                            Förfall: @loan.DueDate.ToString("MMM dd, yyyy")
+                                                        </span>
+                                                        @if (loan.ReturnDate.HasValue)
+                                                        {
+                                                            <span class="detail-item">
+                                                                <i class="bi bi-calendar-check mr-1"></i>
+                                                                Återlämnad: @loan.ReturnDate.Value.ToString("MMM dd, yyyy")
+                                                            </span>
+                                                        }
+                                                        @if (loan.Fee > 0)
+                                                        {
+                                                            <span class="detail-item text-danger">
+                                                                <i class="bi bi-currency-dollar mr-1"></i>
+                                                                Avgift: @FormatSwedishCurrency(loan.Fee)
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                @if (bookLoans.Count() > 10)
+                                {
+                                    <div class="text-center mt-3">
+                                        <button class="btn btn-outline-primary btn-sm" onclick="loadMoreLoans()">
+                                            <i class="bi bi-arrow-down mr-1"></i>
+                                            Visa fler lån (@(bookLoans.Count() - 10) till)
+                                        </button>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="empty-message">
+                                    <i class="bi bi-clock-history"></i>
+                                    <p>Inga lån registrerade för denna bok</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nuvarande låntagare -->
+                <div class="col-12 mb-3">
+                    <div class="book-history-card current-borrowers-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-person-check mr-2"></i>
+                                Nuvarande låntagare
+                            </h5>
+                            <p class="card-subtitle">Medlemmar som för närvarande har lånat exemplar av denna bok</p>
+                        </div>
+                        <div class="card-body">
+                            @{
+                                var currentLoans = bookLoans?.Where(l => l.Status == LoanStatus.Active || l.Status == LoanStatus.Overdue);
+                            }
+
+                            @if (currentLoans != null && currentLoans.Any())
+                            {
+                                <div class="current-borrowers-grid">
+                                    @foreach (var loan in currentLoans)
+                                    {
+                                        <div class="borrower-card">
+                                            <div class="borrower-header">
+                                                <div class="borrower-avatar">
+                                                    <i class="bi bi-person-circle"></i>
+                                                </div>
+                                                <div class="borrower-info">
+                                                    <h6 class="borrower-name">@loan.Member?.Name</h6>
+                                                    <p class="member-id">Medlem #@loan.Member?.Id</p>
+                                                </div>
+                                                <div class="loan-status-indicator @GetStatusClass(loan.Status)">
+                                                    @GetSwedishLoanStatus(loan.Status)
+                                                </div>
+                                            </div>
+                                            <div class="borrower-loan-details">
+                                                <div class="loan-dates">
+                                                    <div class="date-item">
+                                                        <span class="date-label">Lånad:</span>
+                                                        <span class="date-value">@loan.StartDate.ToString("MMM dd")</span>
+                                                    </div>
+                                                    <div class="date-item">
+                                                        <span class="date-label">Förfall:</span>
+                                                        <span class="date-value @(loan.DueDate < DateTime.Now ? "text-danger" : "")">
+                                                            @loan.DueDate.ToString("MMM dd")
+                                                        </span>
+                                                    </div>
+                                                    <div class="date-item">
+                                                        <span class="date-label">Dagar kvar:</span>
+                                                        <span class="date-value @(loan.DueDate < DateTime.Now ? "text-danger" : "text-success")">
+                                                            @((loan.DueDate - DateTime.Now).Days)
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="borrower-actions">
+                                                    <a asp-controller="Loans" asp-action="Details" asp-route-id="@loan.Id"
+                                                       class="btn btn-outline-primary btn-sm">
+                                                        <i class="bi bi-eye mr-1"></i>
+                                                        Visa lån
+                                                    </a>
+                                                    <a asp-controller="Members" asp-action="Details" asp-route-id="@loan.Member?.Id"
+                                                       class="btn btn-outline-info btn-sm">
+                                                        <i class="bi bi-person mr-1"></i>
+                                                        Visa medlem
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="empty-message">
+                                    <i class="bi bi-person-check"></i>
+                                    <p>Inga aktiva lån för denna bok</p>
+                                    <a asp-controller="Loans" asp-action="Create" asp-route-bookId="@Model.Book.Id"
+                                       class="btn btn-primary mt-2">
+                                        <i class="bi bi-plus mr-1"></i>
+                                        Skapa nytt lån
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Relaterade böcker -->
+                @if (relatedBooks != null && relatedBooks.Any())
+                {
+                    <div class="col-12">
+                        <div class="book-history-card related-books-card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-book mr-2"></i>
+                                    Relaterade böcker
+                                </h5>
+                                <p class="card-subtitle">Andra böcker av samma författare eller genre</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="related-books-scroll">
+                                    @foreach (var book in relatedBooks.Take(6))
+                                    {
+                                        <div class="related-book-item">
+                                            <div class="related-book-cover">
+                                                <img src="@(book.ImageBinary ?? "/uploads/9780555816023.png")"
+                                                     alt="@book.Title"
+                                                     class="cover-image-small" />
+                                            </div>
+                                            <div class="related-book-info">
+                                                <h6 class="related-book-title">@book.Title</h6>
+                                                <p class="related-book-author">@book.Author?.Name</p>
+                                                <div class="related-book-actions">
+                                                    <a asp-controller="Books" asp-action="Details" asp-route-id="@book.Id"
+                                                       class="btn btn-outline-primary btn-sm">
+                                                        <i class="bi bi-eye mr-1"></i>
+                                                        Visa
+                                                    </a>
+                                                    <a asp-action="History" asp-route-bookId="@book.Id" class="btn btn-outline-info btn-sm">
+                                                        <i class="bi bi-clock-history mr-1"></i>
+                                                        Historik
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetStatusClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "status-active",
+            LoanStatus.Returned => "status-returned",
+            LoanStatus.Overdue => "status-overdue",
+            LoanStatus.Lost => "status-lost",
+            LoanStatus.Cancelled => "status-cancelled",
+            _ => "status-unknown"
+        };
+    }
+
+    private string GetStatusBadgeClass(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "primary",
+            LoanStatus.Returned => "success",
+            LoanStatus.Overdue => "danger",
+            LoanStatus.Lost => "dark",
+            LoanStatus.Cancelled => "secondary",
+            _ => "light"
+        };
+    }
+
+    private string GetStatusIcon(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "play-circle",
+            LoanStatus.Returned => "check-circle",
+            LoanStatus.Overdue => "exclamation-circle",
+            LoanStatus.Lost => "x-circle",
+            LoanStatus.Cancelled => "slash-circle",
+            _ => "question-circle"
+        };
+    }
+
+    private string GetSwedishLoanStatus(LoanStatus status)
+    {
+        return status switch
+        {
+            LoanStatus.Active => "Aktiv",
+            LoanStatus.Returned => "Återlämnad",
+            LoanStatus.Overdue => "Försenad",
+            LoanStatus.Lost => "Förlorad",
+            LoanStatus.Cancelled => "Avbruten",
+            _ => "Okänd"
+        };
+    }
+
+    private string GetAvailabilityClass(bool isAvailable)
+    {
+        return isAvailable ? "availability-available" : "availability-unavailable";
+    }
+
+    private string GetAvailabilityIcon(bool isAvailable)
+    {
+        return isAvailable ? "check-circle-fill" : "x-circle-fill";
+    }
+
+    private string GetSwedishAvailability(bool isAvailable)
+    {
+        return isAvailable ? "Tillgänglig" : "Utlånad";
+    }
+
+    private string GetConditionClass(BookCondition condition)
+    {
+        return condition switch
+        {
+            BookCondition.New => "condition-new",
+            BookCondition.Good => "condition-good",
+            BookCondition.Fair => "condition-fair",
+            BookCondition.Poor => "condition-poor",
+            BookCondition.Damaged => "condition-damaged",
+            _ => "condition-unknown"
+        };
+    }
+
+    private string GetSwedishCondition(BookCondition condition)
+    {
+        return condition switch
+        {
+            BookCondition.New => "Ny",
+            BookCondition.Good => "Bra",
+            BookCondition.Fair => "Acceptabel",
+            BookCondition.Poor => "Dålig",
+            BookCondition.Damaged => "Skadad",
+            _ => "Okänd"
+        };
+    }
+
+    private string FormatSwedishCurrency(decimal amount)
+    {
+        var swedishCulture = new System.Globalization.CultureInfo("sv-SE");
+        var numberFormat = (System.Globalization.NumberFormatInfo)swedishCulture.NumberFormat.Clone();
+        numberFormat.CurrencyPositivePattern = 3;
+        numberFormat.CurrencyNegativePattern = 8;
+        numberFormat.CurrencySymbol = "kr";
+
+        return amount.ToString("C", numberFormat);
+    }
+}
+
+@section Scripts {
+    <script>
+        function printBookHistory() {
+            window.print();
+        }
+
+        function loadMoreLoans() {
+            // Ajax call to load more loans
+        }
+
+        // Animera element vid laddning
+        document.addEventListener('DOMContentLoaded', function() {
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            timelineItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.classList.add('loaded');
+                }, index * 150);
+            });
+
+            const borrowerCards = document.querySelectorAll('.borrower-card');
+            borrowerCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('loaded');
+                }, index * 100);
+            });
+
+            const relatedBooks = document.querySelectorAll('.related-book-item');
+            relatedBooks.forEach((book, index) => {
+                setTimeout(() => {
+                    book.classList.add('loaded');
+                }, index * 80);
+            });
+        });
+    </script>
+}
+
+<style>
+    /* Bokhistorik-specifik styling */
+    .book-history-header {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+        border-radius: var(--radius-xl);
+        padding: 3rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .book-header-pattern {
+        background: radial-gradient(circle at 30% 40%, rgba(16, 185, 129, 0.15) 0%, transparent 50%), radial-gradient(circle at 70% 30%, rgba(59, 130, 246, 0.15) 0%, transparent 50%), radial-gradient(circle at 50% 70%, rgba(147, 51, 234, 0.1) 0%, transparent 50%);
+    }
+
+    .book-header-title {
+        background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .book-item-label {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--primary-color);
+    }
+
+    .book-item-value {
+        font-weight: 500;
+        color: var(--gray-600);
+    }
+
+    /* Bokikon */
+    .book-history-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    .book-icon-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    .book-pulse-indicator {
+        position: absolute;
+        bottom: -5px;
+        right: -5px;
+        width: 30px;
+        height: 30px;
+        background: #f59e0b;
+        border-radius: 50%;
+        border: 3px solid white;
+        animation: pulse 2s infinite;
+    }
+
+    /* Bokövesikt */
+    .section-title, .card-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-subtitle {
+        padding-top: .2rem;
+        font-size: small;
+        color: #6c757d !important;
+    }
+
+    .book-overview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .book-overview-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: .05rem .5rem;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        font-size: 0.9rem;
+    }
+    /* Bokomslag */
+    .cover-image-small {
+
+    }
+
+    .book-cover-display {
+        position: relative;
+        display: flex;
+        justify-content: end;
+    }
+
+    .book-cover-large {
+        width: 200px;
+        height: 280px;
+        object-fit: cover;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        transition: transform var(--transition-normal);
+    }
+
+        .book-cover-large:hover {
+            transform: scale(1.05);
+        }
+
+    .availability-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-md);
+        font-size: 0.8rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .availability-available {
+        background: rgba(16, 185, 129, 0.9);
+        color: white;
+    }
+
+    .availability-unavailable {
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+    }
+
+    /* Bokstatistik */
+    .book-statistics-section {
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-xl);
+        padding: 2rem;
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+
+    .loans-stats .stat-icon {
+        color: #8b5cf6;
+    }
+
+    .popularity-stats .stat-icon, .status-overdue, .status-cancelled {
+        color: #ef4444;
+    }
+
+    .members-stats .stat-icon, .status-returned {
+        color: #10b981;
+    }
+
+
+    .duration-stats .stat-icon, .status-active {
+        color: #06b6d4;
+    }
+
+
+    .status-lost,
+    .status-unknown {
+        color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Bokhistorikkort */
+    .book-history-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all var(--transition-normal);
+        height: 100%;
+    }
+
+        .book-history-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .book-history-card .card-header {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border-bottom: 1px solid rgba(16, 185, 129, 0.1);
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            padding: 1.5rem;
+        }
+
+    /* Exemplarlista */
+    .copies-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .copy-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(229, 231, 235, 0.5);
+        transition: all var(--transition-normal);
+    }
+
+        .copy-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+    .copy-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .copy-id {
+        font-weight: 600;
+        color: var(--gray-800);
+        margin: 0;
+    }
+
+    .condition-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .condition-new {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .condition-good {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+    }
+
+    .condition-fair {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .condition-poor {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    .condition-damaged {
+        background: rgba(107, 114, 128, 0.1);
+        color: #6b7280;
+    }
+
+    .copy-details, .loan-details {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+        color: var(--gray-600);
+    }
+
+    .status-available {
+        color: #10b981;
+        font-weight: 600;
+    }
+
+    .status-unavailable {
+        color: #ef4444;
+        font-weight: 600;
+    }
+
+    /* Nuvarande låntagare */
+    .current-borrowers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(25vw, 1fr));
+        gap: 1.5rem;
+    }
+
+    .borrower-card {
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        border: 1px solid rgba(229, 231, 235, 0.5);
+        transition: all var(--transition-normal);
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+        .borrower-card.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .borrower-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+    .borrower-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .borrower-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+
+    .borrower-name {
+        font-weight: 600;
+        color: var(--gray-800);
+        margin: 0;
+    }
+
+    .member-id {
+        font-size: 0.8rem;
+        color: var(--gray-500);
+        margin: 0;
+    }
+
+    .loan-status-indicator {
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .borrower-loan-details {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .borrower-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* Relaterade böcker */
+    .related-books-scroll {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.5rem;
+        overflow-x: auto;
+        padding: 1rem 0;
+    }
+
+    .related-book-item {
+        flex: 0 0 200px;
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        border: 1px solid rgba(229, 231, 235, 0.5);
+        transition: all var(--transition-normal);
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+        .related-book-item.loaded {
+            opacity: 1;
+            transform: translateX(0);
+            display:flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .related-book-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+    .related-book-cover {
+        width: 100%;
+        height: 120px;
+        margin-bottom: 1rem;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+    }
+
+    img {
+        width: 100%;
+    }
+
+    .related-book-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin: 0 0 0.25rem 0;
+        line-height: 1.3;
+    }
+
+    .related-book-author {
+        font-size: 0.8rem;
+        color: var(--gray-600);
+        margin: 0 0 1rem 0;
+    }
+
+    .related-book-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* Responsiv design */
+    @@media (max-width: 768px) {
+        .book-history-header {
+            padding: 2rem 1rem;
+        }
+
+        .book-overview {
+            flex-direction: column;
+        }
+
+        .book-cover-large {
+            width: 150px;
+            height: 210px;
+        }
+
+        .current-borrowers-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .related-books-scroll {
+            display:flex;
+            flex-direction: column;
+            overflow-x: visible;
+        }
+
+        .related-book-item {
+            flex: 1;
+        }
+    }
+
+    /* Utskriftsstilar */
+    @@media print {
+        .book-header-actions, .btn {
+            display: none !important;
+        }
+
+        .book-history-header {
+            background: none !important;
+            box-shadow: none !important;
+        }
+    }</style>

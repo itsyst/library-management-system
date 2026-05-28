@@ -72,7 +72,6 @@
                 }
                 if (result.isDismissed) {
                     window.location.reload();
-                    console.log("cancel");
                     taggle = false;
                     return;
                 }

@@ -1306,10 +1306,14 @@ public class LoansController(
                               $"\"{loan.Notes?.Replace("\"", "\"\"") ?? ""}\"");
             }
 
-            var bytes = Encoding.UTF8.GetBytes(csv.ToString());
-            var fileName = $"lån_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            var preamble = Encoding.UTF8.GetPreamble();
+            var csvBytes = Encoding.UTF8.GetBytes(csv.ToString());
+            var bytes = new byte[preamble.Length + csvBytes.Length];
+            Buffer.BlockCopy(preamble, 0, bytes, 0, preamble.Length);
+            Buffer.BlockCopy(csvBytes, 0, bytes, preamble.Length, csvBytes.Length);
 
-            return File(bytes, "text/csv", fileName);
+            var fileName = $"lån_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            return File(bytes, "text/csv; charset=utf-8", fileName);
         }
         catch (Exception ex)
         {

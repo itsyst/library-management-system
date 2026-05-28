@@ -1,5 +1,4 @@
-﻿
-@model Library.MVC.ViewModels.BookDetailsViewModel
+﻿@model Library.MVC.ViewModels.BookDetailsViewModel
 
 @{
     ViewData["Title"] = "Add Book";
@@ -7,24 +6,29 @@
 
 <div class="container-fluid px-4 py-5">
     <div class="row justify-content-center">
-        <div class="col-12 col-xl-10">
-            <div class="edit-header mb-5">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <h1 class="display-6 fw-bold mb-2" style="color:var(--primary-color)">Add New Book</h1>
-                        <p class="text-muted">Enter book details and upload a cover image</p>
-                    </div>
-                    <div class="header-actions">
-                        <a asp-action="Index" class="btn btn-outline-secondary me-2">
-                            <i class="bi bi-arrow-left"></i> Back to Library
-                        </a>
+        <div class="col-12 col-xl-11">
+            <!-- Bakgrundsmönster -->
+            <header class="edit-header mb-5">
+                <div class="books-header mb-5 position-relative overflow-hidden">
+
+                    <div class="header-pattern position-absolute w-100 h-100"></div>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h1 class="display-6 fw-bold mb-2" style="color:var(--primary-color)">Add New Book</h1>
+                            <p class="text-muted">Enter book details and upload a cover image</p>
+                        </div>
+                        <div class="header-actions">
+                            <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                                <i class="bi bi-arrow-left"></i> Back to Library
+                            </a>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </header>
 
             <form asp-action="Create" method="post" enctype="multipart/form-data" class="modern-form">
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger modern-alert"></div>
-                <input asp-for="BookDetails.ID" type="hidden" />
+                <input asp-for="BookDetails.Id" type="hidden" />
 
                 <div class="row g-4">
                     <!-- Cover Image Upload -->
@@ -82,12 +86,12 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label class="form-label">Copies</label>
-                                            <input asp-for="Copies"
+                                            <input asp-for="BookCopies"
                                                    type="number"
                                                    min="1"
                                                    class="form-control modern-input"
                                                    required />
-                                            <span asp-validation-for="Copies" class="validation-message"></span>
+                                            <span asp-validation-for="BookCopies" class="validation-message"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -110,12 +114,12 @@
 
                                 <!-- Author Dropdown + Add Modal -->
                                 <div class="form-group">
-                                    <label asp-for="BookDetails.AuthorID" class="form-label">Author</label>
+                                    <label asp-for="BookDetails.AuthorId" class="form-label">Author</label>
                                     <div class="input-group author-input-group">
                                         <span class="input-group-text">
                                             <i class="bi bi-person"></i>
                                         </span>
-                                        <select asp-for="BookDetails.AuthorID"
+                                        <select asp-for="BookDetails.AuthorId"
                                                 asp-items="@Model.Authors"
                                                 class="form-select modern-input rounded-0"
                                                 id="authorSelect"
@@ -126,7 +130,7 @@
                                             <i class="bi bi-plus"></i> Add New
                                         </button>
                                     </div>
-                                    <span asp-validation-for="BookDetails.AuthorID" class="validation-message"></span>
+                                    <span asp-validation-for="BookDetails.AuthorId" class="validation-message"></span>
                                 </div>
                             </div>
                         </div>
@@ -282,3 +286,9 @@
         }
     </script>
 }
+
+<style>
+    .header-pattern {
+        background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+    }
+</style>

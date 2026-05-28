@@ -1,209 +1,892 @@
 ﻿@model Library.MVC.ViewModels.BookDetailsViewModel
+
 @{
-    ViewData["Title"] = "Delete Copies";
+    ViewData["Title"] = $"Ta bort - {Model.BookDetails?.Title}";
 }
+
 @Html.AntiForgeryToken()
 
+<!-- Modern bokborttagningscontainer -->
 <div class="container-fluid px-4 py-5">
     <div class="row justify-content-center">
-        <div class="col-12 col-xl-10">
+        <div class="col-12 col-xl-11">
+            <!-- Kreativ rubriksektion -->
+            <div class="delete-header mb-5 position-relative overflow-hidden">
+                <!-- Bakgrundsmönster -->
+                <div class="header-pattern position-absolute w-100 h-100"></div>
 
-            <!-- ── HEADER ───────────────────────────────────────── -->
-            <header class="edit-header mb-5 d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="display-6 fw-bold mb-2" style="color:var(--primary-color)">Delete Copies</h1>
-                    <p class="text-muted">
-                        @Model.BookDetails?.Title •
-                        <span id="total-copies-badge"
-                              class="badge-danger badge-pill">
-                            @Model.Copies @((Model.Copies <= 1) ? "copy" : "copies")
-                        </span>
-                    </p>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <a asp-action="Edit"
-                       asp-route-id="@Model.BookDetails?.ID"
-                       class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Back
-                    </a>
-
-                    <button type="button"
-                            class="btn btn-danger delete-btn delete-book-btn ml-2"
-                            data-book-id="@Model.BookDetails?.ID">
-                        <i class="bi bi-trash"></i> Delete Book
-                    </button>
-                </div>
-            </header>
-
-            <!-- ── COPIES GRID ─────────────────────────────────── -->
-            <section id="copies-grid" class="row g-4 mb-4">
-                @foreach (var copy in Model.BookCopies ?? Enumerable.Empty<SelectListItem>())
-                {
-                    <div class="col-6 col-md-4 col-lg-2 mb-4">
-                        <article class="copy-card rounded-3 shadow-sm border border-1"
-                                 tabindex="0"
-                                 data-copy-id="@copy.Value">
-                            <img src="@(Model.BookDetails?.ImageBinary ?? "/uploads/9780555816023.png")"
-                                 class="w-100 rounded copy-image"
-                                 alt="Book cover" />
-
-                            <div class="copy-overlay d-flex align-items-center justify-content-center">
-                                <i class="bi bi-check-circle-fill fs-1 text-white"></i>
+                <div class="position-relative z-2">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="delete-icon mb-3">
+                                <div class="icon-wrapper">
+                                    <i class="bi bi-book-half"></i>
+                                    <div class="warning-pulse"></div>
+                                </div>
                             </div>
 
-                            <footer class="text-center mt-2">
-                                <span class="badge bg-info rounded-pill mb-2">Id: @copy.Value</span>
-                            </footer>
-                        </article>
+                            <h1 class="display-6 fw-bold mb-2 header-title">Ta bort bokexemplar</h1>
+                            <p class="text-muted mb-3 fs-5">
+                                @Model.BookDetails?.Title •
+                                <span id="total-copies-badge" class="badge bg-danger">
+                                    @(Model.BookCopies?.Count() ?? 0) @(Model.BookCopies?.Count() == 1 ? "exemplar" : "exemplar")
+                                </span>
+                            </p>
+
+                            <!-- Varningsmeddelande -->
+                            <div class="alert alert-warning" role="alert">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>Varning:</strong> Du kan ta bort enskilda exemplar eller hela boken. Denna åtgärd kan inte ångras.
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4 text-lg-end">
+                            <div class="header-actions d-flex flex-column gap-2">
+                                <a asp-action="Details" asp-route-id="@Model.BookDetails?.Id" class="btn btn-outline-primary">
+                                    <i class="bi bi-eye me-2"></i>
+                                    Visa bokdetaljer
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@Model.BookDetails?.Id" class="btn btn-outline-secondary">
+                                    <i class="bi bi-pencil me-2"></i>
+                                    Redigera bok
+                                </a>
+                                <a asp-action="Index" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>
+                                    Tillbaka till biblioteket
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                }
-            </section>
-
-            <!-- ── BULK TOOLBAR ────────────────────────────────── -->
-            <footer id="bulk-toolbar" class="bulk-toolbar d-flex align-items-center justify-content-between p-3 bg-light rounded-top shadow-sm">
-                <div>
-                    <label class="form-check m-0">
-                        <input id="select-all" type="checkbox" class="form-check-input" hidden>
-                    </label>
-
-                    <span id="select-copies-badge"
-                          class="badge bg-primary-subtle text-primary-emphasis">
-                        0 of @Model.Copies selected
-                    </span>
                 </div>
-                <div>
-                    <a asp-action="Index"
-                        class="btn btn-outline-secondary mr-2">
-                        <i class="bi bi-arrow-left"></i> Back to Library
-                    </a>
-                    <button id="delete-selected-btn"
-                            class="btn btn-danger delete-btn"
-                            disabled>
-                        <i class="bi bi-trash-fill"></i> Delete Selected
-                    </button>
-                </div>
-            </footer>
+            </div>
 
+            <div class="row g-4">
+                <!-- Bokinformationskort -->
+                <div class="col-12 col-lg-4">
+                    <div class="delete-card book-info-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-book me-2"></i>
+                                Bokinformation
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="book-preview text-center mb-4">
+                                <div class="book-cover-large">
+                                    <img src="@(Model.BookDetails?.ImageBinary ?? "/uploads/9780555816023.png")"
+                                         alt="@Model.BookDetails?.Title"
+                                         class="cover-image-large" />
+                                </div>
+                                <h6 class="book-title mt-3 mb-2">@Model.BookDetails?.Title</h6>
+                                @if (!string.IsNullOrEmpty(Model.BookDetails?.Subtitle))
+                                {
+                                    <p class="book-subtitle text-muted">@Model.BookDetails.Subtitle</p>
+                                }
+                            </div>
+
+                            <div class="book-details">
+                                <div class="detail-row">
+                                    <span class="detail-label">Författare:</span>
+                                    <span class="detail-value">@(Model.BookDetails?.Author?.Name ?? "Okänd")</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">ISBN:</span>
+                                    <span class="detail-value">@Model.BookDetails?.ISBN</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(Model.BookDetails?.Genre))
+                                {
+                                    <div class="detail-row">
+                                        <span class="detail-label">Genre:</span>
+                                        <span class="detail-value">@Model.BookDetails.Genre</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.BookDetails?.Publisher))
+                                {
+                                    <div class="detail-row">
+                                        <span class="detail-label">Förlag:</span>
+                                        <span class="detail-value">@Model.BookDetails.Publisher</span>
+                                    </div>
+                                }
+                                @if (Model.BookDetails?.Pages.HasValue == true)
+                                {
+                                    <div class="detail-row">
+                                        <span class="detail-label">Sidor:</span>
+                                        <span class="detail-value">@Model.BookDetails.Pages</span>
+                                    </div>
+                                }
+                                <div class="detail-row">
+                                    <span class="detail-label">Totalt antal exemplar:</span>
+                                    <span class="detail-value">@(Model.BookCopies?.Count() ?? 0)</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Tillgängliga:</span>
+                                    <span class="detail-value text-success">@Model.BookDetails?.AvailableCopies</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Utlånade:</span>
+                                    <span class="detail-value text-warning">@(Model.BookDetails?.TotalCopies - Model.BookDetails?.AvailableCopies)</span>
+                                </div>
+                            </div>
+
+                            <!-- Riskzon -->
+                            <div class="danger-zone mt-4">
+                                <h6 class="danger-title">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    Riskzon
+                                </h6>
+                                <p class="danger-text">Ta bort hela boken och alla dess exemplar permanent.</p>
+                                <button type="button"
+                                        class="btn btn-danger w-100 delete-book-btn"
+                                        data-book-id="@Model.BookDetails?.Id"
+                                        data-book-title="@Model.BookDetails?.Title">
+                                    <i class="bi bi-trash me-2"></i>
+                                    Ta bort hela boken
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exemplarhantering -->
+                <div class="col-12 col-lg-8">
+                    <div class="delete-card copies-card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-collection me-2"></i>
+                                    Hantering av bokexemplar
+                                </h5>
+                                <div class="copies-stats">
+                                    <span id="select-copies-badge" class="badge bg-primary">
+                                        0 av @(Model.BookCopies?.Count() ?? 0) valda
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.BookCopies != null && Model.BookCopies.Any())
+                            {
+                                <!-- Urvalskontroller -->
+                                <div class="selection-controls mb-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="selection-info">
+                                            <label class="form-check m-0">
+                                                <input id="select-all" type="checkbox" class="form-check-input me-2">
+                                                <span class="form-check-label">Markera alla exemplar</span>
+                                            </label>
+                                        </div>
+                                        <div class="selection-actions">
+                                            <button id="delete-selected-btn"
+                                                    class="btn btn-danger"
+                                                    disabled>
+                                                <i class="bi bi-trash me-2"></i>
+                                                Ta bort valda
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Exemplarrutnät -->
+                                <div id="copies-grid" class="copies-grid">
+                                    @foreach (var copy in Model.BookCopies)
+                                    {
+                                        <div class="copy-card"
+                                             data-copy-id="@copy.Value"
+                                             tabindex="0">
+                                            <div class="copy-image-container">
+                                                <img src="@(Model.BookDetails?.ImageBinary ?? "/uploads/9780555816023.png")"
+                                                     class="copy-image"
+                                                     alt="Bokexemplar" />
+                                                <div class="copy-overlay">
+                                                    <div class="selection-indicator">
+                                                        <i class="bi bi-check-circle-fill"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="copy-status">
+                                                    @{
+                                                        // Tolka exemplarinformation från texten
+                                                        var copyInfo = copy.Text.Split('-');
+                                                        var copyId = copy.Value;
+                                                        var isAvailable = copyInfo.Length > 2 && copyInfo[2].Trim() == "Available";
+                                                        var condition = copyInfo.Length > 1 ? copyInfo[1].Trim() : "Okänt";
+                                                    }
+                                                    <span class="status-badge @(isAvailable ? "status-available" : "status-on-loan")">
+                                                        @(isAvailable ? "Tillgänglig" : "Utlånad")
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="copy-info">
+                                                <div class="copy-id">Exemplar #@copyId</div>
+                                                <div class="copy-condition">@condition</div>
+                                                @if (copyInfo.Length > 3)
+                                                {
+                                                    <div class="copy-location">@copyInfo[3].Trim()</div>
+                                                }
+                                            </div>
+                                            @if (!isAvailable)
+                                            {
+                                                <div class="copy-warning">
+                                                    <i class="bi bi-exclamation-triangle"></i>
+                                                    <span>Kan inte tas bort - Utlånad</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="empty-state text-center py-5">
+                                    <i class="bi bi-inbox fs-1 text-muted"></i>
+                                    <h5 class="text-muted mt-3">Inga exemplar hittades</h5>
+                                    <p class="text-muted">Denna bok har inga exemplar att ta bort.</p>
+                                    <a asp-action="Edit" asp-route-id="@Model.BookDetails?.Id" class="btn btn-primary">
+                                        <i class="bi bi-plus me-2"></i>
+                                        Lägg till exemplar
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Åtgärdssammanfattning -->
+            <div class="action-summary mt-5 pt-4 border-top">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="summary-section">
+                            <h6 class="summary-title">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Innan du tar bort
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="info-box">
+                                        <i class="bi bi-shield-check text-success"></i>
+                                        <div>
+                                            <strong>Säkert att ta bort:</strong>
+                                            <p class="mb-0">Exemplar som för närvarande är tillgängliga kan tas bort säkert.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-box">
+                                        <i class="bi bi-shield-x text-danger"></i>
+                                        <div>
+                                            <strong>Kan inte tas bort:</strong>
+                                            <p class="mb-0">Utlånade exemplar måste returneras först.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script type="module">
-        /* ── SETUP ───────────────────────────────────────────────────── */
-        const token        = document.querySelector('[name="__RequestVerificationToken"]').value;
-        const grid         = document.getElementById('copies-grid');
-        const toolbar      = document.getElementById('bulk-toolbar');
-        const selectAllBox = document.getElementById('select-all');
-        const selectCounterBdg = document.getElementById('select-copies-badge');
-        const totalCounterBdg     = document.getElementById('total-copies-badge');
-        const deleteSelBtn = document.getElementById('delete-selected-btn');
-        const deleteBookBtn= document.querySelector('.delete-book-btn');
-        const chosen       = new Set();
+    <script>
+        // Konfigurera toastr
+        toastr.options = {
+            closeButton: true,
+            newestOnTop: true,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            timeOut: "3500",
+            showMethod: "fadeIn",
+            hideMethod: "fadeOut"
+        };
 
-        /* simple fetch wrapper */
-        const del = (url) => fetch(url, { method: 'DELETE', headers:{ 'RequestVerificationToken': token }})
-                             .then(r => r.json());
+        document.addEventListener('DOMContentLoaded', function() {
+            /* ── SETUP ───────────────────────────────────────────────────── */
+            const token = document.querySelector('[name="__RequestVerificationToken"]').value;
+            const grid = document.getElementById('copies-grid');
+            const selectAllBox = document.getElementById('select-all');
+            const selectCounterBdg = document.getElementById('select-copies-badge');
+            const totalCounterBdg = document.getElementById('total-copies-badge');
+            const deleteSelBtn = document.getElementById('delete-selected-btn');
+            const deleteBookBtn = document.querySelector('.delete-book-btn');
+            const chosen = new Set();
 
-        /* ── UI helpers ─────────────────────────────────────────────── */
-        function refreshToolbar() {
-            const totalText = totalCounterBdg.textContent.trim();
-            const total = parseInt(totalText.split(' ')[0]);
+            /* enkel fetch-wrapper */
+            const del = (url) => fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'RequestVerificationToken': token,
+                    'Content-Type': 'application/json'
+                }
+            }).then(r => r.json());
 
-            // Update selection counter
-            selectCounterBdg.textContent = `${chosen.size} of ${total} selected`;
+            /* ── UI-hjälpare ─────────────────────────────────────────────── */
+            function refreshToolbar() {
+                const totalText = totalCounterBdg.textContent.trim();
+                const total = parseInt(totalText.split(' ')[0]);
 
-            // Enable/disable delete button
-            deleteSelBtn.disabled = chosen.size === 0;
-           
-            // toolbar.classList.toggle('d-none', chosen.size === 0);
-            // selectAllBox.checked     = chosen.size &&
-            //                            chosen.size === grid.querySelectorAll('.copy-card:not(.disabled)').length;
-            
-            // Show/hide the select all checkbox and badge based on selection
-            if (chosen.size === 0) {
-                selectAllBox.parentElement.style.display = 'none'; // Hide select all
-            } else {
-                selectAllBox.parentElement.style.display = 'block'; // Show select all
+                // Uppdatera urvalräknare
+                selectCounterBdg.textContent = `${chosen.size} av ${total} valda`;
+
+                // Aktivera/inaktivera ta bort-knapp
+                deleteSelBtn.disabled = chosen.size === 0;
+
+                // Uppdatera markera alla-kryssruta
+                const availableCards = grid.querySelectorAll('.copy-card:not(.disabled)').length;
+                selectAllBox.checked = chosen.size > 0 && chosen.size === availableCards;
+                selectAllBox.indeterminate = chosen.size > 0 && chosen.size < availableCards;
             }
 
-            // Update select all checkbox state
-            const availableCards = grid.querySelectorAll('.copy-card:not(.disabled)').length;
-            selectAllBox.checked = chosen.size > 0 && chosen.size === availableCards;
-        }
+            /* ── KORTVÄXLING ────────────────────────────────────────────── */
+            if (grid) {
+                grid.addEventListener('click', e => {
+                    const card = e.target.closest('.copy-card');
+                    if (!card || card.classList.contains('disabled') || card.querySelector('.copy-warning')) return;
 
-        /* ── CARD TOGGLE ────────────────────────────────────────────── */
-        grid.addEventListener('click', e => {
-            const card = e.target.closest('.copy-card');
-            if (!card || card.classList.contains('disabled')) return;
+                    card.classList.toggle('selected');
+                    const id = card.dataset.copyId;
+                    card.classList.contains('selected') ? chosen.add(id) : chosen.delete(id);
+                    refreshToolbar();
+                });
 
-            card.classList.toggle('selected');
-            const id = card.dataset.copyId;
-            card.classList.contains('selected') ? chosen.add(id) : chosen.delete(id);
-            refreshToolbar();
-        });
-        grid.addEventListener('keydown', e => {
-            if (e.key === ' ') { e.preventDefault(); e.target.click(); }
-        });
-
-        /* ── SELECT ALL ─────────────────────────────────────────────── */
-        selectAllBox.addEventListener('change', () => {
-            chosen.clear();
-            grid.querySelectorAll('.copy-card:not(.disabled)').forEach(card => {
-                if (selectAllBox.checked !== card.classList.contains('selected')) card.click();
-            });
-        });
-
-        /* ── BULK DELETE ────────────────────────────────────────────── */
-        deleteSelBtn.addEventListener('click', async () => {
-            if (!chosen.size) return;
-            const ok = await Swal.fire({
-                title: `Delete ${chosen.size} ${chosen.size <= 1 ? 'copy' : 'copies'}?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: '<i class="bi bi-trash"></i> Delete',
-                confirmButtonColor: '#dc3545'
-            }).then(r => r.isConfirmed);
-            if (!ok) return;
-
-            for (const id of chosen) {
-                const res = await del(`/Books/DeleteSingle/${id}`);
-                if (!res.success) { toastr.error(res.message); return; }
-                const card = grid.querySelector(`[data-copy-id="${id}"]`);
-                card?.classList.add('disabled');
-                card?.classList.remove('selected');
+                grid.addEventListener('keydown', e => {
+                    if (e.key === ' ') {
+                        e.preventDefault();
+                        e.target.click();
+                    }
+                });
             }
 
-            // Update total badge with proper singular/plural
-            const newTotal = parseInt(totalCounterBdg.textContent.trim().split(' ')[0]) - chosen.size;
-            totalCounterBdg.textContent = `${newTotal} ${newTotal === 1 ? 'copy' : 'copies'}`;
+            /* ── MARKERA ALLA ─────────────────────────────────────────────── */
+            if (selectAllBox) {
+                selectAllBox.addEventListener('change', () => {
+                    chosen.clear();
+                    const availableCards = grid.querySelectorAll('.copy-card:not(.disabled)');
+                    availableCards.forEach(card => {
+                        if (!card.querySelector('.copy-warning')) {
+                            if (selectAllBox.checked !== card.classList.contains('selected')) {
+                                card.click();
+                            }
+                        }
+                    });
+                });
+            }
 
-            toastr.success(`${chosen.size} ${chosen.size === 1 ? 'copy' : 'copies'} deleted`);
-            chosen.clear();
+            /* ── MASSBORTTAGNING ────────────────────────────────────────── */
+            if (deleteSelBtn) {
+                deleteSelBtn.addEventListener('click', async () => {
+                    if (!chosen.size) return;
+
+                    const result = await Swal.fire({
+                        title: `Ta bort ${chosen.size} ${chosen.size === 1 ? 'exemplar' : 'exemplar'}?`,
+                        text: `Detta kommer permanent ta bort de valda bokexemplaren. Denna åtgärd kan inte ångras.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="bi bi-trash"></i> Ja, ta bort',
+                        cancelButtonText: 'Avbryt',
+                        reverseButtons: true,
+                        customClass: {
+                            confirmButton: 'btn btn-danger me-2',
+                            cancelButton: 'btn btn-secondary'
+                        },
+                        buttonsStyling: false
+                    });
+
+                    if (!result.isConfirmed) return;
+
+                    let deletedCount = 0;
+                    for (const id of chosen) {
+                        try {
+                            const res = await del(`/Books/DeleteSingle/${id}`);
+                            if (res.success) {
+                                const card = grid.querySelector(`[data-copy-id="${id}"]`);
+                                if (card) {
+                                    card.classList.add('disabled', 'deleting');
+                                    card.classList.remove('selected');
+                                    setTimeout(() => {
+                                        card.style.opacity = '0.5';
+                                        card.style.pointerEvents = 'none';
+                                    }, 100);
+                                }
+                                deletedCount++;
+                            } else {
+                                toastr.error(res.message || 'Misslyckades med att ta bort exemplar');
+                            }
+                        } catch (error) {
+                            console.error('Fel vid borttagning av exemplar:', error);
+                            toastr.error('Ett fel inträffade vid borttagning');
+                        }
+                    }
+
+                    // Uppdatera totalemblem
+                    const currentTotal = parseInt(totalCounterBdg.textContent.trim().split(' ')[0]);
+                    const newTotal = currentTotal - deletedCount;
+                    totalCounterBdg.textContent = `${newTotal} ${newTotal === 1 ? 'exemplar' : 'exemplar'}`;
+
+                    if (deletedCount > 0) {
+                        toastr.success(`${deletedCount} ${deletedCount === 1 ? 'exemplar' : 'exemplar'} borttaget framgångsrikt`);
+                    }
+
+                    chosen.clear();
+                    refreshToolbar();
+                });
+            }
+
+            /* ── TA BORT HELA BOKEN ─────────────────────────────────────── */
+            if (deleteBookBtn) {
+                deleteBookBtn.addEventListener('click', async () => {
+                    const bookTitle = deleteBookBtn.dataset.bookTitle;
+                    const bookId = deleteBookBtn.dataset.bookId;
+
+                    const result = await Swal.fire({
+                        title: 'Ta bort hela boken?',
+                        html: `Du är på väg att permanent ta bort:<br><strong>"${bookTitle}"</strong><br><br>Detta kommer ta bort boken och alla dess exemplar. Denna åtgärd kan inte ångras.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="bi bi-trash"></i> Ja, ta bort boken',
+                        cancelButtonText: 'Avbryt',
+                        reverseButtons: true,
+                        customClass: {
+                            confirmButton: 'btn btn-danger me-2',
+                            cancelButton: 'btn btn-secondary'
+                        },
+                        buttonsStyling: false,
+                        showLoaderOnConfirm: true,
+                        preConfirm: () => {
+                            return del(`/Books/Delete/${bookId}`)
+                                .then(response => {
+                                    if (response.success) {
+                                        return response;
+                                    } else {
+                                        throw new Error(response.message || 'Misslyckades med att ta bort bok');
+                                    }
+                                })
+                                .catch(error => {
+                                    Swal.showValidationMessage(`Fel: ${error.message}`);
+                                });
+                        },
+                        allowOutsideClick: () => !Swal.isLoading()
+                    });
+
+                    if (result.isConfirmed && result.value) {
+                        Swal.fire({
+                            title: 'Borttaget!',
+                            text: result.value.message || 'Bok borttagen framgångsrikt.',
+                            icon: 'success',
+                            confirmButtonColor: '#28a745'
+                        }).then(() => {
+                            window.location.href = '/Books';
+                        });
+                    }
+                });
+            }
+
+            // Initial inställning
             refreshToolbar();
         });
-
-        /* ── DELETE ENTIRE BOOK ─────────────────────────────────────── */
-        deleteBookBtn.addEventListener('click', async () => {
-            const confirmed = await Swal.fire({
-                title: 'Delete this book and all copies?',
-                icon : 'warning',
-                showCancelButton: true,
-                confirmButtonText: '<i class="bi bi-trash"></i> Delete Book',
-                confirmButtonColor: '#dc3545'
-            }).then(r => r.isConfirmed);
-            if (!confirmed) return;
-
-            const id  = deleteBookBtn.dataset.bookId;
-            const res = await del(`/Books/Delete/${id}`);
-            res.success
-                ? (toastr.success(res.message), setTimeout(()=>location.href='/Books',1200))
-                :  toastr.error(res.message);
-        });
-
-        /* ── toastr default ─────────────────────────────────────────── */
-        toastr.options = { positionClass:'toast-top-right', timeOut:3500, progressBar:true };
     </script>
 }
- 
+
+<style>
+    /* Rubrikstyling */
+    .delete-header {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(255, 193, 7, 0.1) 100%);
+        border-radius: var(--radius-xl);
+        padding: 3rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(220, 53, 69, 0.2);
+    }
+
+    .header-pattern {
+        background: radial-gradient(circle at 20% 50%, rgba(220, 53, 69, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 193, 7, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(255, 108, 108, 0.1) 0%, transparent 50%);
+    }
+
+    .header-title {
+        background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Borttagningsikon */
+    .delete-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    .icon-wrapper {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+    }
+
+    .warning-pulse {
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        border: 2px solid #dc3545;
+        border-radius: 50%;
+        animation: warningPulse 2s infinite;
+        opacity: 0.6;
+    }
+
+    @@keyframes warningPulse {
+        0% {
+            transform: scale(1);
+            opacity: 0.6;
+        }
+
+        50% {
+            transform: scale(1.1);
+            opacity: 0.3;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 0.6;
+        }
+    }
+
+    /* Borttagningskort */
+    .delete-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all var(--transition-normal);
+        height: 100%;
+    }
+
+        .delete-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .delete-card .card-header {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.05) 0%, rgba(255, 193, 7, 0.05) 100%);
+            border-bottom: 1px solid rgba(220, 53, 69, 0.1);
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            padding: 1.5rem;
+        }
+
+        .delete-card .card-title {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+    /* Bokomslag */
+    .book-cover-large {
+        width: 120px;
+        height: 180px;
+        margin: 0 auto;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .cover-image-large {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .book-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+    }
+
+    .book-subtitle {
+        font-size: 0.9rem;
+    }
+
+    /* Detaljrader */
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+    .detail-label {
+        font-weight: 500;
+        color: var(--gray-600);
+        font-size: 0.9rem;
+    }
+
+    .detail-value {
+        font-weight: 600;
+        color: var(--gray-800);
+        font-size: 0.9rem;
+    }
+
+    /* Riskzon */
+    .danger-zone {
+        background: rgba(220, 53, 69, 0.05);
+        border: 2px solid rgba(220, 53, 69, 0.2);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .danger-title {
+        color: #dc3545;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .danger-text {
+        color: var(--gray-600);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Exemplarrutnät */
+    .copies-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .copy-card {
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        position: relative;
+        outline: none;
+    }
+
+        .copy-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .copy-card.selected {
+            border-color: var(--primary-color);
+            background: rgba(59, 130, 246, 0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(59, 130, 246, 0.2);
+        }
+
+        .copy-card.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            background: var(--gray-100);
+        }
+
+        .copy-card.deleting {
+            animation: deleteAnimation 0.5s ease-out;
+        }
+
+    @@keyframes deleteAnimation {
+        0% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        100% {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+    }
+
+    /* Exemplarbild */
+    .copy-image-container {
+        position: relative;
+        width: 100%;
+        height: 120px;
+        margin-bottom: 1rem;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+    }
+
+    .copy-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .copy-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(59, 130, 246, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all var(--transition-normal);
+    }
+
+    .copy-card.selected .copy-overlay {
+        opacity: 1;
+    }
+
+    .selection-indicator {
+        font-size: 2rem;
+        color: white;
+    }
+
+    .copy-status {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+    }
+
+    .status-badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+    }
+
+    .status-available {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .status-on-loan {
+        background: var(--warning-color);
+        color: white;
+    }
+
+    /* Exemplarinformation */
+    .copy-info {
+        text-align: center;
+    }
+
+    .copy-id {
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 0.25rem;
+    }
+
+    .copy-condition {
+        font-size: 0.8rem;
+        color: var(--gray-600);
+        margin-bottom: 0.25rem;
+    }
+
+    .copy-location {
+        font-size: 0.7rem;
+        color: var(--gray-500);
+    }
+
+    /* Exemplarvarning */
+    .copy-warning {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(220, 53, 69, 0.9);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border-radius: var(--radius-lg);
+    }
+
+        .copy-warning i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+    /* Urvalskontroller */
+    .selection-controls {
+        background: rgba(248, 250, 252, 0.8);
+        border-radius: var(--radius-lg);
+        padding: 1rem;
+        border: 1px solid var(--gray-200);
+    }
+
+    /* Åtgärdssammanfattning */
+    .action-summary {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: var(--radius-xl);
+        padding: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .summary-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .info-box {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-200);
+    }
+
+        .info-box i {
+            font-size: 1.5rem;
+            margin-top: 0.25rem;
+        }
+
+    /* Tomt tillstånd */
+    .empty-state {
+        color: var(--gray-400);
+        padding: 3rem 1rem;
+    }
+
+    /* Responsiv design */
+    @@media (max-width: 768px) {
+        .delete-header {
+            padding: 2rem 1rem;
+        }
+
+        .header-actions {
+            text-align: center;
+        }
+
+        .copies-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .selection-controls {
+            text-align: center;
+        }
+
+            .selection-controls .d-flex {
+                flex-direction: column;
+                gap: 1rem;
+            }
+    }
+</style>

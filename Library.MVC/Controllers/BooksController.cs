@@ -6,7 +6,9 @@ using Library.MVC.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Text;
+using System.Text.Json;
 
 namespace Library.MVC.Controllers;
 
@@ -45,32 +47,102 @@ public class BooksController : Controller
     {
         try
         {
-            // Build filter expression
-            var books = await _bookService.GetAllBookDetailsAsync(
-                filter: b =>
-                    (string.IsNullOrEmpty(search) ||
-                     b.Title.Contains(search) ||
-                     b.ISBN.Contains(search) ||
-                     b.Author.Name.Contains(search)) &&
-                    (!authorId.HasValue || b.AuthorId == authorId.Value) &&
-                    (string.IsNullOrEmpty(genre) || b.Genre == genre) &&
-                    (!available.HasValue || b.Copies.Any(c => c.IsAvailable) == available.Value),
-                orderBy: GetSortExpression(sort),
-                a => a.Author,
-                c => c.Copies);
+            // Normalisera sökterm för bättre matchning
+            var normalizedSearch = search?.Trim().ToLowerInvariant();
 
-            // Get filter options
-            var authors = await _authorService.GetAllAsync();
-            var allBooks = await _bookService.GetAllAsync();
-            var uniqueGenres = allBooks.Where(b => !string.IsNullOrEmpty(b.Genre))
-                                      .Select(b => b.Genre)
-                                      .Distinct()
-                                      .OrderBy(g => g);
+            // Bygg upp filteruttryck
+            Expression<Func<BookDetails, bool>> filter = book => true;
 
-            // Calculate pagination
-            var totalItems = books.Count();
+            // Sökfilter med case-insensitive matching
+            if (!string.IsNullOrEmpty(normalizedSearch))
+            {
+                // Kontrollera om söktermen är numerisk (för författar-ID eller ISBN)
+                bool isNumericSearch = normalizedSearch.All(char.IsDigit);
+
+                if (isNumericSearch)
+                {
+                    // Sök på författar-ID eller ISBN
+                    filter = filter.AndAlso(x =>
+                        x.AuthorId.ToString().Contains(normalizedSearch) ||
+                        x.ISBN.ToString().Contains(normalizedSearch)); 
+                }
+                else
+                {
+                    // Sök på boktitel eller författarnamn
+                    filter = filter.AndAlso(x =>
+                        x.Title.ToLower().Contains(normalizedSearch) ||
+                        x.Author.Name.ToLower().Contains(normalizedSearch));
+                }
+            }
+
+            // Författarfilter
+            if (authorId.HasValue)
+            {
+                filter = filter.AndAlso(x => x.AuthorId == authorId.Value);
+            }
+
+            // Genrefilter
+            if (!string.IsNullOrEmpty(genre))
+            {
+                filter = filter.AndAlso(x => x.Genre == genre);
+            }
+
+            // Tillgänglighetsfilter
+            if (available.HasValue)
+            {
+                filter = filter.AndAlso(x => x.Copies.Any(c => c.IsAvailable) == available.Value);
+            }
+
+            // Sorteringsuttryck
+            Func<IQueryable<BookDetails>, IOrderedQueryable<BookDetails>> orderBy = sort?.ToLower() switch
+            {
+                "title" => q => q.OrderBy(x => x.Title),
+                "title_desc" => q => q.OrderByDescending(x => x.Title),
+                "author" => q => q.OrderBy(x => x.Author.Name),
+                "author_desc" => q => q.OrderByDescending(x => x.Author.Name),
+                "genre" => q => q.OrderBy(x => x.Genre),
+                "genre_desc" => q => q.OrderByDescending(x => x.Genre),
+                "year" => q => q.OrderBy(x => x.PublicationDate),
+                "year_desc" => q => q.OrderByDescending(x => x.PublicationDate),
+                "pages" => q => q.OrderBy(x => x.Pages),
+                "pages_desc" => q => q.OrderByDescending(x => x.Pages),
+                _ => q => q.OrderBy(x => x.Title)
+            };
+
+            // Hämta böcker med inkluderade relationer
+            var allBooks = await _bookService.GetAllBookDetailsAsync(
+                filter: filter,
+                orderBy: orderBy,
+                b => b.Author, b=> b.Copies  
+             );
+
+            // Beräkna pagination
+            var totalItems = allBooks.Count();
             var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
-            var pagedBooks = books.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            var pagedBooks = allBooks.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            // Hämta filteralternativ
+            var authors = await _authorService.GetAllAsync();
+            var allBooksForGenres = await _bookService.GetAllAsync();
+            var uniqueGenres = allBooksForGenres
+                .Where(b => !string.IsNullOrEmpty(b.Genre))
+                .Select(b => b.Genre)
+                .Distinct()
+                .OrderBy(g => g);
+
+            // Beräkna statistik
+            var statistics = new BookStatistics
+            {
+                TotalBooks = totalItems,
+                TotalCopies = allBooks.Sum(b => b.TotalCopies),
+                AvailableCopies = allBooks.Sum(b => b.AvailableCopies),
+                BorrowedCopies = allBooks.Sum(b => b.TotalCopies - b.AvailableCopies),
+                TotalAuthors = authors.Count(),
+                UniqueGenres = uniqueGenres.Count(),
+                AveragePages = allBooks.Where(b => b.Pages.HasValue).Any() ?
+                         (decimal)allBooks.Where(b => b.Pages.HasValue).Average(b => b.Pages.Value) : 0,
+                MostPopularGenre = uniqueGenres.FirstOrDefault()
+            };
 
             var viewModel = new BookDetailsViewModel
             {
@@ -82,6 +154,7 @@ public class BooksController : Controller
                 PageSize = pageSize,
                 TotalRecords = totalItems,
                 TotalPages = totalPages,
+                Statistics = statistics,
 
                 // Filter dropdowns
                 Authors = authors.Select(a => new SelectListItem
@@ -97,29 +170,22 @@ public class BooksController : Controller
                     Value = g,
                     Selected = g == genre
                 }).Prepend(new SelectListItem { Text = "All Genres", Value = "" }),
-
-                Statistics = new BookStatistics
-                {
-                    TotalBooks = totalItems,
-                    TotalCopies = books.Sum(b => b.TotalCopies),
-                    AvailableCopies = books.Sum(b => b.AvailableCopies),
-                    BorrowedCopies = books.Sum(b => b.TotalCopies - b.AvailableCopies),
-                    TotalAuthors = authors.Count(),
-                    UniqueGenres = uniqueGenres.Count(),
-                    AveragePages = (decimal)(books.Where(b => b.Pages.HasValue).Any() ?
-                                 books.Where(b => b.Pages.HasValue).Average(b => b.Pages.Value) : 0),
-                    MostPopularGenre = uniqueGenres.FirstOrDefault()
-                }
             };
 
             ViewBag.Books = pagedBooks;
-            ViewBag.SortBy = sort;
+            ViewBag.CurrentSearch = search;
+            ViewBag.CurrentAuthorId = authorId;
+            ViewBag.CurrentGenre = genre;
+            ViewBag.CurrentAvailable = available;
+            ViewBag.CurrentSort = sort;
+            ViewBag.CurrentPage = page;
+
             return View(viewModel);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading books index");
-            TempData["Error"] = "Unable to load books. Please try again.";
+            _logger.LogError(ex, "Fel vid laddning av böcker med sökparametrar: {Search}", search);
+            TempData["Error"] = "Kunde inte ladda böcker. Vänligen försök igen.";
             return View(new BookDetailsViewModel());
         }
     }
@@ -478,6 +544,37 @@ public class BooksController : Controller
         }
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditCopy(int copyId, [FromForm] BookCondition condition, [FromForm] string location, [FromForm] decimal? purchasePrice, [FromForm] string notes)
+    {
+        try
+        {
+            var bookCopy = await _bookCopyService.GetBookCopyOrDefaultAsync(bc => bc.Id == copyId);
+            if (bookCopy == null)
+                return Json(new { success = false, message = "Exemplar hittades inte." });
+
+            if (!bookCopy.IsAvailable)
+                return Json(new { success = false, message = "Kan inte redigera exemplar som är utlånat." });
+
+            // Uppdatera fälten
+            bookCopy.Condition = condition;
+            bookCopy.Location = location?.Trim();
+            bookCopy.PurchasePrice = purchasePrice;
+            bookCopy.Notes = notes?.Trim();
+            bookCopy.UpdatedDate = DateTime.UtcNow;
+
+            await _bookCopyService.UpdateAsync(bookCopy);
+
+            return Json(new { success = true, message = $"Exemplar #${copyId} uppdaterades framgångsrikt." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Fel vid uppdatering av bokexemplar {CopyId}", copyId);
+            return Json(new { success = false, message = "Ett fel uppstod vid uppdatering av exemplar. Försök igen." });
+        }
+    }
+
 
     public async Task<IActionResult> Details(int id)
     {
@@ -493,6 +590,17 @@ public class BooksController : Controller
             if (book == null)
                 return NotFound();
 
+            // Hämta bookCopies (liknande Edit)
+            var bookCopies = await _bookCopyService.GetAllBookCopiesAsync(
+                filter: c => c.DetailsId == id,
+                orderBy: x => x.OrderBy(c => c.Id));
+
+            // Hämta loans (liknande Edit)
+            var loans = await _loanService.GetAllLoansAsync(
+                filter: l => l.BookCopyLoans.Any(bcl => bcl.BookCopy.DetailsId == id),
+                orderBy: x => x.OrderByDescending(l => l.StartDate),
+                l => l.Member, l => l.BookCopyLoans);
+
             var authors = await _authorService.GetAllAsync();
 
             var viewModel = new BookDetailsViewModel
@@ -507,14 +615,31 @@ public class BooksController : Controller
                 Genres = GetGenreOptions(),
                 Languages = GetLanguageOptions(),
                 Publishers = GetPublisherOptions(),
-                BookConditions = GetBookConditionOptions()
+                BookConditions = GetBookConditionOptions(),
+                // Lägg till dessa för konsistens (används eventuellt i vyn)
+                BookCopies = bookCopies.Select(c => new SelectListItem
+                {
+                    Text = $"Copy #{c.Id} - {c.Condition} - {(c.IsAvailable ? "Available" : "On Loan")} - {c.Location}",
+                    Value = c.Id.ToString()
+                }),
+                CopiesToAdd = bookCopies.Count(),
+                Statistics = new BookStatistics
+                {
+                    TotalCopies = book.TotalCopies,
+                    AvailableCopies = book.AvailableCopies,
+                    BorrowedCopies = book.TotalCopies - book.AvailableCopies
+                }
             };
+
+            // ViewBag-värdena 
+            ViewBag.BookCopies = bookCopies;
+            ViewBag.RecentLoans = loans.Take(5);
 
             return View(viewModel);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading edit page for book ID: {BookId}", id);
+            _logger.LogError(ex, "Error loading details page for book ID: {BookId}", id);
             return NotFound();
         }
     }
@@ -618,16 +743,22 @@ public class BooksController : Controller
             // Convert base64 to bytes
             byte[] imageBytes;
             string contentType = "image/jpeg";
+            string fileExtension = ".jpg"; // Default to jpg
 
             if (book.ImageBinary.StartsWith("data:image"))
             {
                 var parts = book.ImageBinary.Split(',');
                 if (parts.Length == 2)
                 {
-                    // Extract content type
+                    // Extract content type and set extension accordingly
                     var header = parts[0];
-                    if (header.Contains("image/png")) contentType = "image/png";
-                    else if (header.Contains("image/webp")) contentType = "image/webp";
+                    if (header.Contains("image/png")) { contentType = "image/png"; fileExtension = ".png"; }
+                    else if (header.Contains("image/webp")) { contentType = "image/webp"; fileExtension = ".webp"; }
+                    else if (header.Contains("image/jpeg") || header.Contains("image/jpg"))
+                    {
+                        contentType = "image/jpeg";
+                        fileExtension = ".jpg";
+                    }
 
                     imageBytes = Convert.FromBase64String(parts[1]);
                 }
@@ -641,7 +772,7 @@ public class BooksController : Controller
                 imageBytes = Convert.FromBase64String(book.ImageBinary);
             }
 
-            var fileName = $"{SanitizeFileName(book.Title)}_cover.jpg";
+            var fileName = $"{SanitizeFileName(book.Title)}_cover{fileExtension}";
             return File(imageBytes, contentType, fileName);
         }
         catch (Exception ex)
@@ -663,10 +794,15 @@ public class BooksController : Controller
                 c => c.Copies);
 
             var csv = GenerateCsvContent(books);
-            var bytes = Encoding.UTF8.GetBytes(csv);
+
+            var preamble = Encoding.UTF8.GetPreamble();
+            var csvBytes = Encoding.UTF8.GetBytes(csv);
+            var bytes = new byte[preamble.Length + csvBytes.Length];
+            Buffer.BlockCopy(preamble, 0, bytes, 0, preamble.Length);
+            Buffer.BlockCopy(csvBytes, 0, bytes, preamble.Length, csvBytes.Length);
 
             var fileName = $"books_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-            return File(bytes, "text/csv", fileName);
+            return File(bytes, "text/csv; charset=utf-8", fileName);
         }
         catch (Exception ex)
         {
@@ -703,15 +839,17 @@ public class BooksController : Controller
                 Description = b.Description
             });
 
-            var json = System.Text.Json.JsonSerializer.Serialize(jsonData, new System.Text.Json.JsonSerializerOptions
+            var jsonOptions = new JsonSerializerOptions
             {
-                WriteIndented = true
-            });
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
 
+            var json = JsonSerializer.Serialize(jsonData, jsonOptions);
             var bytes = Encoding.UTF8.GetBytes(json);
             var fileName = $"books_export_{DateTime.Now:yyyyMMdd_HHmmss}.json";
 
-            return File(bytes, "application/json", fileName);
+            return File(bytes, "application/json; charset=utf-8", fileName);
         }
         catch (Exception ex)
         {
@@ -913,17 +1051,51 @@ public class BooksController : Controller
         foreach (var book in books)
         {
             // Calculate average purchase price in Swedish currency
-            var avgPrice = book.Copies?.Where(c => c.PurchasePrice.HasValue)
-                                      .Average(c => c.PurchasePrice.Value) ?? 0;
-            var avgPriceFormatted = avgPrice > 0 ? FormatSwedishCurrency(avgPrice) : "N/A";
+            // Safe average price calculation
+            var avgPrice = 0m;
+            if (book.Copies?.Any(c => c.PurchasePrice.HasValue) == true)
+                avgPrice = book.Copies.Where(c => c.PurchasePrice.HasValue)
+                                     .Average(c => c.PurchasePrice.Value);
 
-            var line = $"\"{book.Title?.Replace("\"", "\"\"")}\",\"{book.Subtitle?.Replace("\"", "\"\"")}\",\"{book.Author?.Name?.Replace("\"", "\"\"")}\",\"{book.ISBN}\",\"{book.Genre?.Replace("\"", "\"\"")}\",\"{book.Language}\",\"{book.Publisher?.Replace("\"", "\"\"")}\",{book.Pages},\"{book.PublicationDate:yyyy-MM-dd}\",{book.TotalCopies},{book.AvailableCopies},\"{avgPriceFormatted}\",\"{book.Description?.Replace("\"", "\"\"").Replace("\n", " ").Replace("\r", "")}\"";
-            sb.AppendLine(line);
+            var avgPriceValue = avgPrice > 0 ? avgPrice.ToString("F2", CultureInfo.InvariantCulture) : "0.00";
+
+            var fields = new string[]
+            {
+                EscapeCsvField(book.Title),
+                EscapeCsvField(book.Subtitle),
+                EscapeCsvField(book.Author?.Name),
+                EscapeCsvField(book.ISBN),
+                EscapeCsvField(book.Genre),
+                EscapeCsvField(book.Language),
+                EscapeCsvField(book.Publisher),
+                book.Pages?.ToString() ?? "",
+                book.PublicationDate?.ToString("yyyy-MM-dd") ?? "",
+                book.TotalCopies.ToString(),
+                book.AvailableCopies.ToString(),
+                avgPriceValue,
+                EscapeCsvField(book.Description)
+            };
+
+            sb.AppendLine(string.Join(",", fields));
         }
 
         return sb.ToString();
     }
- 
+
+    private string EscapeCsvField(string field)
+    {
+        if (string.IsNullOrEmpty(field))
+            return "\"\"";
+
+        // Replace double quotes with double double quotes and wrap in quotes
+        var escaped = field.Replace("\"", "\"\"")
+                          .Replace("\r\n", " ")
+                          .Replace("\r", " ")
+                          .Replace("\n", " ");
+
+        return $"\"{escaped}\"";
+    }
+
     private string GenerateBookReportContent(BookDetails book, IEnumerable<BookCopy> copies, IEnumerable<Loan> loans)
     {
         var sb = new StringBuilder();
@@ -997,7 +1169,7 @@ public class BooksController : Controller
 
         return sb.ToString();
     }
- 
+
     private Func<IQueryable<BookDetails>, IOrderedQueryable<BookDetails>> GetSortExpression(string sort)
     {
         return sort?.ToLower() switch
@@ -1061,7 +1233,7 @@ public class BooksController : Controller
                        Value = c.ToString()
                    });
     }
- 
+
     private static int CalculatePopularityScore(IEnumerable<Loan> loans)
     {
         if (!loans.Any()) return 0;

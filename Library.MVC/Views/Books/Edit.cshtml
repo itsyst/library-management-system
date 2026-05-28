@@ -4,6 +4,8 @@
     ViewData["Title"] = "Edit Book";
 }
 
+@Html.AntiForgeryToken()
+
 <!-- Modern Edit Container -->
 <div class="container-fluid px-4 py-5">
     <div class="row justify-content-center">
@@ -24,7 +26,7 @@
                         <a asp-action="Index" class="btn btn-outline-secondary me-2">
                             <i class="bi bi-arrow-left"></i> Back to Library
                         </a>
-                        <a asp-action="Delete" asp-route-id="@Model.BookDetails.ID"
+                        <a asp-action="Delete" asp-route-id="@Model.BookDetails.Id"
                            class="btn btn-danger delete-btn">
                             <i class="bi bi-trash"></i> Delete Book
                         </a>
@@ -32,11 +34,10 @@
                 </div>
             </div>
 
-
             <!-- Main Form -->
             <form asp-action="Edit" method="post" enctype="multipart/form-data" class="modern-form">
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger modern-alert"></div>
-                <input asp-for="BookDetails.ID" type="hidden" />
+                <input asp-for="BookDetails.Id" type="hidden" />
 
                 <div class="row g-4">
                     <!-- Left Column - Cover Image -->
@@ -131,7 +132,7 @@
                                                 {
                                                     <button type="button"
                                                             class="btn btn-outline-success add-copy-btn"
-                                                            onclick="addSingleCopy(@Model.BookDetails.ID, '@Model.BookDetails.Title')"
+                                                            onclick="addSingleCopy(@Model.BookDetails.Id, '@Model.BookDetails.Title')"
                                                             title="Add one copy (Max 5 total)">
                                                         <i class="bi bi-plus"></i> Add Copy
                                                     </button>
@@ -163,55 +164,134 @@
                                         </div>
                                     </div>
 
-                                </div>
-                                <div class="form-group">
-                                    <label asp-for="BookDetails.Title" class="form-label">
-                                        Title <span class="text-danger">*</span>
-                                    </label>
-                                    <input asp-for="BookDetails.Title"
-                                           class="form-control modern-input"
-                                           required
-                                           placeholder="Enter book title" />
-                                    <span asp-validation-for="BookDetails.Title" class="validation-message"></span>
-                                </div>
-
-                                <div class="form-group">
-                                    <label asp-for="BookDetails.Description" class="form-label">Description</label>
-                                    <textarea asp-for="BookDetails.Description"
-                                              class="form-control modern-input"
-                                              rows="4"
-                                              placeholder="Enter book description..."
-                                              maxlength="1000"></textarea>
-                                    <div class="form-text">
-                                        <small id="descriptionCount" class="text-muted">0/1000 characters</small>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.Title" class="form-label">
+                                                Title <span class="text-danger">*</span>
+                                            </label>
+                                            <input asp-for="BookDetails.Title"
+                                                   class="form-control modern-input"
+                                                   required
+                                                   placeholder="Enter book title" />
+                                            <span asp-validation-for="BookDetails.Title" class="validation-message"></span>
+                                        </div>
                                     </div>
-                                    <span asp-validation-for="BookDetails.Description" class="validation-message"></span>
-                                </div>
 
-                                <!-- Book Author -->
-                                <div class="form-group">
-                                    <label asp-for="BookDetails.AuthorID" class="form-label">
-                                        Author <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-group author-input-group">
-                                        <span class="input-group-text">
-                                            <i class="bi bi-person"></i>
-                                        </span>
-                                        <select asp-for="BookDetails.AuthorID"
-                                                asp-items="@Model.Authors"
-                                                class="form-select modern-input rounded-0"
-                                                required>
-                                            <option value="">-- Select Author --</option>
-                                        </select>
-                                        @*<button type="button" class="btn btn-primary add-author-btn"
-                                                data-bs-toggle="modal" data-bs-target="#addAuthorModal">
-                                            Add New
-                                        </button> *@
-                                        <button type="button" class="btn btn-primary add-author-btn" onclick="addNewAuthor()">
-                                            <i class="bi bi-plus"></i> Add New
-                                        </button>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.Subtitle" class="form-label">Subtitle</label>
+                                            <input asp-for="BookDetails.Subtitle"
+                                                   class="form-control modern-input"
+                                                   placeholder="Enter book subtitle" />
+                                            <span asp-validation-for="BookDetails.Subtitle" class="validation-message"></span>
+                                        </div>
                                     </div>
-                                    <span asp-validation-for="BookDetails.AuthorID" class="validation-message"></span>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.Pages" class="form-label">Pages</label>
+                                            <input asp-for="BookDetails.Pages"
+                                                   type="number"
+                                                   class="form-control modern-input"
+                                                   placeholder="Enter number of pages" />
+                                            <span asp-validation-for="BookDetails.Pages" class="validation-message"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.PublicationDate" class="form-label">Publication Date</label>
+                                            <input asp-for="BookDetails.PublicationDate"
+                                                   type="date"
+                                                   class="form-control modern-input" />
+                                            <span asp-validation-for="BookDetails.PublicationDate" class="validation-message"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.Publisher" class="form-label">Publisher</label>
+                                            <select asp-for="BookDetails.Publisher"
+                                                    asp-items="@Model.Publishers"
+                                                    class="form-select modern-input">
+                                                <option value="">-- Select Publisher --</option>
+                                            </select>
+                                            <span asp-validation-for="BookDetails.Publisher" class="validation-message"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.Language" class="form-label">Language</label>
+                                            <select asp-for="BookDetails.Language"
+                                                    asp-items="@Model.Languages"
+                                                    class="form-select modern-input">
+                                                <option value="">-- Select Language --</option>
+                                            </select>
+                                            <span asp-validation-for="BookDetails.Language" class="validation-message"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.Genre" class="form-label">Genre</label>
+                                            <select asp-for="BookDetails.Genre"
+                                                    asp-items="@Model.Genres"
+                                                    class="form-select modern-input">
+                                                <option value="">-- Select Genre --</option>
+                                            </select>
+                                            <span asp-validation-for="BookDetails.Genre" class="validation-message"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.Edition" class="form-label">Edition</label>
+                                            <input asp-for="BookDetails.Edition"
+                                                   class="form-control modern-input"
+                                                   placeholder="Enter edition (e.g., 1st Edition)" />
+                                            <span asp-validation-for="BookDetails.Edition" class="validation-message"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.Description" class="form-label">Description</label>
+                                            <textarea asp-for="BookDetails.Description"
+                                                      class="form-control modern-input"
+                                                      rows="4"
+                                                      placeholder="Enter book description..."
+                                                      maxlength="1000"></textarea>
+                                            <div class="form-text">
+                                                <small id="descriptionCount" class="text-muted">0/1000 characters</small>
+                                            </div>
+                                            <span asp-validation-for="BookDetails.Description" class="validation-message"></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Book Author -->
+                                    <div class="col-12">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.AuthorId" class="form-label">
+                                                Author <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group author-input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bi bi-person"></i>
+                                                </span>
+                                                <select asp-for="BookDetails.AuthorId"
+                                                        asp-items="@Model.Authors"
+                                                        class="form-select modern-input rounded-0"
+                                                        required>
+                                                    <option value="">-- Select Author --</option>
+                                                </select>
+                                                <button type="button" class="btn btn-primary add-author-btn" onclick="addNewAuthor()">
+                                                    <i class="bi bi-plus"></i> Add New
+                                                </button>
+                                            </div>
+                                            <span asp-validation-for="BookDetails.AuthorId" class="validation-message"></span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -275,8 +355,281 @@
     </div>
 </div>
 
+
+
+<!-- Modern Edit Container -->
+@* <div class="container-fluid px-4 py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            <!-- Header Section -->
+            <div class="edit-header mb-5">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h1 class="display-6 fw-bold mb-2" style="color:var(--primary-color)">Edit Book</h1>
+                        <p class="text-muted" id="headerDescription">
+                            Update book details and manage cover image -
+                            <span id="headerCopyInfo" class="badge-warning badge-pill">
+                                @Model.BookDetails?.Copies.Count @(Model.BookDetails?.Copies.Count <=1 ? "copy " : "copies ") total
+                            </span>
+                        </p>
+                    </div>
+                    <div class="header-actions">
+                        <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-arrow-left"></i> Back to Library
+                        </a>
+                        <a asp-action="Delete" asp-route-id="@Model.BookDetails.Id"
+                           class="btn btn-danger delete-btn">
+                            <i class="bi bi-trash"></i> Delete Book
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Main Form -->
+            <form asp-action="Edit" method="post" enctype="multipart/form-data" class="modern-form">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger modern-alert"></div>
+                <input asp-for="BookDetails.Id" type="hidden" />
+
+                <div class="row g-4">
+                    <!-- Left Column - Cover Image -->
+                    <div class="col-12 col-lg-4">
+                        <div class="cover-upload-section">
+                            <div class="cover-preview-container">
+                                <div class="current-cover">
+                                    <img src="@(Model.BookDetails?.ImageBinary ?? "/uploads/9780555816023.png")"
+                                         alt="@(Model.BookDetails?.Title ?? "Book")"
+                                         class="cover-image"
+                                         id="coverPreview" />
+                                    <div class="cover-overlay">
+                                        <i class="bi bi-camera-fill"></i>
+                                        <span>Change Cover</span>
+                                    </div>
+                                </div>
+
+                                <!-- Upload Area -->
+                                <div class="upload-area" id="uploadArea" style="display: none;">
+                                    <input type="file"
+                                           name="CoverImage"
+                                           id="coverInput"
+                                           accept="image/*"
+                                           class="file-input" />
+                                    <div class="upload-content">
+                                        <i class="bi bi-cloud-upload"></i>
+                                        <h5>Drop new image here</h5>
+                                        <p>or <span class="upload-link">browse files</span></p>
+                                        <small>JPG, PNG, WEBP up to 5MB</small>
+                                    </div>
+                                </div>
+
+                                <!-- Upload Actions -->
+                                <div class="upload-actions mt-3">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="triggerUpload()">
+                                        <i class="bi bi-upload"></i> Change Image
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="resetImage()">
+                                        <i class="bi bi-arrow-clockwise"></i> Reset
+                                    </button>
+                                </div>
+
+                                <!-- Current Image Info -->
+                                <div class="image-info mt-3">
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle"></i>
+                                        Current cover will be kept if no new image is uploaded
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Form Fields -->
+                    <div class="col-12 col-lg-8">
+                        <div class="form-card">
+                            <!-- Book Details -->
+                            <div class="form-section">
+                                <h4 class="section-title">Book Information</h4>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label asp-for="BookDetails.ISBN" class="form-label">ISBN</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bi bi-upc-scan"></i>
+                                                </span>
+                                                <input asp-for="BookDetails.ISBN"
+                                                       class="form-control modern-input readonly-input"
+                                                       readonly
+                                                       title="ISBN cannot be changed after creation" />
+                                            </div>
+                                            <span asp-validation-for="BookDetails.ISBN" class="validation-message"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="form-label">Book Copies Management</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bi bi-files"></i>
+                                                </span>
+                                                <input value="@(Model.BookDetails?.Copies?.Count ?? 0)"
+                                                       class="form-control modern-input readonly-input"
+                                                       readonly
+                                                       title="Current number of book copies"
+                                                       id="copyCountInput" />
+
+                                                @if ((Model.BookDetails?.Copies?.Count ?? 0) < 5)
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-success add-copy-btn"
+                                                            onclick="addSingleCopy(@Model.BookDetails?.Id, '@Model.BookDetails?.Title')"
+                                                            title="Add one copy (Max 5 total)">
+                                                        <i class="bi bi-plus"></i> Add Copy
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-secondary"
+                                                            disabled
+                                                            title="Maximum limit of 5 copies reached">
+                                                        <i class="bi bi-check"></i> Max Reached
+                                                    </button>
+                                                }
+                                            </div>
+                                            <small class="text-muted" id="copyHelpText">
+                                                @{
+                                                    int currentCopies = Model.BookDetails?.Copies?.Count ?? 0;
+                                                    int remaining = 5 - currentCopies;
+                                                }
+                                                @if (remaining > 0)
+                                                {
+                                                    <text>You can add @remaining more copies (Max: 5 total)</text>
+                                                }
+                                                else
+                                                {
+                                                    <text>Maximum limit of 5 copies reached</text>
+                                                }
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="BookDetails.Title" class="form-label">
+                                        Title <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="BookDetails.Title"
+                                           class="form-control modern-input"
+                                           required
+                                           placeholder="Enter book title" />
+                                    <span asp-validation-for="BookDetails.Title" class="validation-message"></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label asp-for="BookDetails.Description" class="form-label">Description</label>
+                                    <textarea asp-for="BookDetails.Description"
+                                              class="form-control modern-input"
+                                              rows="4"
+                                              placeholder="Enter book description..."
+                                              maxlength="1000"></textarea>
+                                    <div class="form-text">
+                                        <small id="descriptionCount" class="text-muted">0/1000 characters</small>
+                                    </div>
+                                    <span asp-validation-for="BookDetails.Description" class="validation-message"></span>
+                                </div>
+
+                                <!-- Book Author -->
+                                <div class="form-group">
+                                    <label asp-for="BookDetails.AuthorId" class="form-label">
+                                        Author <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group author-input-group">
+                                        <span class="input-group-text">
+                                            <i class="bi bi-person"></i>
+                                        </span>
+                                        <select asp-for="BookDetails.AuthorId"
+                                                asp-items="@Model.Authors"
+                                                class="form-select modern-input rounded-0"
+                                                required>
+                                            <option value="">-- Select Author --</option>
+                                        </select>
+                                        @*<button type="button" class="btn btn-primary add-author-btn"
+                                                data-bs-toggle="modal" data-bs-target="#addAuthorModal">
+                                            Add New
+                                        </button>  
+                                        <button type="button" class="btn btn-primary add-author-btn" onclick="addNewAuthor()">
+                                            <i class="bi bi-plus"></i> Add New
+                                        </button>
+                                    </div>
+                                    <span asp-validation-for="BookDetails.AuthorId" class="validation-message"></span>
+                                </div>
+                            </div>
+
+                            <!-- Book Statistics -->
+                            <div class="form-section">
+                                <h4 class="section-title">Book Statistics</h4>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="stat-card">
+                                            <div class="stat-icon text-primary">
+                                                <i class="bi bi-files"></i>
+                                            </div>
+                                            <div class="stat-info">
+                                                <h3 id="totalCopiesCount">@(Model.BookDetails?.Copies?.Count ?? 0)</h3>
+                                                <p>Total Copies</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="stat-card">
+                                            <div class="stat-icon text-success">
+                                                <i class="bi bi-check-circle"></i>
+                                            </div>
+                                            <div class="stat-info">
+                                                <h3 id="availableCopiesCount">@(Model.BookDetails?.Copies?.Count(c => c.IsAvailable) ?? 0)</h3>
+                                                <p>Available</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="stat-card">
+                                            <div class="stat-icon text-warning">
+                                                <i class="bi bi-clock"></i>
+                                            </div>
+                                            <div class="stat-info">
+                                                <h3 id="onLoanCopiesCount">@((Model.BookDetails?.Copies?.Count ?? 0) - (Model.BookDetails?.Copies?.Count(c => c.IsAvailable) ?? 0))</h3>
+                                                <p>On Loan</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions mt-5">
+                    <div class="d-flex gap-3 justify-content-end flex-wrap">
+                        <a asp-action="Index" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg save-btn ml-3">
+                            <i class="bi bi-check-circle"></i>
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+ 
 <!-- Add Author Modal (same as Create view) -->
-@* <div class="modal fade" id="addAuthorModal" tabindex="-1" aria-labelledby="addAuthorModalLabel" aria-hidden="true">
+ <div class="modal fade" id="addAuthorModal" tabindex="-1" aria-labelledby="addAuthorModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <form id="addAuthorForm">
             <div class="modal-content">
@@ -470,7 +823,7 @@
         //         const result = await response.json();
 
         //         if (result.success) {
-        //             const select = document.querySelector('[name="BookDetails.AuthorID"]');
+        //             const select = document.querySelector('[name="BookDetails.AuthorId"]');
         //             const option = new Option(result.authorName, result.authorId, true, true);
         //             select.add(option, 1);
 
@@ -488,7 +841,21 @@
         //         showError('An error occurred while adding the author');
         //     }
         // });
-
+        document.querySelector('.modern-form').addEventListener('submit', function(e) {
+            // Optional: Client-side check for required fields
+            const requiredFields = this.querySelectorAll('[required]');
+            let valid = true;
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    valid = false;
+                    field.classList.add('is-invalid');
+                }
+            });
+            if (!valid) {
+                e.preventDefault();
+                showError('Please fill all required fields');
+            }
+        });
         // Replace the entire addAuthorForm event listener with this SweetAlert2 implementation
          async function addNewAuthor() {
             const { value: authorName } = await Swal.fire({
@@ -547,7 +914,7 @@
             // Handle successful author creation with toastr
             if (authorName) {
                 // Update the dropdown
-                const select = document.querySelector('[name="BookDetails.AuthorID"]');
+                const select = document.querySelector('[name="BookDetails.AuthorId"]');
                 const option = new Option(authorName.authorName, authorName.authorId, true, true);
                 select.add(option, 1);
 
@@ -779,11 +1146,11 @@
                 clearTimeout(autoSaveTimeout);
                 autoSaveTimeout = setTimeout(() => {
                     const formData = new FormData(form);
-                    localStorage.setItem(`book-edit-${@(Model.BookDetails?.ID ?? 0)}`,
+                    localStorage.setItem(`book-edit-${@(Model.BookDetails?.Id ?? 0)}`,
                         JSON.stringify({
                             title: formData.get('BookDetails.Title'),
                             description: formData.get('BookDetails.Description'),
-                            authorId: formData.get('BookDetails.AuthorID'),
+                            authorId: formData.get('BookDetails.AuthorId'),
                             timestamp: Date.now()
                         }));
                 }, 2000);
